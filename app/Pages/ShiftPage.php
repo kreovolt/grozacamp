@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Groza\Pages;
 
 use Groza\App;
+use Groza\Content\PageData;
 use Groza\Http\Request;
 use Groza\Http\Response;
 
@@ -38,7 +39,7 @@ final class ShiftPage
                 return Response::redirect('/booking/', 301);
             }
 
-            return Response::html('Not Found', 404);
+            return (new NotFoundPage($this->app))($r, []);
         }
 
         $venue = null;
@@ -48,35 +49,20 @@ final class ShiftPage
             }
         }
         $texts = $this->app->store()->read('texts');
-        $included = $texts['home.included'] ?? [];
         $today = $this->app->clock()->now()->format('Y-m-d');
 
         return Response::html($this->app->view()->render('pages/shift', [
             'shift' => $shift,
             'venue' => $venue,
             'past' => $today > (string) ($shift['dateEnd'] ?? ''),
-            'included' => is_array($included) ? array_values(array_filter($included, 'is_string')) : [],
-            'faq' => $this->faq(),
+            'included' => PageData::included($texts),
+            'faq' => PageData::faq($this->items('faq'), self::FAQ_LIMIT, true),
         ]));
-    }
-
-    /** @return list<array{question:string,answer:string}> */
-    private function faq(): array
-    {
-        $items = array_values(array_filter($this->items('faq'), static fn (array $q): bool => !empty($q['onHome'])));
-        usort($items, static fn (array $a, array $b): int => (int) ($a['order'] ?? 0) <=> (int) ($b['order'] ?? 0));
-
-        return array_map(
-            static fn (array $q): array => ['question' => trim((string) ($q['question'] ?? '')), 'answer' => (string) ($q['answer'] ?? '')],
-            array_slice($items, 0, self::FAQ_LIMIT)
-        );
     }
 
     /** @return list<array<string,mixed>> */
     private function items(string $collection): array
     {
-        $items = $this->app->store()->read($collection)['items'] ?? [];
-
-        return is_array($items) ? array_values(array_filter($items, 'is_array')) : [];
+        return PageData::items($this->app->store()->read($collection));
     }
 }

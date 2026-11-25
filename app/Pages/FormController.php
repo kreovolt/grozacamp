@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Groza\Pages;
 
 use Groza\App;
+use Groza\Content\PageData;
 use Groza\Domain\Shifts;
 use Groza\Forms\BookingForm;
 use Groza\Forms\Fields;
@@ -23,11 +24,6 @@ final class FormController
     private const FIELDS = [
         'booking' => ['shift', 'parentName', 'phone', 'childAge', 'comment', 'consent'],
         'vacancy' => ['fullName', 'phone', 'email', 'age', 'position', 'experience', 'shifts', 'vk', 'consent'],
-    ];
-
-    private const TITLES = [
-        'booking' => 'Заявка на путёвку',
-        'vacancy' => 'Анкета на вакансию',
     ];
 
     private const RETRY = [
@@ -57,12 +53,6 @@ final class FormController
         $form = $r->query('f') === 'vacancy' ? 'vacancy' : 'booking';
 
         return Response::html($this->app->view()->render('pages/thanks', ['form' => $form]));
-    }
-
-    /** Временная страница с формой анкеты (dev/test), пока нет /vacancies/ (Task 10). */
-    public function preview(string $formId): Response
-    {
-        return $this->page($formId, [], [], 200, $this->app->guardFields($formId));
     }
 
     private function submit(Request $r, string $formId): Response
@@ -136,16 +126,7 @@ final class FormController
     private function options(string $formId): array
     {
         if ($formId === 'vacancy') {
-            $positions = [];
-            foreach ($this->items('vacancies') as $v) {
-                $title = Fields::line($v['title'] ?? '');
-                if (empty($v['hidden']) && $title !== '') {
-                    $positions[] = $title;
-                }
-            }
-            $positions[] = VacancyForm::OTHER;
-
-            return ['positions' => array_values(array_unique($positions))];
+            return ['positions' => VacanciesPage::positions($this->items('vacancies'))];
         }
 
         return ['shifts' => BookingPage::shiftOptions(Shifts::visible($this->items('shifts'), $this->app->clock()->now()))];
@@ -166,9 +147,7 @@ final class FormController
     /** @return list<array<string,mixed>> */
     private function items(string $collection): array
     {
-        $items = $this->app->store()->read($collection)['items'] ?? [];
-
-        return is_array($items) ? array_values(array_filter($items, 'is_array')) : [];
+        return PageData::items($this->app->store()->read($collection));
     }
 
     /** Введённое посетителем — для повторного показа формы (только известные поля, длина ограничена). @return array<string,string> */
@@ -219,22 +198,7 @@ final class FormController
             return (new BookingPage($this->app))->render($r, $values, $errors, 422, $guard);
         }
 
-        return $this->page($formId, $values, $errors, 422, $guard);
-    }
-
-    /** @param array<string,string> $values @param array<string,string> $errors */
-    private function page(string $formId, array $values, array $errors, int $status, ?array $guard): Response
-    {
-        $html = $this->app->view()->render('pages/form-page', [
-            'formId' => $formId,
-            'title' => self::TITLES[$formId],
-            'values' => $values,
-            'errors' => $errors,
-            'options' => $this->options($formId),
-            'guard' => $guard,
-        ]);
-
-        return Response::html($html, $status);
+        return (new VacanciesPage($this->app))->render($r, $values, $errors, 422, $guard);
     }
 
     /** Письмо не ушло или запрос отклонён: человеку — телефон и WhatsApp, а не «ошибка 500». */

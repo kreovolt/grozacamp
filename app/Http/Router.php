@@ -11,6 +11,9 @@ final class Router
     /** @var array<string,string> */
     private array $redirects = [];
 
+    /** @var callable|null обработчик 404 (страница «не найдено»); без него — короткий текст */
+    private $notFound = null;
+
     public function get(string $pattern, callable $handler): void
     {
         $this->add('GET', $pattern, $handler);
@@ -19,6 +22,12 @@ final class Router
     public function post(string $pattern, callable $handler): void
     {
         $this->add('POST', $pattern, $handler);
+    }
+
+    /** Страница для неизвестных адресов: вызывается как обычный обработчик и должна вернуть ответ со статусом 404. */
+    public function notFound(callable $handler): void
+    {
+        $this->notFound = $handler;
     }
 
     /** Точные пути → цель, ответ 301 за один переход. @param array<string,string> $map */
@@ -61,7 +70,7 @@ final class Router
             return Response::redirect($path . '/' . ($query !== '' ? '?' . $query : ''), 301);
         }
 
-        return Response::html('Not Found', 404);
+        return $this->notFound !== null ? ($this->notFound)($r, []) : Response::html('Not Found', 404);
     }
 
     private function add(string $method, string $pattern, callable $handler): void

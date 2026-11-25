@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-// Форма заявки живёт на /booking/ (анкета — пока на временной /_forms/vacancy/ до Task 10).
+// Форма заявки живёт на /booking/ (анкета — на /vacancies/).
 // Сервер сам требует ≥ 3 с между показом формы и отправкой, поэтому тест честно ждёт.
 const FORM = '/booking/';
 const WAIT_MS = 3300;
@@ -46,7 +46,7 @@ test('с JS: пустая отправка — ошибки у полей и ф�
 });
 
 test('с JS: анкета — фокус на первом по порядку на странице поле с ошибкой', async ({ page }) => {
-  await page.goto('/_forms/vacancy/');
+  await page.goto('/vacancies/');
   await page.waitForTimeout(WAIT_MS);
   await page.getByRole('button', { name: 'Отправить анкету' }).click();
   await expect(page.locator('#vacancy-fullName-error')).toBeVisible();

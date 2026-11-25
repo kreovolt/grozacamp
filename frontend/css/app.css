@@ -210,6 +210,10 @@
   .richtext li + li { margin-top: 0.35em; }
   .richtext a { @apply font-semibold text-rust-deep underline decoration-rust-deep/40 hover:decoration-rust-deep; }
   .richtext strong { @apply font-bold text-ink; }
+  /* Подзаголовки длинных текстов (правила, политика): якоря не прячутся под верхний край */
+  .richtext h3 { @apply scroll-mt-6 font-display text-[1.375rem] font-semibold uppercase leading-tight tracking-[0.03em] text-ink; margin-top: 1.9em; }
+  .richtext > h3:first-child { margin-top: 0; }
+  .richtext h3 + * { margin-top: 0.6em; }
 
 
   /* Ссылка «Перейти к содержанию» — видна при фокусе с клавиатуры */
