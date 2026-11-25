@@ -9,7 +9,7 @@ namespace Groza\Admin;
  */
 final class Uploads
 {
-    private const IMAGE_EXT = ['jpg' => ['jpg', 'jpeg'], 'png' => ['png'], 'webp' => ['webp']];
+    private const IMAGE_EXT = ['jpg', 'jpeg', 'png', 'webp'];
     private const IMAGE_MIME = ['jpg' => 'image/jpeg', 'png' => 'image/png', 'webp' => 'image/webp'];
     private const NOT_PHOTO = 'Файл не похож на фото. Подходят JPEG, PNG и WebP';
 
@@ -38,6 +38,7 @@ final class Uploads
     /** @param array<string,mixed> $file запись из $_FILES @return array{src:string,widths:list<int>,formats:list<string>,w:int,h:int} */
     public function storeImage(array $file): array
     {
+        $this->images->assertCapable();
         $tmp = $this->checkUpload($file);
         $size = $this->actualSize($tmp);
         if ($size > $this->maxImageBytes) {
@@ -52,7 +53,7 @@ final class Uploads
         if ($kind === null || $mime !== self::IMAGE_MIME[$kind]) {
             throw new UploadException(self::NOT_PHOTO);
         }
-        if (!in_array($this->extension((string) ($file['name'] ?? '')), self::IMAGE_EXT[$kind], true)) {
+        if (!in_array($this->extension((string) ($file['name'] ?? '')), self::IMAGE_EXT, true)) {
             throw new UploadException(self::NOT_PHOTO);
         }
 
@@ -67,6 +68,9 @@ final class Uploads
     /** @param array<string,mixed> $file @return array{url:string,bytes:int,originalName:string} */
     public function storePdf(array $file): array
     {
+        if (!function_exists('finfo_open')) {
+            throw new UploadException('Сервер не умеет обрабатывать фото. Сообщите разработчику.');
+        }
         $tmp = $this->checkUpload($file);
         $size = $this->actualSize($tmp);
         if ($size > $this->maxPdfBytes) {
@@ -226,7 +230,9 @@ final class Uploads
 
     private function extension(string $name): string
     {
-        $name = $this->cleanName($name);
+        // из «сырого» имени, без перекодировки и подстановок: проверка байтовая, кодировка имени не важна
+        $name = str_replace('\\', '/', $name);
+        $name = trim(substr($name, (int) strrpos('/' . $name, '/')));
         $dot = strrpos($name, '.');
 
         return $dot === false ? '' : strtolower(substr($name, $dot + 1));
@@ -235,6 +241,7 @@ final class Uploads
     /** Имя для показа: без пути и управляющих символов, кириллица сохраняется, до 120 знаков. */
     private function cleanName(string $name): string
     {
+        $name = mb_scrub($name); // не-UTF-8 байты заменяются, иначе preg_* с /u вернёт null
         $name = str_replace('\\', '/', $name);
         $name = (string) substr($name, (int) strrpos('/' . $name, '/'));
         $name = (string) preg_replace('/[\p{C}]+/u', '', $name);

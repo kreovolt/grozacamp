@@ -12,6 +12,11 @@ RemoveHandler .php .phtml .phar
 RemoveType .php .phtml .phar
 Options -ExecCGI -Indexes
 
+<IfModule mod_mime.c>
+  AddType image/webp .webp
+  AddType application/pdf .pdf
+</IfModule>
+
 <IfModule mod_headers.c>
   Header set X-Content-Type-Options "nosniff"
 </IfModule>

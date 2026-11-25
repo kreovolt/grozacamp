@@ -12,8 +12,41 @@ final class ImageProcessor
     private const WEBP_QUALITY = 80;
     private const JPEG_QUALITY = 82;
 
-    public function __construct(private int $maxPixels = 25000000)
+    private const MEMORY_RESERVE = 33554432; // 32 МБ на сам PHP и копии под ширины
+    private const BYTES_PER_PIXEL = 5;
+    private const REQUIRED = ['imagewebp', 'imagecreatefromjpeg', 'imagecreatefrompng', 'finfo_open'];
+
+    /** @var \Closure(string):bool */
+    private \Closure $hasFunction;
+
+    /**
+     * @param int|null $memoryLimit байты (-1 — без лимита); null — читать memory_limit в момент обработки (для тестов — подставить)
+     * @param callable|null $hasFunction проверка наличия функций расширений (для тестов)
+     */
+    public function __construct(private int $maxPixels = 25000000, private ?int $memoryLimit = null, ?callable $hasFunction = null)
     {
+        $this->hasFunction = $hasFunction !== null ? \Closure::fromCallable($hasFunction) : static fn (string $f): bool => function_exists($f);
+    }
+
+    /** Нужные расширения PHP есть? Иначе — понятный отказ вместо ошибки 500. */
+    public function assertCapable(): void
+    {
+        foreach (self::REQUIRED as $fn) {
+            if (!($this->hasFunction)($fn)) {
+                throw new UploadException('Сервер не умеет обрабатывать фото. Сообщите разработчику.');
+            }
+        }
+    }
+
+    /** Сколько пикселей можно раскодировать: не больше maxPixels и не больше, чем влезает в память (≈5 байт на пиксель + запас). */
+    public function effectiveMaxPixels(): int
+    {
+        $limit = $this->memoryLimit ?? \Groza\App::iniBytes((string) ini_get('memory_limit'));
+        if ($limit <= 0) { // -1 — без лимита
+            return $this->maxPixels;
+        }
+
+        return max(0, min($this->maxPixels, intdiv($limit - self::MEMORY_RESERVE, self::BYTES_PER_PIXEL)));
     }
 
     /**
@@ -27,14 +60,15 @@ final class ImageProcessor
             throw new UploadException('Файл не похож на фото. Подходят JPEG, PNG и WebP');
         }
         [$srcW, $srcH, $type] = $info;
+        $this->assertCapable();
         // размер проверяем по заголовку, до декодирования: огромная картинка — это «бомба» для памяти
-        if ($srcW * $srcH > $this->maxPixels) {
-            throw new UploadException('Фото слишком большое: уменьшите до 25 мегапикселей');
+        $maxPixels = $this->effectiveMaxPixels();
+        if ($srcW * $srcH > $maxPixels) {
+            throw new UploadException('Фото слишком большое: уменьшите до ' . max(1, intdiv($maxPixels, 1000000)) . ' мегапикселей');
         }
         if (!in_array($type, [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_WEBP], true)) {
             throw new UploadException('Файл не похож на фото. Подходят JPEG, PNG и WebP');
         }
-        $this->ensureMemory($srcW, $srcH);
 
         $img = match ($type) {
             IMAGETYPE_JPEG => @imagecreatefromjpeg($path),
@@ -64,12 +98,12 @@ final class ImageProcessor
                 $scaled = $this->scale($img, $w, $h, $tw, $th);
                 try {
                     $made[] = $webp = "$destDir/$base-$tw.webp";
-                    $okWebp = imagewebp($scaled, $webp, self::WEBP_QUALITY);
+                    $okWebp = @imagewebp($scaled, $webp, self::WEBP_QUALITY);
                     $flat = $this->flatten($scaled, $tw, $th);
                     try {
                         imageinterlace($flat, true); // progressive
                         $made[] = $jpg = "$destDir/$base-$tw.jpg";
-                        $okJpg = imagejpeg($flat, $jpg, self::JPEG_QUALITY);
+                        $okJpg = @imagejpeg($flat, $jpg, self::JPEG_QUALITY);
                     } finally {
                         unset($flat);
                     }
@@ -137,7 +171,7 @@ final class ImageProcessor
             if ($op === 'flip') {
                 imageflip($img, $arg);
             } else {
-                $rotated = imagerotate($img, $arg, 0);
+                $rotated = @imagerotate($img, $arg, 0);
                 if ($rotated === false) {
                     throw new UploadException('Не удалось обработать фото. Попробуйте сохранить его заново как JPEG');
                 }
@@ -150,7 +184,7 @@ final class ImageProcessor
 
     private function scale(\GdImage $img, int $w, int $h, int $tw, int $th): \GdImage
     {
-        $dst = imagecreatetruecolor($tw, $th);
+        $dst = @imagecreatetruecolor($tw, $th);
         if ($dst === false) {
             throw new UploadException('Не удалось обработать фото. Попробуйте уменьшить его');
         }
@@ -165,7 +199,7 @@ final class ImageProcessor
     /** Прозрачность для JPEG невозможна: подкладываем белый фон. */
     private function flatten(\GdImage $img, int $w, int $h): \GdImage
     {
-        $flat = imagecreatetruecolor($w, $h);
+        $flat = @imagecreatetruecolor($w, $h);
         if ($flat === false) {
             throw new UploadException('Не удалось обработать фото. Попробуйте уменьшить его');
         }
@@ -174,26 +208,5 @@ final class ImageProcessor
         imagecopy($flat, $img, 0, 0, 0, 0, $w, $h);
 
         return $flat;
-    }
-
-    /** Раскодированная картинка занимает ~4 байта на пиксель (и ещё копии); запас под это, а если не вышло — понятный отказ вместо падения. */
-    private function ensureMemory(int $w, int $h): void
-    {
-        $limit = self::bytes((string) ini_get('memory_limit'));
-        if ($limit <= 0) {
-            return;
-        }
-        $need = (int) ($w * $h * 4 * 3) + 32 * 1048576;
-        if ($need <= $limit - memory_get_usage()) {
-            return;
-        }
-        if (@ini_set('memory_limit', (string) ($memory = memory_get_usage() + $need)) === false || self::bytes((string) ini_get('memory_limit')) < $memory) {
-            throw new UploadException('Фото слишком большое для обработки: уменьшите его и попробуйте снова');
-        }
-    }
-
-    private static function bytes(string $v): int
-    {
-        return \Groza\App::iniBytes($v);
     }
 }

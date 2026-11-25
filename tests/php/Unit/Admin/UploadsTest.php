@@ -132,8 +132,76 @@ final class UploadsTest extends TestCase
     {
         $this->assertRejected(
             fn () => $this->uploads(p: new ImageProcessor(maxPixels: 10000))->storeImage($this->file('small.jpg')),
-            'Фото слишком большое: уменьшите до 25 мегапикселей'
+            'Фото слишком большое: уменьшите до'
         );
+    }
+
+    public function test_pixel_limit_follows_memory_limit_and_reports_it(): void
+    {
+        $this->assertSame(25000000, (new ImageProcessor(memoryLimit: -1))->effectiveMaxPixels());
+        $this->assertSame(20132659, (new ImageProcessor(memoryLimit: 128 * 1048576))->effectiveMaxPixels());
+        $this->assertSame(25000000, (new ImageProcessor(memoryLimit: 1024 * 1048576))->effectiveMaxPixels());
+        // 3x2 «мегапикселя» не влезает в 40 МБ: (40-32)/5 МБ ≈ 1 Мп
+        $this->assertRejected(
+            fn () => $this->uploads(p: new ImageProcessor(memoryLimit: 40 * 1048576))->storeImage($this->file('bomb.png')),
+            'Фото слишком большое: уменьшите до 1 мегапикселей'
+        );
+        $this->assertRejected(
+            fn () => $this->uploads(p: new ImageProcessor(memoryLimit: 128 * 1048576))->storeImage($this->file('bomb.png')),
+            'уменьшите до 20 мегапикселей'
+        );
+        $this->assertRejected(
+            fn () => $this->uploads(p: new ImageProcessor(memoryLimit: -1))->storeImage($this->file('bomb.png')),
+            'уменьшите до 25 мегапикселей'
+        );
+    }
+
+    public function test_decompression_bomb_png_rejected_before_decoding_and_leaves_nothing(): void
+    {
+        $this->assertRejected(fn () => $this->uploads()->storeImage($this->file('bomb.png')), 'Фото слишком большое');
+        $this->assertSame([], glob($this->base . '/img/*') ?: []);
+    }
+
+    public function test_webp_input_accepted(): void
+    {
+        $d = $this->uploads()->storeImage($this->file('photo.webp', 'снимок.WEBP'));
+        $this->assertSame(['webp', 'jpg'], $d['formats']);
+        $this->assertSame([480, 600], $d['widths']);
+        $this->assertFileExists($this->base . '/img/' . basename($d['src']) . '-600.webp');
+        $this->assertFileExists($this->base . '/img/' . basename($d['src']) . '-600.jpg');
+    }
+
+    public function test_extension_mismatch_accepted_when_content_is_a_real_image(): void
+    {
+        $d = $this->uploads()->storeImage($this->file('photo.png', 'IMG_5.JPG'));
+        $this->assertMatchesRegularExpression('#^/uploads/img/[0-9a-f]{16}$#', $d['src']);
+        foreach (['pic.gif', 'run.exe', 'noext', 'pic.jpg.exe'] as $name) {
+            $this->assertRejected(fn () => $this->uploads()->storeImage($this->file('small.jpg', $name)), 'Файл не похож на фото');
+        }
+    }
+
+    public function test_non_utf8_names_do_not_bypass_extension_check(): void
+    {
+        $this->assertRejected(fn () => $this->uploads()->storePdf($this->file('real.pdf', "Àvirus.exe")), 'Это не PDF');
+        $this->assertRejected(fn () => $this->uploads()->storeImage($this->file('small.jpg', "Àvirus.exe")), 'Файл не похож на фото');
+        $this->assertRejected(fn () => $this->uploads()->storePdf($this->file('real.pdf', "ÀÁ")), 'Это не PDF');
+        $r = $this->uploads()->storePdf($this->file('real.pdf', "Àdoc.pdf"));
+        $this->assertTrue(mb_check_encoding($r['originalName'], 'UTF-8'));
+        $this->assertStringEndsWith('doc.pdf', $r['originalName']);
+        $this->assertSame(1, preg_match('#^/uploads/img/[0-9a-f]{16}$#', $this->uploads()->storeImage($this->file('small.jpg', "Àpic.jpg"))['src']));
+    }
+
+    public function test_rlo_and_zero_width_characters_stripped_from_original_name(): void
+    {
+        $r = $this->uploads()->storePdf($this->file('real.pdf', "Устав‮​ лагеря﻿.pdf"));
+        $this->assertSame('Устав лагеря.pdf', $r['originalName']);
+    }
+
+    public function test_missing_php_extensions_give_friendly_error(): void
+    {
+        $p = new ImageProcessor(hasFunction: static fn (string $f): bool => $f !== 'imagewebp');
+        $this->assertRejected(fn () => $this->uploads(p: $p)->storeImage($this->file('small.jpg')), 'Сервер не умеет обрабатывать фото. Сообщите разработчику.');
+        $this->assertSame([], glob($this->base . '/img/*') ?: []);
     }
 
     public function test_image_size_limit(): void
@@ -238,7 +306,7 @@ final class UploadsTest extends TestCase
     public function test_uploads_htaccess_blocks_scripts(): void
     {
         $h = file_get_contents(dirname(__DIR__, 4) . '/public/uploads/.htaccess');
-        foreach (['php_flag engine off', 'RemoveHandler .php .phtml .phar', 'Options -ExecCGI -Indexes', 'jpg|jpeg|webp|png|pdf', 'X-Content-Type-Options'] as $needle) {
+        foreach (['php_flag engine off', 'RemoveHandler .php .phtml .phar', 'Options -ExecCGI -Indexes', 'jpg|jpeg|webp|png|pdf', 'X-Content-Type-Options', 'AddType image/webp .webp', 'AddType application/pdf .pdf'] as $needle) {
             $this->assertStringContainsString($needle, $h);
         }
     }

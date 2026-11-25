@@ -84,7 +84,18 @@ final class ImageProcessorTest extends TestCase
             $this->proc('small.jpg', new ImageProcessor(maxPixels: 10000));
             $this->fail('нужно исключение');
         } catch (UploadException $e) {
-            $this->assertSame('Фото слишком большое: уменьшите до 25 мегапикселей', $e->getMessage());
+            $this->assertStringStartsWith('Фото слишком большое: уменьшите до ', $e->getMessage());
+        }
+        $this->assertSame([], $this->files());
+    }
+
+    public function test_bomb_png_rejected_and_no_files_left(): void
+    {
+        try {
+            $this->proc('bomb.png');
+            $this->fail();
+        } catch (UploadException $e) {
+            $this->assertStringStartsWith('Фото слишком большое', $e->getMessage());
         }
         $this->assertSame([], $this->files());
     }
