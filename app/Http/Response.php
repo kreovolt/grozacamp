@@ -99,7 +99,7 @@ final class Response
         }
         $in = fopen($file, 'rb');
         if ($in !== false) {
-            while (!feof($in) && ($chunk = fread($in, 65536)) !== false) {
+            while (!feof($in) && !connection_aborted() && ($chunk = fread($in, 65536)) !== false) {
                 echo $chunk;
                 flush();
             }

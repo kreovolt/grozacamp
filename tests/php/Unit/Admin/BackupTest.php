@@ -96,6 +96,36 @@ final class BackupTest extends TestCase
         }
     }
 
+    public function test_backup_uses_an_allowlist_of_stores(): void
+    {
+        $data = $this->app->config()['storageDir'] . '/data';
+        file_put_contents($data . '/users-old.json', '{"items":[{"hash":"OLD-HASH"}]}');
+        file_put_contents($data . '/secret.json', '{"k":"SECRET"}');
+
+        $names = $this->entries(AdminHttp::get($this->app, '/admin/backup/')->body());
+
+        $this->assertNotContains('data/users-old.json', $names);
+        $this->assertNotContains('data/secret.json', $names);
+        $this->assertContains('data/shifts.json', $names);
+    }
+
+    public function test_backup_sweeps_old_temp_archives_only(): void
+    {
+        $tmpDir = $this->app->config()['storageDir'] . '/tmp';
+        mkdir($tmpDir, 0777, true);
+        file_put_contents($tmpDir . '/backup-old.zip', 'x');
+        touch($tmpDir . '/backup-old.zip', time() - 7200);
+        file_put_contents($tmpDir . '/backup-fresh.zip', 'x');
+        file_put_contents($tmpDir . '/other-old.zip', 'x');
+        touch($tmpDir . '/other-old.zip', time() - 7200);
+
+        AdminHttp::get($this->app, '/admin/backup/');
+
+        $this->assertFileDoesNotExist($tmpDir . '/backup-old.zip');
+        $this->assertFileExists($tmpDir . '/backup-fresh.zip', 'свежий (возможно, ещё скачивается) не трогаем');
+        $this->assertFileExists($tmpDir . '/other-old.zip', 'чужие файлы не трогаем');
+    }
+
     public function test_backup_has_real_data_and_no_password_hashes(): void
     {
         $res = AdminHttp::get($this->app, '/admin/backup/');

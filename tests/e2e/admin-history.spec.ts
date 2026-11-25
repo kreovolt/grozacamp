@@ -50,7 +50,9 @@ test('история: скрыли вакансию, вернули прежню
   const block = page.locator('details.history', { hasText: 'Вакансии' });
   await block.locator('summary').click();
   const first = block.locator('.history__item').first();
-  await expect(first).toContainText('Тест История');
+  await expect(first).toContainText('Как было до правки: Тест История');
+  await expect(first).toContainText('до последнего изменения');
+  await expect(first).toContainText('Тест История изменил(а) видимость на сайте');
 
   // без отметки «Да, вернуть» браузер форму не отправит; сервер, если обойти, тоже откажет
   await first.getByLabel('Да, вернуть').check();

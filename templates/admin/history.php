@@ -1,7 +1,7 @@
 <?php
 /**
  * История изменений: версии по файлам данных, откат с подтверждением.
- * @var list<array{name:string,label:string,versions:list<array{id:string,at:string,who:string}>}> $files
+ * @var list<array{name:string,label:string,versions:list<array{id:string,at:string,who:string,what:string}>}> $files
  * @var string|null $notice
  * @var string|null $error
  * @var string|null $errorVersion версия, у которой не отмечено подтверждение
@@ -14,7 +14,7 @@ $this->layout('admin/layout', ['title' => 'История изменений', '
 ?>
 <p class="back back-top"><a href="/admin/">← К разделам</a></p>
 <h1 class="h1">История изменений</h1>
-<p class="lead">Перед каждым сохранением прежнее состояние запоминается (последние 20 версий каждого раздела). Любую можно вернуть. Сам откат тоже попадает в историю — его можно отменить.</p>
+<p class="lead">Перед каждым сохранением прежнее состояние запоминается (последние 20 версий каждого раздела). Каждая строка — состояние раздела до чьей-то правки. Кнопка возвращает его целиком. Сам откат тоже попадает в историю — его можно отменить.</p>
 <p class="hint">Пароли и учётные записи в историю не входят.</p>
 <?php if ($notice !== null): ?>
 <p class="alert alert-ok" role="status"><?= e($notice) ?></p>
@@ -30,10 +30,14 @@ $this->layout('admin/layout', ['title' => 'История изменений', '
   <p class="hint">Пока ни разу не менялось.</p>
 <?php else: ?>
   <ul class="history__list">
-<?php foreach ($file['versions'] as $v): ?>
+<?php foreach ($file['versions'] as $i => $v): ?>
     <li class="history__item">
-      <span class="history__when"><?= e($v['at']) ?></span>
-      <span class="history__who"><?= e($v['who']) ?></span>
+      <div class="history__text">
+        <span class="history__when">Как было до правки: <?= e($v['who']) ?>, <?= e($v['at']) ?><?= $i === 0 ? ' — до последнего изменения' : '' ?></span>
+<?php if ($v['what'] !== ''): ?>
+        <span class="history__what"><?= e($v['what']) ?></span>
+<?php endif ?>
+      </div>
       <form method="post" action="/admin/history/restore/" class="history__form">
         <input type="hidden" name="_csrf" value="<?= e($csrf) ?>">
         <input type="hidden" name="name" value="<?= e($file['name']) ?>">

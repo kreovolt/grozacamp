@@ -6,10 +6,15 @@ declare(strict_types=1);
  * Админка сама заменённые файлы не удаляет, пока их версия хранится (иначе «Вернуть эту версию» дала бы битые ссылки);
  * когда версия уходит из последних 20, файл остаётся лишним — запускайте это время от времени.
  *
- *   php scripts/uploads-gc.php [--dry-run] [--min-age=СЕК]
+ *   php scripts/uploads-gc.php [--dry-run] [--min-age=СЕК] [--force]
  *
  *   --dry-run     только показать, что было бы удалено
  *   --min-age=N   не трогать файлы моложе N секунд (по умолчанию 3600: их мог только что загрузить чей-то запрос)
+ *
+ *   --force       не останавливаться на защитных проверках (см. ниже)
+ *
+ * Защита от «не той папки»: скрипт ничего не создаёт и останавливается с кодом 2, если в хранилище нет данных,
+ * нет ни одной сохранённой версии или удалилось бы больше половины файлов загрузок — без --force.
  *
  * Хранилище и папка загрузок — из конфигурации (GROZA_STORAGE_DIR, uploadsDir).
  */
@@ -23,17 +28,34 @@ $root = dirname(__DIR__);
 require $root . '/vendor/autoload.php';
 $config = require $root . '/config/config.php';
 
-$opts = getopt('', ['dry-run', 'min-age:', 'help']);
+$opts = getopt('', ['dry-run', 'min-age:', 'force', 'help']);
 if (isset($opts['help'])) {
-    fwrite(STDOUT, "Usage: php scripts/uploads-gc.php [--dry-run] [--min-age=SECONDS]\n");
+    fwrite(STDOUT, "Usage: php scripts/uploads-gc.php [--dry-run] [--min-age=SECONDS] [--force]\n");
     exit(0);
 }
 $dry = isset($opts['dry-run']);
 $minAge = isset($opts['min-age']) && ctype_digit((string) $opts['min-age']) ? (int) $opts['min-age'] : 3600;
 
-$app = App::boot($config);
+$force = isset($opts['force']);
+
+$app = App::boot($config, false); // только чтение: стартовые данные не подкладываем
+if ($app->store()->publicNames() === []) {
+    fwrite(STDERR, "uploads-gc: в хранилище {$config['storageDir']}/data нет данных сайта — похоже, указана не та папка (GROZA_STORAGE_DIR). Ничего не удалено.\n");
+    exit(2);
+}
 $uploads = $app->uploads();
 $orphans = $uploads->orphans($app->keptUploadRefs(), $minAge);
+$total = count($uploads->inventory());
+if (!$force && $orphans !== []) {
+    if ($app->store()->versionCount() === 0) {
+        fwrite(STDERR, "uploads-gc: в хранилище нет ни одной сохранённой версии — без истории не понять, что ещё нужно. Ничего не удалено (--force, если уверены).\n");
+        exit(2);
+    }
+    if (count($orphans) * 2 > $total) {
+        fwrite(STDERR, sprintf("uploads-gc: удалилось бы %d из %d файлов (больше половины) — похоже, указана не та папка. Ничего не удалено (--force, если уверены).\n", count($orphans), $total));
+        exit(2);
+    }
+}
 
 $failed = 0;
 foreach ($orphans as $url) {

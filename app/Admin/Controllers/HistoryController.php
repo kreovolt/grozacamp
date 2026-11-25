@@ -71,19 +71,56 @@ final class HistoryController
     private function render(?string $notice, ?string $error, ?string $errorVersion, int $status = 200): Response
     {
         $files = [];
+        $audit = $this->app->audit()->recent(500);
+        $describer = new DashboardController($this->app);
         foreach (self::files() as $name => $label) {
             $versions = [];
             foreach ($this->app->store()->versions($name) as $v) {
+                // метка версии — кто и когда ПЕРЕЗАПИСАЛ это состояние: версия хранит то, что было ДО его правки
+                $what = $this->whatChanged($describer, $audit, $name, $v['actor'], $v['at']);
                 $versions[] = [
                     'id' => $v['id'],
                     'at' => Dates::ruTime($v['at']),
                     'who' => $this->app->actorName($v['actor']),
+                    'what' => $what,
                 ];
             }
             $files[] = ['name' => $name, 'label' => $label, 'versions' => $versions];
         }
 
         return $this->page('admin/history', ['files' => $files, 'notice' => $notice, 'error' => $error, 'errorVersion' => $errorVersion], $status);
+    }
+
+    /**
+     * Что сделал тот, кто перезаписал эту версию: запись журнала того же автора про тот же файл в пределах нескольких секунд.
+     *
+     * @param list<array{actor:string,action:string,target:string,at:string}> $audit
+     */
+    private function whatChanged(DashboardController $describer, array $audit, string $name, string $actor, string $at): string
+    {
+        $t = strtotime($at);
+        if ($t === false) {
+            return '';
+        }
+        $best = null;
+        $bestDiff = 11;
+        foreach ($audit as $row) {
+            $action = (string) ($row['action'] ?? '');
+            $target = (string) ($row['target'] ?? '');
+            $mine = str_starts_with($action, $name . '.') || ($action === 'restore' && str_starts_with($target, $name . ':'));
+            $rt = strtotime((string) ($row['at'] ?? ''));
+            if (!$mine || $rt === false || ($row['actor'] ?? null) !== $actor || abs($rt - $t) >= $bestDiff) {
+                continue;
+            }
+            $best = $row;
+            $bestDiff = abs($rt - $t);
+        }
+        if ($best === null) {
+            return '';
+        }
+        $d = $describer->describe((string) $best['action'], (string) $best['target']);
+
+        return $d === null ? '' : $this->app->actorName($actor) . ' ' . $d[0] . ($d[1] !== '' ? ' «' . $d[1] . '»' : '');
     }
 
     /** @param array<string,mixed> $vars */

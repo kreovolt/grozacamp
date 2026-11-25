@@ -57,6 +57,15 @@ final class ReadinessCliTest extends TestCase
         $this->assertStringContainsString('/admin/', $out, 'и куда идти');
     }
 
+    public function test_cli_without_data_exits_two_and_creates_nothing(): void
+    {
+        [$code, $out, $err] = $this->cli();
+
+        $this->assertSame(2, $code);
+        $this->assertStringContainsString('нет файлов', $err);
+        $this->assertSame([], glob($this->storage . '/data/*') ?: [], 'проверка только читает: стартовые данные не подложены');
+    }
+
     public function test_cli_complete_data_exits_zero(): void
     {
         $this->fill(dirname(__DIR__, 4) . '/tests/fixtures/complete');

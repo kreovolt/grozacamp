@@ -37,6 +37,17 @@ final class JsonStore
         return $names;
     }
 
+    /** Сколько версий хранится всего (у файлов, которые вообще ведут историю). */
+    public function versionCount(): int
+    {
+        $n = 0;
+        foreach ($this->publicNames() as $name) {
+            $n += count(glob($this->versionDir($name) . '/*.json') ?: []);
+        }
+
+        return $n;
+    }
+
     /**
      * Текст всех текущих файлов данных и всех хранимых версий (кроме закрытых): по ним понимают, какие загруженные файлы ещё нужны.
      *

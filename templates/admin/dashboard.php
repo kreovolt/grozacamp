@@ -23,11 +23,11 @@ $this->layout('admin/layout', ['title' => 'Готовность к провер�
 
   <p class="readiness__summary <?= $ready ? 'readiness__summary--ok' : 'readiness__summary--bad' ?>" role="status">
     <span class="readiness__summary-title"><?= e($summary) ?></span>
-    <span class="readiness__summary-note"><?= $ready ? 'Все ' . (int) $total . ' обязательных пунктов заполнены.' : 'Заполнено ' . (int) ($total - $failedCount) . ' из ' . (int) $total . '.' ?></span>
+    <span class="readiness__summary-note"><?= $ready ? 'Заполнены все обязательные пункты: ' . (int) $total : 'Заполнено ' . (int) ($total - $failedCount) . ' из ' . (int) $total . '.' ?></span>
   </p>
 
 <?php foreach ($groups as $g): ?>
-  <h3 class="readiness__section"><?= e($g['label']) ?> <span class="readiness__count"><?= count($g['items']) ?></span></h3>
+  <h2 class="readiness__section"><?= e($g['label']) ?> <span class="readiness__count"><?= count($g['items']) ?></span></h2>
   <ul class="readiness__list">
 <?php foreach ($g['items'] as $item): ?>
     <li class="readiness__item readiness__item--bad">

@@ -7,7 +7,7 @@ declare(strict_types=1);
  *   php scripts/readiness.php
  *
  * Печатает недостающие обязательные пункты («раздел — пункт») и предупреждения.
- * Код выхода: 0 — все обязательные пункты заполнены, 1 — нет.
+ * Код выхода: 0 — все обязательные пункты заполнены, 1 — нет, 2 — в хранилище нет данных сайта (скрипт только читает и сам ничего не создаёт).
  * Хранилище, окружение и «сегодня» берутся из конфигурации, как у сайта (в env=test часы — GROZA_FAKE_NOW).
  */
 
@@ -21,7 +21,15 @@ $root = dirname(__DIR__);
 require $root . '/vendor/autoload.php';
 $config = require $root . '/config/config.php';
 
-$app = App::boot($config);
+$app = App::boot($config, false); // только чтение: стартовые данные не подкладываем
+$missing = array_values(array_filter(
+    ['texts', 'shifts', 'venues', 'team', 'documents'],
+    static fn (string $n): bool => $app->store()->updatedAt($n) === null
+));
+if ($missing !== []) {
+    fwrite(STDERR, 'readiness: в хранилище ' . $config['storageDir'] . '/data нет файлов: ' . implode(', ', $missing) . ". Проверьте GROZA_STORAGE_DIR.\n");
+    exit(2);
+}
 $items = Readiness::evaluate(Readiness::dataFrom($app), $app->clock()->now());
 
 $failed = array_values(array_filter($items, static fn (array $i): bool => $i['level'] === 'required' && !$i['ok']));

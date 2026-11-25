@@ -144,7 +144,8 @@ final class HistoryTest extends TestCase
             $this->assertSame(400, $res->status());
         }
         $this->assertSame($before, (string) file_get_contents($this->app->config()['storageDir'] . '/data/users.json'));
-        $this->assertSame([], $store->versions('users') === [] ? [] : [], 'проверка выше — главная');
+        $this->assertFileExists($dir . '/' . $id . '.json', 'подложенная версия не тронута');
+        $this->assertNotSame('restore', $this->app->audit()->recent(1)[0]['action'] ?? '', 'откат не записан в журнал');
     }
 
     public function test_history_page_lists_versions_by_file_with_time_and_who(): void
@@ -163,9 +164,32 @@ final class HistoryTest extends TestCase
         $this->assertStringContainsString('name="confirm"', $body);
         $this->assertStringContainsString('Да, вернуть', $body);
         $this->assertStringContainsString('Вернуть эту версию', $body);
-        $this->assertStringContainsString('Ольга', $body, 'кто сохранил — по имени');
+        $this->assertStringContainsString('Как было до правки: Ольга, ', $body, 'версия хранит состояние ДО правки этого автора');
+        $this->assertStringContainsString(' — до последнего изменения', $body);
+        $this->assertSame(1, substr_count($body, ' — до последнего изменения'), 'только у верхней строки файла');
+        $this->assertStringContainsString('Каждая строка — состояние раздела до чьей-то правки. Кнопка возвращает его целиком.', $body);
         $this->assertMatchesRegularExpression('/\d{1,2} [а-я]+, \d{2}:\d{2}/u', $body);
         $this->assertStringContainsString('name="_csrf"', $body);
+    }
+
+    public function test_history_row_names_what_the_author_changed(): void
+    {
+        $shift = $this->app->store()->read('shifts')['items'][0];
+        AdminHttp::postWithToken($this->app, '/admin/shifts/' . $shift['id'] . '/status/', ['status' => 'closed']);
+
+        $body = AdminHttp::get($this->app, '/admin/history/')->body();
+
+        $this->assertStringContainsString('Ольга изменил(а) статус смены «' . $shift['title'] . '»', $body);
+    }
+
+    public function test_history_row_without_matching_audit_entry_has_no_phrase(): void
+    {
+        $this->renameFirstShift('Новое название'); // правка мимо админки: в журнале про неё ничего нет
+
+        $body = AdminHttp::get($this->app, '/admin/history/')->body();
+
+        $this->assertStringContainsString('Как было до правки: Ольга', $body);
+        $this->assertStringNotContainsString('history__what', $body);
     }
 
     public function test_history_requires_login(): void

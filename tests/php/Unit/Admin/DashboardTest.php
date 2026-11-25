@@ -90,7 +90,7 @@ final class DashboardTest extends TestCase
         $last = -1;
         $seen = 0;
         foreach (['Основные сведения', 'Документы', 'Руководство', 'Педагогический и вожатский состав', 'Контакты', 'Деятельность', 'Материально-техническое обеспечение', 'Услуги, в том числе платные', 'Доступная среда'] as $title) {
-            $pos = strpos($body, '<h3 class="readiness__section">' . $title);
+            $pos = strpos($body, '<h2 class="readiness__section">' . $title);
             if ($pos === false) {
                 continue; // раздел может быть уже заполнен в примерных данных
             }

@@ -34,6 +34,11 @@ final class BackupController
         if (!is_dir($tmpDir) && !@mkdir($tmpDir, 0777, true) && !is_dir($tmpDir)) {
             return $this->failed();
         }
+        foreach (glob($tmpDir . '/backup-*.zip') ?: [] as $stale) { // остатки прерванных скачиваний
+            if (is_file($stale) && time() - (int) filemtime($stale) > 3600) {
+                @unlink($stale);
+            }
+        }
         $tmp = $tmpDir . '/backup-' . bin2hex(random_bytes(8)) . '.zip';
         $zip = new \ZipArchive();
         if ($zip->open($tmp, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
@@ -63,7 +68,8 @@ final class BackupController
     private function fill(\ZipArchive $zip): void
     {
         $dataDir = $this->app->config()['storageDir'] . '/data';
-        foreach ($this->app->store()->publicNames() as $name) {
+        // белый список: только известные хранилища сайта; чужой или будущий закрытый файл (users-old.json) в копию не попадёт
+        foreach (array_keys(HistoryController::files()) as $name) {
             $path = $dataDir . '/' . $name . '.json';
             if (is_file($path) && !is_link($path)) {
                 $zip->addFile($path, 'data/' . $name . '.json');

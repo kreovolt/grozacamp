@@ -37,7 +37,7 @@ $env = static function (string $name) {
     return $v === false || $v === '' ? null : $v;
 };
 foreach (['env' => 'ENV', 'baseUrl' => 'BASE_URL', 'storageDir' => 'STORAGE_DIR', 'timezone' => 'TIMEZONE',
-          'appSecret' => 'APP_SECRET', 'metrikaId' => 'METRIKA_ID', 'fakeNow' => 'FAKE_NOW'] as $key => $name) {
+          'appSecret' => 'APP_SECRET', 'uploadsDir' => 'UPLOADS_DIR', 'metrikaId' => 'METRIKA_ID', 'fakeNow' => 'FAKE_NOW'] as $key => $name) {
     if (($v = $env($name)) !== null) {
         $config[$key] = $v;
     }

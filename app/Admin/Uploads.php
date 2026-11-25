@@ -186,7 +186,21 @@ final class Uploads
      */
     public function orphans(array $refs, int $minAge = 0): array
     {
-        $found = []; // адрес → время изменения самого свежего файла
+        $found = $this->inventory();
+        $now = time();
+        $orphans = array_values(array_filter(
+            array_keys($found),
+            static fn (string $url): bool => !isset($refs[$url]) && $now - $found[$url] >= $minAge
+        ));
+        sort($orphans, SORT_STRING);
+
+        return $orphans;
+    }
+
+    /** Все загруженные файлы: адрес (для фото — адрес-основа) → время изменения самого свежего файла. @return array<string,int> */
+    public function inventory(): array
+    {
+        $found = [];
         foreach (glob($this->baseDir . '/img/*') ?: [] as $file) {
             if (is_file($file) && !is_link($file) && preg_match('/^([A-Za-z0-9_][A-Za-z0-9_-]*)-\d{1,5}\.(webp|jpg)$/', basename($file), $m) === 1) {
                 $url = $this->key('img', $m[1]);
@@ -198,14 +212,7 @@ final class Uploads
                 $found[$this->key('docs', basename($file))] = (int) filemtime($file);
             }
         }
-        $now = time();
-        $orphans = array_values(array_filter(
-            array_keys($found),
-            static fn (string $url): bool => !isset($refs[$url]) && $now - $found[$url] >= $minAge
-        ));
-        sort($orphans, SORT_STRING);
-
-        return $orphans;
+        return $found;
     }
 
     private function key(string $kind, string $name): string

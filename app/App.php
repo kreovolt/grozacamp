@@ -59,7 +59,7 @@ final class App
     }
 
     /** @param array<string,mixed> $config */
-    public static function boot(array $config): App
+    public static function boot(array $config, bool $seed = true): App
     {
         date_default_timezone_set($config['timezone']);
         $clock = ($config['env'] === 'test' && !empty($config['fakeNow']))
@@ -67,7 +67,9 @@ final class App
             : new SystemClock($config['timezone']);
 
         $app = new App($config, $clock);
-        $app->seedMissing();
+        if ($seed) {
+            $app->seedMissing();
+        }
 
         return $app;
     }

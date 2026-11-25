@@ -119,7 +119,7 @@ final class DashboardController
      *
      * @return array{0:string,1:string}|null
      */
-    private function describe(string $action, string $target): ?array
+    public function describe(string $action, string $target): ?array
     {
         $groups = TextsController::GROUPS;
         $files = HistoryController::files();
