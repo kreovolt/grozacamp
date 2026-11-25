@@ -6,12 +6,10 @@ use Groza\Content\Nav;
 use Groza\Http\Request;
 use Groza\Http\Response;
 use Groza\Http\Router;
+use Groza\Pages\HomePage;
 
 return static function (Router $router, App $app): void {
-    // ВРЕМЕННО (Task 4): главная — пустая страница в общем макете. Настоящую главную делает Task 7.
-    $router->get('/', static fn (Request $r, array $params): Response => Response::html(
-        $app->view()->render('pages/placeholder', ['title' => 'Детский лагерь «Гроза»', 'crumbs' => []])
-    ));
+    $router->get('/', new HomePage($app));
 
     // ВРЕМЕННЫЕ ЗАГЛУШКИ (Task 4), чтобы пункты меню не вели в 404. Их заменяют:
     // /booking/ — Task 9, /info/ и /vacancies/ — Task 10, /svedeniya/ и подстраницы — Task 11.

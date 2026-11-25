@@ -1,5 +1,5 @@
 // Сборка статики сайта (на хостинге Node нет — результат коммитится):
-//   шрифты @fontsource → public/assets/fonts/
+//   шрифты @fontsource → public/assets/fonts/ (cyrillic + latin; из latin-ext берётся только ₽)
 //   иконки lucide-static + свои глифы → public/assets/icons.svg (спрайт)
 //   frontend/css/app.css (Tailwind) → public/assets/css/app.css
 //   frontend/js/main.js (esbuild) → public/assets/js/main.js
@@ -29,7 +29,7 @@ const FONTS = [
 ];
 
 // Только используемые иконки (имя в спрайте = имя в lucide-static)
-const LUCIDE = ['phone', 'message-circle', 'menu', 'x', 'chevron-down', 'chevron-right', 'map-pin', 'clock', 'mail', 'arrow-right'];
+const LUCIDE = ['phone', 'message-circle', 'menu', 'x', 'chevron-down', 'chevron-right', 'map-pin', 'clock', 'mail', 'arrow-right', 'check', 'calendar'];
 // Свои глифы в том же стиле (контур 2 px, 24×24): ВКонтакте и YouTube — без пакетов брендовых иконок
 const CUSTOM = {
   vk: '<path d="M3 7.5 6.5 16.5 10 7.5"/><path d="M13.5 7.5v9"/><path d="M20.5 7.5 14 12.5l6.5 4"/>',
@@ -40,7 +40,8 @@ function copyFonts() {
   mkdirSync(join(out, 'fonts'), { recursive: true });
   for (const [family, weights] of FONTS) {
     for (const weight of weights) {
-      for (const subset of ['cyrillic', 'latin']) {
+      // latin-ext — только ради знака рубля (U+20BD): в app.css он подключён с unicode-range: U+20BD
+      for (const subset of ['cyrillic', 'latin', 'latin-ext']) {
         const src = join(root, 'node_modules', '@fontsource', family, 'files', `${family}-${subset}-${weight}-normal.woff2`);
         copyFileSync(src, join(out, 'fonts', `${family}-${subset}-${weight}.woff2`));
       }

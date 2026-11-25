@@ -23,7 +23,7 @@ $tag = 'h' . max(1, min(4, (int) ($level ?? 2)));
   <?php if (!empty($kicker)): ?>
     <p class="kicker mb-4 <?= $dark ? 'text-gold' : 'text-rust-deep' ?>"><?= e($kicker) ?></p>
   <?php endif ?>
-  <<?= $tag ?> class="font-display text-[clamp(2rem,1.35rem+2.6vw,3.25rem)] font-bold uppercase leading-[1.02] tracking-[0.01em] <?= $dark ? 'text-cream' : 'text-ink' ?>"<?= !empty($id) ? ' id="' . e($id) . '"' : '' ?>><?= e($title) ?></<?= $tag ?>>
+  <<?= $tag ?> class="font-display text-[clamp(2rem,1.35rem+2.6vw,3.25rem)] font-bold uppercase leading-[1.1] tracking-[0.01em] <?= $dark ? 'text-cream' : 'text-ink' ?>"<?= !empty($id) ? ' id="' . e($id) . '"' : '' ?>><?= e($title) ?></<?= $tag ?>>
   <?php if (!empty($lead)): ?>
     <p class="mt-4 text-[1.0625rem] leading-relaxed sm:text-lg <?= $center ? 'mx-auto ' : '' ?>max-w-[60ch] <?= $dark ? 'text-cream/85' : 'text-ink-soft' ?>"><?= e($lead) ?></p>
   <?php endif ?>
