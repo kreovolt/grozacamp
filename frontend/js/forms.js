@@ -81,15 +81,12 @@ async function submit(form, root) {
     }
     if (data && data.errors) {
       refreshGuard(form, data.guard);
-      let first = null;
       Object.keys(data.errors).forEach((name) => {
-        if (name === '_form') {
-          showGeneral(form, data.errors[name]);
-          return;
-        }
-        const input = setError(form, name, data.errors[name]);
-        if (input && !first) first = input;
+        if (name === '_form') showGeneral(form, data.errors[name]);
+        else setError(form, name, data.errors[name]);
       });
+      // фокус — на первом по порядку на странице, а не в порядке ответа сервера
+      const first = form.querySelector('[aria-invalid="true"]');
       if (first) first.focus();
       return;
     }

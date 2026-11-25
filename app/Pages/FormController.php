@@ -7,6 +7,7 @@ use Groza\App;
 use Groza\Domain\Shifts;
 use Groza\Forms\BookingForm;
 use Groza\Forms\Fields;
+use Groza\Forms\FormGuard;
 use Groza\Forms\ValidationResult;
 use Groza\Forms\VacancyForm;
 use Groza\Http\Request;
@@ -62,12 +63,18 @@ final class FormController
     /** Временная страница с формой (dev/test), пока нет /booking/ и /vacancies/ (Task 9, 10). */
     public function preview(string $formId): Response
     {
-        return $this->page($formId, [], [], 200);
+        return $this->page($formId, [], [], 200, $this->app->guardFields($formId));
     }
 
     private function submit(Request $r, string $formId): Response
     {
-        $code = $this->app->guard()->check($r, $formId);
+        try {
+            $code = $this->app->guard()->check($r, $formId);
+        } catch (\RuntimeException) {
+            $this->log($formId, 'misconfigured');
+
+            return $this->fallback($r, 503);
+        }
 
         if ($code === 'honeypot') {
             $this->log($formId, 'honeypot');
@@ -77,7 +84,7 @@ final class FormController
         if (isset(self::RETRY[$code ?? ''])) {
             $this->log($formId, $code);
 
-            return $this->invalid($r, $formId, $this->values($r, $formId), ['_form' => self::RETRY[$code]]);
+            return $this->invalid($r, $formId, $this->values($r, $formId), ['_form' => self::RETRY[$code]], $code);
         }
         if ($code === 'rate_limited') {
             $this->log($formId, $code);
@@ -94,7 +101,7 @@ final class FormController
         if (!$result->ok()) {
             $this->log($formId, 'invalid');
 
-            return $this->invalid($r, $formId, $this->values($r, $formId), $result->errors);
+            return $this->invalid($r, $formId, $this->values($r, $formId), $result->errors, null);
         }
 
         try {
@@ -193,18 +200,37 @@ final class FormController
             : Response::redirect('/spasibo/?f=' . $formId, 303);
     }
 
-    /** @param array<string,string> $values @param array<string,string> $errors */
-    private function invalid(Request $r, string $formId, array $values, array $errors): Response
+    /**
+     * Принятая метка времени остаётся: иначе после каждой ошибки заново ждать 3 секунды.
+     * Новая выдаётся только если прежняя устарела (или скоро устареет).
+     *
+     * @return array{_ts:string,_sig:string}|null
+     */
+    private function guardAfterError(Request $r, string $formId, ?string $code): ?array
     {
-        if ($r->wantsJson()) {
-            return Response::json(['ok' => false, 'errors' => $errors, 'guard' => $this->app->guard()->fields($formId)], 422);
+        $ts = $r->post('_ts');
+        $sig = $r->post('_sig');
+        if ($code !== 'expired' && is_string($ts) && is_string($sig) && ctype_digit($ts)
+            && $this->app->clock()->now()->getTimestamp() - (int) $ts < FormGuard::MAX_SECONDS - 600) {
+            return ['_ts' => $ts, '_sig' => $sig];
         }
 
-        return $this->page($formId, $values, $errors, 422);
+        return $this->app->guardFields($formId);
     }
 
     /** @param array<string,string> $values @param array<string,string> $errors */
-    private function page(string $formId, array $values, array $errors, int $status): Response
+    private function invalid(Request $r, string $formId, array $values, array $errors, ?string $code): Response
+    {
+        $guard = $this->guardAfterError($r, $formId, $code);
+        if ($r->wantsJson()) {
+            return Response::json(['ok' => false, 'errors' => $errors, 'guard' => $guard], 422);
+        }
+
+        return $this->page($formId, $values, $errors, 422, $guard);
+    }
+
+    /** @param array<string,string> $values @param array<string,string> $errors */
+    private function page(string $formId, array $values, array $errors, int $status, ?array $guard): Response
     {
         $html = $this->app->view()->render('pages/form-page', [
             'formId' => $formId,
@@ -212,7 +238,7 @@ final class FormController
             'values' => $values,
             'errors' => $errors,
             'options' => $this->options($formId),
-            'guard' => $this->app->guard()->fields($formId),
+            'guard' => $guard,
         ]);
 
         return Response::html($html, $status);

@@ -30,11 +30,19 @@ test('с JS: пустая отправка — ошибки у полей и ф�
   await expect(page.locator('#booking-consent-error')).toHaveText('Нужно согласие на обработку данных');
   await expect(page.getByLabel('Смена')).toBeFocused();
   await expect(page.getByLabel('Смена')).toHaveAttribute('aria-invalid', 'true');
-  // после исправления повторная отправка проходит (токен обновлён ответом сервера)
+  // после исправления повторная отправка проходит сразу: принятая метка времени сохраняется
   await fill(page);
-  await page.waitForTimeout(WAIT_MS);
   await page.getByRole('button', { name: 'Отправить заявку' }).click();
   await expect(page.getByText('Спасибо! Мы перезвоним')).toBeVisible();
+});
+
+test('с JS: анкета — фокус на первом по порядку на странице поле с ошибкой', async ({ page }) => {
+  await page.goto('/_forms/vacancy/');
+  await page.waitForTimeout(WAIT_MS);
+  await page.getByRole('button', { name: 'Отправить анкету' }).click();
+  await expect(page.locator('#vacancy-fullName-error')).toBeVisible();
+  // «Должность» стоит на странице первой, хотя в ответе сервера ошибка ФИО идёт раньше
+  await expect(page.getByLabel('Должность')).toBeFocused();
 });
 
 test.describe('без JavaScript', () => {

@@ -24,6 +24,10 @@ use Groza\View\View;
 
 final class App
 {
+    private const MIN_SECRET_BYTES = 32;
+    private const EXAMPLE_SECRET = 'замените-на-длинную-случайную-строку';
+    public const DEFAULT_MAIL_TO = '2474347@bk.ru';
+
     private Router $router;
     private ?JsonStore $store = null;
     private ?AuditLog $audit = null;
@@ -111,10 +115,12 @@ final class App
     public function guard(): FormGuard
     {
         $secret = (string) $this->config['appSecret'];
-        if ($secret === '') {
-            if (in_array($this->config['env'], ['staging', 'prod'], true)) {
-                throw new RuntimeException('Не задан appSecret в config/local.php.');
+        if (in_array($this->config['env'], ['staging', 'prod'], true)) {
+            // пустой, взятый из config/local.example.php или короткий секрет позволяет подделать подпись формы
+            if (strlen($secret) < self::MIN_SECRET_BYTES || $secret === self::EXAMPLE_SECRET) {
+                throw new \RuntimeException('appSecret в config/local.php не задан или слишком слаб (нужно от 32 байт, не из примера).');
             }
+        } elseif ($secret === '') {
             $secret = 'dev-only-secret'; // локальная разработка без config/local.php
         }
 
@@ -124,6 +130,16 @@ final class App
             $this->clock,
             (string) $this->config['baseUrl']
         );
+    }
+
+    /** Скрытые поля формы для шаблона; null — защита не настроена (форму заменяет блок «позвоните нам»). @return array{_ts:string,_sig:string}|null */
+    public function guardFields(string $formId): ?array
+    {
+        try {
+            return $this->guard()->fields($formId);
+        } catch (\RuntimeException) {
+            return null;
+        }
     }
 
     /** Транспорт писем: test — в памяти, dev — файлы .eml в storage/mail, иначе SMTP. */
@@ -142,6 +158,14 @@ final class App
         $this->mailTransport = $transport;
     }
 
+    /** Получатель заявок: настройка mailTo, при пустой или неверной — адрес из Global Constraints. */
+    private function mailTo(): string
+    {
+        $to = trim((string) ($this->settings()['mailTo'] ?? ''));
+
+        return filter_var($to, FILTER_VALIDATE_EMAIL) !== false ? $to : self::DEFAULT_MAIL_TO;
+    }
+
     public function mailer(): Mailer
     {
         $mail = $this->config['mail'];
@@ -152,7 +176,7 @@ final class App
 
         return new Mailer(
             $this->mailTransport(),
-            trim((string) ($this->settings()['mailTo'] ?? '')),
+            $this->mailTo(),
             $from,
             (string) ($mail['fromName'] ?? ''),
             $this->clock

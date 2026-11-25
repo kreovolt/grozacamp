@@ -8,12 +8,17 @@ declare(strict_types=1);
  * @var string $success      текст на месте формы после отправки с JS
  * @var string $submitLabel
  * @var string $body         разметка полей
- * @var array<string,string> $guard
+ * @var array<string,string>|null $guard   null — защита форм не настроена
  * @var array<string,string> $errors
  * @var array<string,mixed> $settings
  */
 use function Groza\View\e;
 ?>
+<?php if ($guard === null): /* защита не настроена — вместо формы телефон и WhatsApp */ ?>
+<div class="rounded-card border-2 border-rust-deep bg-paper px-6 py-6">
+  <?= $this->partial('partials/contact-fallback', ['intro' => 'Форма сейчас недоступна.']) ?>
+</div>
+<?php return; endif ?>
 <div data-form-root>
   <form method="post" action="<?= e($action) ?>" novalidate data-form="<?= e($formId) ?>" class="space-y-5">
     <input type="hidden" name="_ts" value="<?= e($guard['_ts'] ?? '') ?>">

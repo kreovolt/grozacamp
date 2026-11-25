@@ -229,6 +229,107 @@ final class FormControllerTest extends TestCase
         $this->assertStringContainsString('Пётр', $res->body());
     }
 
+
+    public function test_token_survives_validation_error_so_quick_resubmit_works(): void
+    {
+        $app = $this->app();
+        $tokens = $this->tokens($app, 'booking', 3);
+        $res = $this->booking($app, ['consent' => ''] + $tokens, ['Accept' => 'application/json'], 3);
+        $this->assertSame(422, $res->status());
+        $data = json_decode($res->body(), true);
+        $this->assertSame($tokens, $data['guard']);
+
+        $html = $this->booking($app, ['consent' => ''] + $tokens, [], 3);
+        $this->assertStringContainsString('value="' . $tokens['_ts'] . '"', $html->body());
+        $this->assertStringContainsString('value="' . $tokens['_sig'] . '"', $html->body());
+
+        // сразу после ошибки: тот же токен, согласие отмечено — принято, а не «слишком быстро»
+        $this->assertSame(303, $this->booking($app, $data['guard'], [], 3)->status());
+    }
+
+    public function test_too_fast_keeps_token_and_passes_three_seconds_later(): void
+    {
+        $early = TestApp::make();
+        $tokens = $this->tokens($early, 'booking', 1);
+        $res = $this->booking($early, $tokens, ['Accept' => 'application/json'], 1);
+        $this->assertSame(422, $res->status());
+        $guard = json_decode($res->body(), true)['guard'];
+        $this->assertSame($tokens, $guard);
+
+        $later = TestApp::make(['fakeNow' => '2027-01-15T12:00:02+05:00']);
+        $this->assertSame(303, $this->booking($later, $guard, [], 1)->status());
+    }
+
+    public function test_expired_token_is_replaced_with_fresh_one(): void
+    {
+        $app = $this->app();
+        $tokens = $this->tokens($app, 'booking', 3 * 3600);
+        $res = $this->booking($app, $tokens, ['Accept' => 'application/json'], 3 * 3600);
+        $this->assertSame(422, $res->status());
+        $this->assertNotSame($tokens['_ts'], json_decode($res->body(), true)['guard']['_ts']);
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('badSecrets')]
+    public function test_misconfigured_secret_in_prod_gives_fallback(string $secret): void
+    {
+        $app = TestApp::make(['env' => 'prod', 'appSecret' => $secret, 'fakeNow' => null]);
+        $app->setMailTransport(new ArrayTransport());
+        $post = ['_ts' => '1', '_sig' => 'x', 'parentName' => 'Анна'];
+        $res = TestApp::post($app, '/form/booking/', $post);
+        $this->assertSame(503, $res->status());
+        $this->assertStringContainsString('+7 (342) 247-43-47', $res->body());
+        $this->assertStringContainsString('wa.me/79991239300', $res->body());
+        $json = TestApp::post($app, '/form/booking/', $post, ['Accept' => 'application/json']);
+        $this->assertSame('{"ok":false,"fallback":true}', $json->body());
+        $this->assertStringContainsString('misconfigured', (string) file_get_contents($app->config()['storageDir'] . '/logs/forms.log'));
+    }
+
+    public static function badSecrets(): array
+    {
+        return [
+            'empty' => [''],
+            'placeholder' => ['замените-на-длинную-случайную-строку'],
+            'short' => ['abcdefghij0123456789abcdefghij0'],
+        ];
+    }
+
+    public function test_misconfigured_secret_does_not_break_form_page_render(): void
+    {
+        $app = TestApp::make(['env' => 'dev', 'appSecret' => '']);
+        $this->assertSame(200, TestApp::get($app, '/_forms/booking/')->status()); // dev: запасной секрет
+
+        $prod = TestApp::make(['env' => 'prod', 'appSecret' => '', 'fakeNow' => null]);
+        $html = $prod->view()->render('forms/booking', ['values' => [], 'errors' => [], 'options' => ['shifts' => []], 'guard' => null]);
+        $this->assertStringNotContainsString('<form', $html);
+        $this->assertStringContainsString('+7 (342) 247-43-47', $html);
+    }
+
+    public function test_valid_long_secret_in_prod_is_accepted(): void
+    {
+        $app = TestApp::make(['env' => 'prod', 'appSecret' => str_repeat('k', 40), 'fakeNow' => null]);
+        $this->assertSame(['_ts', '_sig'], array_keys($app->guard()->fields('booking')));
+    }
+
+    public function test_mail_to_defaults_when_setting_missing_or_invalid(): void
+    {
+        foreach (['', 'not-an-email', null] as $value) {
+            $app = $this->app();
+            $settings = $app->store()->read('settings');
+            if ($value === null) {
+                unset($settings['mailTo']);
+            } else {
+                $settings['mailTo'] = $value;
+            }
+            $app->store()->write('settings', $settings, 'test');
+            $this->booking($app);
+            $this->assertSame('2474347@bk.ru', $this->sent($app)[0]->to, var_export($value, true));
+        }
+        $app = $this->app();
+        $app->store()->write('settings', ['mailTo' => 'office@example.ru'] + $app->store()->read('settings'), 'test');
+        $this->booking($app);
+        $this->assertSame('office@example.ru', $this->sent($app)[0]->to);
+    }
+
     public function test_thanks_page(): void
     {
         $app = $this->app();
