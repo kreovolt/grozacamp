@@ -8,7 +8,9 @@
     "test": "node scripts/php.mjs vendor/bin/phpunit",
     "e2e": "playwright test",
     "photos": "node scripts/optimize-photos.mjs",
-    "deploy": "node scripts/deploy.mjs"
+    "deploy": "node scripts/deploy.mjs",
+    "lint:php": "node scripts/php.mjs vendor/bin/phpcs --runtime-set installed_paths vendor/phpcompatibility/php-compatibility,vendor/phpcsstandards/phpcsutils",
+    "lint:syntax": "node scripts/lint-syntax.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.1",
