@@ -57,7 +57,17 @@ final class RateLimiter
     /** Сколько обращений учтено за последние $windowSec секунд (без учёта нового). */
     public function count(string $bucket, string $key, int $windowSec): int
     {
-        $data = json_decode((string) @file_get_contents($this->file($bucket, $key)), true);
+        $fh = @fopen($this->file($bucket, $key), 'r');
+        if ($fh === false) {
+            return 0;
+        }
+        try {
+            flock($fh, LOCK_SH); // не читать файл посреди записи hit()
+            $data = json_decode((string) stream_get_contents($fh), true);
+        } finally {
+            flock($fh, LOCK_UN);
+            fclose($fh);
+        }
         $now = $this->clock->now()->getTimestamp();
         $hits = is_array($data['hits'] ?? null) ? $data['hits'] : [];
 

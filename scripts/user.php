@@ -43,7 +43,7 @@ $askPassword = static function () use ($fromStdin): string {
     $read = static function (string $prompt): string {
         fwrite(STDERR, $prompt);
         if (PHP_OS_FAMILY === 'Windows') {
-            $cmd = 'powershell -NoProfile -Command "$p = Read-Host -AsSecureString; '
+            $cmd = 'powershell -NoProfile -Command "[Console]::InputEncoding = [Text.Encoding]::UTF8; [Console]::OutputEncoding = [Text.Encoding]::UTF8; $p = Read-Host -AsSecureString; '
                 . '[Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($p))"';
             $value = rtrim((string) shell_exec($cmd), "\r\n");
         } else {
@@ -55,7 +55,15 @@ $askPassword = static function () use ($fromStdin): string {
 
         return $value;
     };
-    $first = $read('Пароль (не короче ' . Users::MIN_PASSWORD . ' символов): ');
+    $check = static function (string $v): string {
+        if (!mb_check_encoding($v, 'UTF-8')) {
+            fwrite(STDERR, "Пароль введён не в UTF-8. Используйте пароль на латинице." . PHP_EOL);
+            exit(1);
+        }
+
+        return $v;
+    };
+    $first = $check($read('Пароль (не короче ' . Users::MIN_PASSWORD . ' символов): '));
     if ($first !== $read('Пароль ещё раз: ')) {
         fwrite(STDERR, "Пароли не совпадают.\n");
         exit(1);

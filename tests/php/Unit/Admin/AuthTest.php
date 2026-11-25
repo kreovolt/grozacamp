@@ -6,7 +6,10 @@ namespace Groza\Tests\Unit\Admin;
 use Groza\Admin\Auth;
 use Groza\Admin\Users;
 use Groza\App;
+use Groza\Data\JsonStore;
+use Groza\Http\Request;
 use Groza\Support\Csrf;
+use Groza\Support\RateLimiter;
 use Groza\Support\FixedClock;
 use Groza\Support\Session;
 use Groza\Tests\Support\AdminHttp;
@@ -156,15 +159,32 @@ final class AuthTest extends TestCase
         $this->assertSame('locked', $this->auth()->attempt('oLgA', AdminHttp::PASSWORD, '10.8.8.8'));
     }
 
-    public function test_lockout_by_ip_across_different_logins(): void
+    public function test_ip_threshold_is_20_failures_across_different_logins(): void
     {
         $this->startSession();
-        foreach (['a1x', 'b2x', 'c3x', 'd4x', 'e5x'] as $login) {
-            $this->assertSame('invalid', $this->auth()->attempt($login, 'wrong-password-1', '192.0.2.7'));
+        for ($i = 0; $i < 20; $i++) { // за одним NAT — весь офис: 5 сбоев с адреса ещё не блокируют
+            $this->assertSame('invalid', $this->auth()->attempt('user' . $i, 'wrong-password-1', '192.0.2.7'));
         }
 
         $this->assertSame('locked', $this->auth()->attempt('olga', AdminHttp::PASSWORD, '192.0.2.7'));
         $this->assertSame('ok', $this->auth()->attempt('olga', AdminHttp::PASSWORD, '192.0.2.8'), 'другой адрес не затронут');
+    }
+
+    public function test_ip_below_threshold_still_logs_in_and_user_threshold_stays_5(): void
+    {
+        $this->startSession();
+        for ($i = 0; $i < 19; $i++) {
+            $this->auth()->attempt('user' . $i, 'wrong-password-1', '192.0.2.9');
+        }
+        $this->assertSame('ok', $this->auth()->attempt('olga', AdminHttp::PASSWORD, '192.0.2.9'));
+        $this->auth()->logout();
+
+        // а по логину порог прежний — 5, хоть адрес и «чистый»
+        $this->startSession();
+        for ($i = 0; $i < 5; $i++) {
+            $this->assertSame('invalid', $this->auth()->attempt('petr', 'wrong-password-1', '192.0.2.50'));
+        }
+        $this->assertSame('locked', $this->auth()->attempt('petr', 'wrong-password-1', '192.0.2.50'));
     }
 
     public function test_lockout_of_unknown_login_looks_the_same(): void
@@ -426,15 +446,19 @@ final class AuthTest extends TestCase
     public function test_admin_templates_have_no_inline_script_or_style(): void
     {
         AdminHttp::login($this->app);
-        foreach (['/admin/', '/admin/password/'] as $path) {
-            $body = AdminHttp::get($this->app, $path)->body();
+        $bodies = [AdminHttp::get($this->app, '/admin/')->body(), AdminHttp::get($this->app, '/admin/password/')->body()];
+        AdminHttp::postWithToken($this->app, '/admin/logout/');
+        $login = AdminHttp::get($this->app, '/admin/login/');
+        $this->assertSame(200, $login->status());
+        $this->assertStringContainsString('name="password"', $login->body());
+        $bodies[] = $login->body();
+        $bodies[] = AdminHttp::post($this->app, '/admin/x/')->body(); // 419
+        foreach ($bodies as $body) {
             $this->assertDoesNotMatchRegularExpression('/<script(?![^>]*\ssrc=)/i', $body);
             $this->assertStringNotContainsString(' style=', $body);
             $this->assertStringNotContainsString('<style', $body);
             $this->assertDoesNotMatchRegularExpression('/\son[a-z]+=/i', $body);
         }
-        $login = AdminHttp::get($this->app, '/admin/login/');
-        $this->assertSame(302, $login->status());
     }
 
     // ---------- пароль ----------
@@ -509,9 +533,10 @@ final class AuthTest extends TestCase
         $this->assertStringNotContainsString('Mallory', $log);
         $this->assertStringNotContainsString('mallory', $log);
         $this->assertStringNotContainsString('127.0.0.1', $log);
+        $this->assertNotSame(substr(hash('sha256', 'mallory'), 0, 12), $this->app->audit()->recent()[2]['target'], 'не голый sha256');
 
         $rows = array_reverse($this->app->audit()->recent());
-        $this->assertSame(['-', 'auth.login.fail', substr(hash('sha256', 'mallory'), 0, 12)], [$rows[0]['actor'], $rows[0]['action'], $rows[0]['target']]);
+        $this->assertSame(['-', 'auth.login.fail', substr(hash_hmac('sha256', 'mallory', 'test-secret'), 0, 12)], [$rows[0]['actor'], $rows[0]['action'], $rows[0]['target']]);
         $this->assertSame('olga', $rows[1]['actor']);
         $this->assertSame('auth.login.ok', $rows[1]['action']);
         $this->assertSame('olga', $rows[2]['actor']);
@@ -523,5 +548,72 @@ final class AuthTest extends TestCase
         $this->assertSame('-', $this->app->actor());
         AdminHttp::login($this->app);
         $this->assertSame('olga', $this->app->actor());
+    }
+
+    public function test_lock_is_audited_once_at_the_moment_it_is_set_without_raw_login(): void
+    {
+        for ($i = 0; $i < 5; $i++) {
+            AdminHttp::login($this->app, 'Olga', 'wrong-password-1', '10.0.0.' . $i);
+        }
+        AdminHttp::login($this->app, 'Olga', 'wrong-password-1', '10.0.0.9'); // уже заблокирован
+        AdminHttp::login($this->app, 'Olga', AdminHttp::PASSWORD, '10.0.0.9');
+
+        $locked = array_values(array_filter($this->app->audit()->recent(), static fn (array $r): bool => $r['action'] === 'auth.login.locked'));
+        $this->assertCount(1, $locked);
+        $this->assertSame('-', $locked[0]['actor']);
+        $this->assertSame(substr(hash_hmac('sha256', 'olga', 'test-secret'), 0, 12), $locked[0]['target']);
+    }
+
+    public function test_unknown_login_still_answers_invalid_when_store_is_not_writable(): void
+    {
+        $dir = sys_get_temp_dir() . '/groza-ro-' . bin2hex(random_bytes(4));
+        mkdir($dir);
+        file_put_contents($dir . '/data', 'a file, not a directory'); // запись в «каталог данных» невозможна
+        $store = new JsonStore($dir . '/data', $dir . '/versions');
+        $auth = new Auth($store, new RateLimiter($dir . '/rl', $this->clock()), $this->clock());
+        $this->startSession();
+        $oldLog = ini_set('error_log', $dir . '/php.log'); // сообщение о сбое записи — в сторону, не в вывод тестов
+
+        try {
+            $this->assertSame('invalid', @$auth->attempt('nobody', 'whatever-long-pass', '10.0.0.1'));
+        } finally {
+            ini_set('error_log', (string) $oldLog);
+            @unlink($dir . '/php.log');
+            @unlink($dir . '/data');
+            foreach (glob($dir . '/rl/*') ?: [] as $f) {
+                @unlink($f);
+            }
+            @rmdir($dir . '/rl');
+            @rmdir($dir);
+        }
+    }
+
+    public function test_admin_headers_also_on_staging_401_and_canonical_redirect(): void
+    {
+        $staging = TestApp::make(['env' => 'staging', 'appSecret' => str_repeat('s', 40)]);
+        $res = $staging->handle(Request::create('GET', '/admin/'));
+        $this->assertSame(401, $res->status());
+        $this->assertStringContainsString('no-store', (string) $res->header('Cache-Control'));
+        $this->assertSame('noindex, nofollow', $res->header('X-Robots-Tag'));
+
+        $www = TestApp::make(['baseUrl' => 'https://example.test']);
+        $res = $www->handle(Request::create('GET', '/admin/login/', [], [], ['Host' => 'www.example.test']));
+        $this->assertSame(301, $res->status());
+        $this->assertStringContainsString('no-store', (string) $res->header('Cache-Control'));
+        $this->assertSame('noindex, nofollow', $res->header('X-Robots-Tag'));
+
+        $public = $www->handle(Request::create('GET', '/booking/', [], [], ['Host' => 'www.example.test']));
+        $this->assertStringNotContainsString('no-store', (string) $public->header('Cache-Control'));
+    }
+
+    public function test_too_long_new_password_rejected_with_message(): void
+    {
+        AdminHttp::login($this->app);
+        $long = str_repeat('a', 1025);
+        $res = AdminHttp::postWithToken($this->app, '/admin/password/', ['current' => AdminHttp::PASSWORD, 'new' => $long, 'repeat' => $long]);
+
+        $this->assertSame(200, $res->status());
+        $this->assertStringContainsString('слишком длинный', $res->body());
+        $this->assertTrue(password_verify(AdminHttp::PASSWORD, (new Users($this->app->store()))->find('olga')['hash']));
     }
 }

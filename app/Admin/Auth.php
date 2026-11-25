@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Groza\Admin;
 
+use Groza\Data\AuditLog;
 use Groza\Data\ConflictException;
 use Groza\Data\JsonStore;
 use Groza\Http\Request;
@@ -22,15 +23,17 @@ use Groza\Support\Session;
  */
 final class Auth
 {
-    private const MAX_PASSWORD_BYTES = 1024;
+    private const MAX_PASSWORD_BYTES = Users::MAX_PASSWORD_BYTES;
     private const FAIL_USER = 'login-user';
     private const FAIL_IP = 'login-ip';
-    private const LOCK_USER = 'login-user-lock';
-    private const LOCK_IP = 'login-ip-lock';
     private const FAIL_PASSWORD = 'password-change';
 
     private Users $users;
 
+    /**
+     * Попытка списывается из лимита ДО проверки пароля (атомарный hit), поэтому параллельные запросы не получают лишних попыток.
+     * Лимит по IP выше, чем по логину: за одним NAT сидит весь офис. Успешный вход сбрасывает счётчик логина, но не IP.
+     */
     public function __construct(
         private JsonStore $store,
         private RateLimiter $limiter,
@@ -39,6 +42,9 @@ final class Auth
         private int $absoluteSeconds = 43200,
         private int $maxFailures = 5,
         private int $lockSeconds = 900,
+        private int $maxIpFailures = 20,
+        private ?AuditLog $audit = null,
+        private string $secret = '',
     ) {
         $this->users = new Users($store);
     }
@@ -47,7 +53,9 @@ final class Auth
     public function attempt(string $login, string $password, string $ip): string
     {
         $key = self::key($login);
-        if ($this->isLocked(self::LOCK_USER, $key) || $this->isLocked(self::LOCK_IP, $ip)) {
+        $userAllowed = $this->limiter->hit(self::FAIL_USER, $key, $this->maxFailures, $this->lockSeconds);
+        $ipAllowed = $this->limiter->hit(self::FAIL_IP, $ip, $this->maxIpFailures, $this->lockSeconds);
+        if (!$userAllowed || !$ipAllowed) {
             return 'locked';
         }
 
@@ -57,8 +65,8 @@ final class Auth
         // password_verify выполняется всегда — и для неизвестного логина, — чтобы время ответа не выдавало, есть ли такой пользователь
         $matches = password_verify($candidate, $user['hash'] ?? $this->dummyHash());
         if ($user === null || !$matches || $candidate === '') {
-            $this->fail(self::FAIL_USER, self::LOCK_USER, $key);
-            $this->fail(self::FAIL_IP, self::LOCK_IP, $ip);
+            $this->noteLock(self::FAIL_USER, $key, $this->maxFailures, $this->auditKey($login));
+            $this->noteLock(self::FAIL_IP, $ip, $this->maxIpFailures, 'ip:' . $this->auditKey($ip));
 
             return 'invalid';
         }
@@ -137,7 +145,7 @@ final class Auth
         return $next;
     }
 
-    /** @return 'ok'|'wrong'|'short'|'mismatch'|'same'|'locked'|'anonymous' */
+    /** @return 'ok'|'wrong'|'short'|'long'|'mismatch'|'same'|'locked'|'anonymous' */
     public function changePassword(string $current, string $new, string $repeat): string
     {
         $me = $this->user();
@@ -145,17 +153,20 @@ final class Auth
             return 'anonymous';
         }
         $key = self::key($me['login']);
-        if ($this->limiter->count(self::FAIL_PASSWORD, $key, $this->lockSeconds) >= $this->maxFailures) {
+        // попытка списывается до проверки (атомарно); верный текущий пароль счётчик обнуляет
+        if (!$this->limiter->hit(self::FAIL_PASSWORD, $key, $this->maxFailures, $this->lockSeconds)) {
             return 'locked';
         }
         $row = $this->users->find($me['login']);
         if ($row === null || strlen($current) > self::MAX_PASSWORD_BYTES || !password_verify($current, $row['hash'])) {
-            $this->limiter->hit(self::FAIL_PASSWORD, $key, $this->maxFailures, $this->lockSeconds);
-
             return 'wrong';
         }
+        $this->limiter->reset(self::FAIL_PASSWORD, $key);
         if (mb_strlen($new) < Users::MIN_PASSWORD) {
             return 'short';
+        }
+        if (strlen($new) > self::MAX_PASSWORD_BYTES) {
+            return 'long';
         }
         if ($new !== $repeat) {
             return 'mismatch';
@@ -165,7 +176,6 @@ final class Auth
         }
 
         $this->users->setPassword($me['login'], $new, $me['login']);
-        $this->limiter->reset(self::FAIL_PASSWORD, $key);
         Session::set('sig', self::fingerprint($this->users->find($me['login'])['hash'] ?? ''));
         Session::regenerate();
         Csrf::rotate();
@@ -173,10 +183,10 @@ final class Auth
         return 'ok';
     }
 
-    /** Ключ журнала для неудачного входа: 12 символов sha256 от логина — не сам логин. */
-    public static function auditKey(string $login): string
+    /** Ключ журнала: 12 hex от HMAC-SHA256(appSecret, значение в нижнем регистре) — не сам логин и не словарно подбираемый хеш. */
+    public function auditKey(string $value): string
     {
-        return substr(hash('sha256', Users::normalize($login)), 0, 12);
+        return substr(hash_hmac('sha256', Users::normalize($value), $this->secret), 0, 12);
     }
 
     private static function key(string $login): string
@@ -189,17 +199,11 @@ final class Auth
         return substr(hash('sha256', $hash), 0, 20);
     }
 
-    private function isLocked(string $lockBucket, string $key): bool
+    /** Если этой неудачей лимит исчерпан — блокировка только что наступила: одна запись в журнал (ключ — HMAC, не сырое значение). */
+    private function noteLock(string $bucket, string $key, int $max, string $target): void
     {
-        return $this->limiter->count($lockBucket, $key, $this->lockSeconds) >= 1;
-    }
-
-    /** Учесть сбой; на последнем допустимом ставится метка блокировки — она держится lockSeconds с этого момента. */
-    private function fail(string $failBucket, string $lockBucket, string $key): void
-    {
-        $this->limiter->hit($failBucket, $key, $this->maxFailures, $this->lockSeconds);
-        if ($this->limiter->count($failBucket, $key, $this->lockSeconds) >= $this->maxFailures) {
-            $this->limiter->hit($lockBucket, $key, 1, $this->lockSeconds);
+        if ($this->audit !== null && $this->limiter->count($bucket, $key, $this->lockSeconds) === $max) {
+            $this->audit->record('-', 'auth.login.locked', $target);
         }
     }
 
@@ -224,7 +228,12 @@ final class Auth
         $dummy = $meta['dummy'] ?? null;
         if (!is_string($dummy) || password_get_info($dummy)['algo'] === null || password_needs_rehash($dummy, PASSWORD_DEFAULT)) {
             $dummy = password_hash(bin2hex(random_bytes(16)), PASSWORD_DEFAULT);
-            $this->store->write('auth-meta', ['dummy' => $dummy], 'system');
+            try {
+                $this->store->write('auth-meta', ['dummy' => $dummy], 'system');
+            } catch (\Throwable $e) {
+                // хранилище недоступно для записи: этот запрос обходится свежим хешем, чтобы неизвестный логин не отвечал иначе, чем известный
+                error_log('Groza auth: не удалось сохранить фиктивный хеш: ' . $e->getMessage());
+            }
         }
 
         return $dummy;

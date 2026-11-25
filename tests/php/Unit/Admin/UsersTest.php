@@ -48,6 +48,14 @@ final class UsersTest extends TestCase
         $users->add('olga', 'Ольга', '123456789');
     }
 
+    public function test_password_longer_than_1024_bytes_rejected(): void
+    {
+        $users = new Users($this->store);
+        $users->add('olga', 'Ольга', str_repeat('a', 1024));
+        $this->expectException(\InvalidArgumentException::class);
+        $users->setPassword('olga', str_repeat('a', 1025));
+    }
+
     public function test_set_password_rejects_short_and_keeps_old_hash(): void
     {
         $users = new Users($this->store);

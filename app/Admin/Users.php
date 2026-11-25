@@ -9,6 +9,7 @@ use Groza\Data\JsonStore;
 final class Users
 {
     public const MIN_PASSWORD = 10;
+    public const MAX_PASSWORD_BYTES = 1024;
     private const LOGIN = '/^[a-z0-9._-]{3,32}$/D';
 
     public function __construct(private JsonStore $store)
@@ -111,6 +112,9 @@ final class Users
     {
         if (mb_strlen($password) < self::MIN_PASSWORD) {
             throw new \InvalidArgumentException('Пароль — не короче ' . self::MIN_PASSWORD . ' символов.');
+        }
+        if (strlen($password) > self::MAX_PASSWORD_BYTES) {
+            throw new \InvalidArgumentException('Пароль слишком длинный: не больше ' . self::MAX_PASSWORD_BYTES . ' байт.');
         }
     }
 

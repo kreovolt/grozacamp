@@ -24,6 +24,20 @@ final class RateLimiterTest extends TestCase
         @rmdir($this->dir);
     }
 
+    public function test_count_and_reset(): void
+    {
+        $rl = new RateLimiter($this->dir, new FixedClock('2027-01-15T12:00:00+05:00'), 'k');
+        $this->assertSame(0, $rl->count('b', 'x', 600));
+        $rl->hit('b', 'x', 3, 600);
+        $rl->hit('b', 'x', 3, 600);
+        $this->assertSame(2, $rl->count('b', 'x', 600));
+        $this->assertSame(2, $rl->count('b', 'x', 600), 'чтение не учитывает обращение');
+        $later = new RateLimiter($this->dir, new FixedClock('2027-01-15T12:10:01+05:00'), 'k');
+        $this->assertSame(0, $later->count('b', 'x', 600));
+        $rl->reset('b', 'x');
+        $this->assertSame(0, $rl->count('b', 'x', 600));
+    }
+
     public function test_allows_up_to_max_then_blocks_and_window_expires(): void
     {
         $t0 = new RateLimiter($this->dir, new FixedClock('2027-01-15T12:00:00+05:00'), 'k');

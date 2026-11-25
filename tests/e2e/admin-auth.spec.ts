@@ -88,3 +88,12 @@ test('ответы админки не кэшируются и закрыты о
   expect(forged.status()).toBe(419);
   expect(await forged.text()).toContain('Сессия устарела. Обновите страницу и повторите.');
 });
+
+test('строгий режим сессии: подброшенный идентификатор не принимается', async ({ page, context, baseURL }) => {
+  const planted = 'attackerchosen0123456789abcdef';
+  await context.addCookies([{ name: 'groza_admin', value: planted, url: `${baseURL}/admin/`, httpOnly: true, sameSite: 'Strict' }]);
+  await page.goto('/admin/login/');
+  const cookie = (await context.cookies()).find((c) => c.name === 'groza_admin');
+  expect(cookie).toBeTruthy();
+  expect(cookie?.value).not.toBe(planted);
+});

@@ -45,7 +45,7 @@ final class AuthController
             return Response::redirect($next);
         }
         if ($result === 'invalid') {
-            $audit->record('-', 'auth.login.fail', Auth::auditKey($login));
+            $audit->record('-', 'auth.login.fail', $this->app->auth()->auditKey($login));
 
             return $this->page('admin/login', ['login' => mb_substr($login, 0, 64), 'next' => $next, 'error' => self::MSG_INVALID]);
         }
@@ -96,6 +96,7 @@ final class AuthController
         $messages = [
             'wrong' => 'Текущий пароль указан неверно.',
             'short' => 'Новый пароль — не короче ' . Users::MIN_PASSWORD . ' символов.',
+            'long' => 'Новый пароль слишком длинный: не больше ' . Users::MAX_PASSWORD_BYTES . ' байт.',
             'mismatch' => 'Пароли не совпадают.',
             'same' => 'Новый пароль должен отличаться от текущего.',
             'locked' => 'Слишком много попыток. Попробуйте через 15 минут.',

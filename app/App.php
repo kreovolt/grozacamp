@@ -87,6 +87,11 @@ final class App
         $this->view = null; // глобальные переменные шаблонов — свежие на каждый запрос
 
         $response = $this->canonicalHost($r) ?? $this->stagingGate($r) ?? $this->dispatch($r);
+        if (self::isAdminPath($r->path())) { // и редирект на основной домен, и 401 тестового адреса
+            $response = $response
+                ->withHeader('Cache-Control', 'no-store, private')
+                ->withHeader('X-Robots-Tag', 'noindex, nofollow');
+        }
 
         return SecurityHeaders::apply($response, ['env' => $this->config['env'], 'metrikaId' => $this->metrikaId()]);
     }
@@ -115,9 +120,7 @@ final class App
             Session::close();
         }
 
-        return $response
-            ->withHeader('Cache-Control', 'no-store, private')
-            ->withHeader('X-Robots-Tag', 'noindex, nofollow');
+        return $response;
     }
 
     /**
@@ -232,7 +235,9 @@ final class App
         return $this->auth ??= new Auth(
             $this->store(),
             new RateLimiter($this->config['storageDir'] . '/ratelimit', $this->clock, (string) $this->config['appSecret']),
-            $this->clock
+            $this->clock,
+            audit: $this->audit(),
+            secret: (string) $this->config['appSecret']
         );
     }
 
