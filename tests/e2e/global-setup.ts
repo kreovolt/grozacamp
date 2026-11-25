@@ -41,12 +41,15 @@ export default function globalSetup(): void {
   if (seed.status !== 0) {
     throw new Error(`scripts/seed.php (storage/test-admin) завершился с кодом ${seed.status ?? seed.signal}`);
   }
-  const shifts = spawnSync(process.execPath, ['scripts/php.mjs', 'scripts/user.php', 'add', 'e2e-shifts', 'Тест Смены', '--password-stdin'], {
-    input: E2E_PASSWORD,
-    stdio: ['pipe', 'inherit', 'inherit'],
-    env: { ...process.env, GROZA_ENV: 'test', GROZA_STORAGE_DIR: 'storage/test-admin' },
-  });
-  if (shifts.status !== 0) {
-    throw new Error(`scripts/user.php add e2e-shifts завершился с кодом ${shifts.status ?? shifts.signal}`);
+  // Пользователи спеков админки (свои сессии: спеки идут параллельно)
+  for (const [login, name] of [['e2e-shifts', 'Тест Смены'], ['e2e-docs', 'Тест Документы']]) {
+    const u = spawnSync(process.execPath, ['scripts/php.mjs', 'scripts/user.php', 'add', login, name, '--password-stdin'], {
+      input: E2E_PASSWORD,
+      stdio: ['pipe', 'inherit', 'inherit'],
+      env: { ...process.env, GROZA_ENV: 'test', GROZA_STORAGE_DIR: 'storage/test-admin' },
+    });
+    if (u.status !== 0) {
+      throw new Error(`scripts/user.php add ${login} завершился с кодом ${u.status ?? u.signal}`);
+    }
   }
 }

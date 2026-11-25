@@ -11,7 +11,7 @@ final class Collections
     /** @var array<string,array<string,mixed>>|null */
     private static ?array $cache = null;
 
-    /** @return array<string,array{label:string, publicUrl:?string, fields:list<array<string,mixed>>, orderable?:bool}> */
+    /** @return array<string,array{label:string, publicUrl:?string, fields:list<array<string,mixed>>, orderable?:bool, counter?:array{field:string,label:string,max:int}}> */
     public static function all(): array
     {
         return self::$cache ??= self::build();
@@ -21,6 +21,21 @@ final class Collections
     public static function get(string $name): array
     {
         return self::all()[$name] ?? throw new InvalidArgumentException("Неизвестная коллекция: $name");
+    }
+
+    /**
+     * Пункты приказа № 201 по id («mto.b»): номер, короткое название, полная формулировка, обязательность (config/order201.php).
+     *
+     * @return array<string,array{paragraph:string,title:string,full:string,level:string}>
+     */
+    private static function legal(): array
+    {
+        $out = [];
+        foreach ((array) require dirname(__DIR__, 2) . '/config/order201.php' as $p) {
+            $out[(string) $p['id']] = $p;
+        }
+
+        return $out;
     }
 
     /** @return array<string,mixed> */
@@ -34,17 +49,13 @@ final class Collections
         $f = self::f(...);
         $req = ['required' => true];
 
-        $mto = [
-            'mto_a' => 'Даты ввода в эксплуатацию и капитального ремонта (п. 9 а)',
-            'mto_b' => 'Условия проживания детей (п. 9 б)',
-            'mto_v' => 'Условия питания детей (п. 9 в)',
-            'mto_g' => 'Обеспечение образовательной и воспитательной деятельности: кабинеты, объекты практических занятий, библиотеки, спорт (п. 9 г)',
-            'mto_d' => 'Обеспечение оздоровительной деятельности, если она ведётся (п. 9 д)',
-        ];
+        $legal = self::legal();
+        $mto = ['mto_a' => 'mto.a', 'mto_b' => 'mto.b', 'mto_v' => 'mto.v', 'mto_g' => 'mto.g', 'mto_d' => 'mto.d'];
         $access = [
-            'access_a' => 'а', 'access_b' => 'б', 'access_v' => 'в', 'access_g' => 'г', 'access_d' => 'д',
-            'access_e' => 'е', 'access_zh' => 'ж', 'access_z' => 'з', 'access_i' => 'и', 'access_k' => 'к',
-            'access_l' => 'л', 'access_m' => 'м', 'access_n' => 'н',
+            'access_a' => 'dostupnaya.a', 'access_b' => 'dostupnaya.b', 'access_v' => 'dostupnaya.v', 'access_g' => 'dostupnaya.g',
+            'access_d' => 'dostupnaya.d', 'access_e' => 'dostupnaya.e', 'access_zh' => 'dostupnaya.zh', 'access_z' => 'dostupnaya.z',
+            'access_i' => 'dostupnaya.i', 'access_k' => 'dostupnaya.k', 'access_l' => 'dostupnaya.l', 'access_m' => 'dostupnaya.m',
+            'access_n' => 'dostupnaya.n',
         ];
         $venueFields = [
             $f('slug', 'text', 'Адрес страницы (латиницей)', $req + ['max' => 80]),
@@ -52,11 +63,28 @@ final class Collections
             $f('address', 'text', 'Адрес', ['max' => 300]),
             $f('photos', 'gallery', 'Фотографии'),
         ];
-        foreach ($mto as $k => $label) {
-            $venueFields[] = $f($k, 'textarea', $label, ['max' => 4000]);
+        // Подпись — «9 б) Условия проживания»: буква и короткое название пункта из приказа № 201; полная формулировка — в «Подсказке приказа»
+        $point = static function (string $key, string $id, ?string $heading) use ($f, $legal): array {
+            $p = $legal[$id];
+            $extra = ['max' => 4000, 'legal' => $p['full']];
+            if ($p['level'] === 'optional') {
+                $extra['optional'] = true;
+            }
+            if ($heading !== null) {
+                $extra['heading'] = ['title' => $heading];
+            }
+
+            return $f($key, 'textarea', $p['paragraph'] . ') ' . $p['title'], $extra);
+        };
+        $first = true;
+        foreach ($mto as $k => $id) {
+            $venueFields[] = $point($k, $id, $first ? 'Материально-техническое обеспечение (п. 9)' : null);
+            $first = false;
         }
-        foreach ($access as $k => $letter) {
-            $venueFields[] = $f($k, 'textarea', "Доступная среда, п. 11 $letter", ['max' => 4000]);
+        $first = true;
+        foreach ($access as $k => $id) {
+            $venueFields[] = $point($k, $id, $first ? 'Доступная среда (п. 11)' : null);
+            $first = false;
         }
 
         return [
@@ -98,10 +126,10 @@ final class Collections
                     $f('group', 'enum', 'Группа', $req + ['options' => [
                         'leadership' => 'Руководство', 'pedagogue' => 'Педагог', 'counselor' => 'Вожатый', 'other' => 'Другое',
                     ]]),
-                    $f('education', 'text', 'Образование', ['max' => 300]),
+                    $f('education', 'text', 'Образование', ['max' => 300, 'heading' => ['title' => 'Для раздела «Сведения» (п. 6)', 'help' => 'Обязательно для педагогов и вожатых: должность и уровень образования']]),
                     $f('specialty', 'text', 'Специальность', ['max' => 200]),
                     $f('qualification', 'text', 'Квалификация', ['max' => 200]),
-                    $f('ovzResponsible', 'bool', 'Отвечает за работу с детьми с ОВЗ'),
+                    $f('ovzResponsible', 'bool', 'Отвечает за работу с детьми с ОВЗ', ['help' => 'Человек попадёт в раздел «Сведения», п. 6 б: ответственные за доступность лагеря для детей с ОВЗ и детей-инвалидов']),
                     $f('photo', 'image', 'Фото'),
                     $f('about', 'textarea', 'О себе', ['max' => 1500]),
                     $f('onHome', 'bool', 'Показывать на главной'),
@@ -140,10 +168,11 @@ final class Collections
             'faq' => [
                 'label' => 'Вопросы и ответы',
                 'publicUrl' => '/info/#faq',
+                'counter' => ['field' => 'onHome', 'label' => 'На главной', 'max' => 5],
                 'fields' => [
                     $f('question', 'text', 'Вопрос', $req + ['max' => 300]),
                     $f('answer', 'richtext', 'Ответ', $req),
-                    $f('onHome', 'bool', 'Показывать на главной'),
+                    $f('onHome', 'bool', 'Показывать на главной', ['help' => 'На главной показываются до пяти вопросов']),
                     $f('order', 'int', 'Порядок'),
                 ],
             ],

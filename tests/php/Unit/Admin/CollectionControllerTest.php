@@ -92,6 +92,7 @@ final class CollectionControllerTest extends TestCase
             'ageMax' => '14',
             'price' => '45 000',
             'status' => 'open',
+            'photo__alt' => 'Ребята на поляне у костра', // нужна подпись, когда загружается своё фото
         ];
     }
 

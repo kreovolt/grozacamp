@@ -3,7 +3,8 @@
  * Список записей раздела. У смен — крупные кнопки статуса (одно нажатие).
  * @var string $collection
  * @var array{label:string} $def
- * @var list<array{id:string,title:string,facts:list<string>,hidden:bool,status:?string,first:bool,last:bool}> $rows
+ * @var list<array{id:string,title:string,facts:list<string>,hidden:bool,canHide:bool,status:?string,first:bool,last:bool}> $rows
+ * @var string|null $counter
  * @var bool $orderable
  * @var array<string,string>|null $statusOptions
  * @var string|null $flash
@@ -21,6 +22,9 @@ $this->layout('admin/layout', ['title' => $def['label'], 'user' => $user, 'csrf'
 </div>
 <?php if ($flash !== null): ?>
 <p class="alert alert-ok" role="status"><?= e($flash) ?></p>
+<?php endif ?>
+<?php if ($counter !== null): ?>
+<p class="counter" id="list-counter"><?= e($counter) ?></p>
 <?php endif ?>
 <?php if ($rows === []): ?>
 <p class="card empty">Здесь пока ничего нет. Нажмите «Добавить».</p>
@@ -49,6 +53,12 @@ $this->layout('admin/layout', ['title' => $def['label'], 'user' => $user, 'csrf'
         <input type="hidden" name="_csrf" value="<?= e($csrf) ?>">
         <button type="submit" name="dir" value="up" class="btn btn-icon" aria-label="Выше: <?= e($row['title']) ?>"<?= $row['first'] ? ' disabled' : '' ?>>↑</button>
         <button type="submit" name="dir" value="down" class="btn btn-icon" aria-label="Ниже: <?= e($row['title']) ?>"<?= $row['last'] ? ' disabled' : '' ?>>↓</button>
+      </form>
+<?php endif ?>
+<?php if ($row['canHide']): ?>
+      <form method="post" action="/admin/<?= e($collection) ?>/<?= e($row['id']) ?>/visibility/" class="visibility">
+        <input type="hidden" name="_csrf" value="<?= e($csrf) ?>">
+        <button type="submit" name="state" value="<?= $row['hidden'] ? 'show' : 'hide' ?>" class="btn btn-ghost" aria-label="<?= $row['hidden'] ? 'Показать на сайте' : 'Скрыть с сайта' ?>: <?= e($row['title']) ?>"><?= $row['hidden'] ? 'Показать' : 'Скрыть' ?></button>
       </form>
 <?php endif ?>
       <a class="btn btn-ghost btn-quiet" href="/admin/<?= e($collection) ?>/<?= e($row['id']) ?>/delete/">Удалить</a>

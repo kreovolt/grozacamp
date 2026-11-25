@@ -130,6 +130,12 @@ final class Request
         return $this->ip;
     }
 
+    /** Все загруженные файлы запроса по именам полей. @return array<string,array<string,mixed>> */
+    public function files(): array
+    {
+        return $this->files;
+    }
+
     /** @return array<string,mixed>|null */
     public function file(string $k): ?array
     {

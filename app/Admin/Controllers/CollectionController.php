@@ -13,6 +13,7 @@ use Groza\Domain\ValidationException;
 use Groza\Domain\Validator;
 use Groza\Http\Request;
 use Groza\Http\Response;
+use Groza\Pages\SvedeniyaPage;
 use Groza\Support\Csrf;
 
 /**
@@ -33,7 +34,12 @@ final class CollectionController
     private const RETRIES = 3;
     /** Поля, из которых берётся название записи в списке (первое заполненное). */
     private const TITLE_FIELDS = ['title', 'name', 'question', 'text', 'author'];
-    private const FLASH = ['status' => 'Статус изменён', 'delete' => 'Запись удалена'];
+    private const FLASH = ['status' => 'Статус изменён', 'delete' => 'Запись удалена', 'visibility' => 'Видимость на сайте изменена'];
+    public const MSG_ALT = 'Опишите, что на фото, — это нужно незрячим посетителям';
+    private const ALT_MAX = 200;
+    /** Не больше стольких новых фото за одно сохранение галереи. */
+    private const NEW_PHOTOS_MAX = 20;
+    private const PLACEHOLDER = 'pending-upload';
 
     public function __construct(private App $app)
     {
@@ -59,6 +65,7 @@ final class CollectionController
                 'title' => $this->itemTitle($def, $item),
                 'facts' => $this->facts($name, $def, $item),
                 'hidden' => !empty($item['hidden']) || (array_key_exists('visible', $item) && empty($item['visible'])),
+                'canHide' => $this->hideField($def) !== null,
                 'status' => $isShifts ? (string) ($item['status'] ?? '') : null,
                 'first' => $i === 0,
                 'last' => $i === count($items) - 1,
@@ -72,6 +79,7 @@ final class CollectionController
             'rows' => $rows,
             'orderable' => $orderable,
             'statusOptions' => $isShifts ? Shifts::STATUS_LABELS : null,
+            'counter' => $this->counter($def, $items),
             'flash' => $flash,
         ]);
     }
@@ -141,7 +149,7 @@ final class CollectionController
         }
 
         // 1. Проверка всех полей. Файлы пока не загружаем: вместо них подставляем «будет загружено».
-        [$input, $pending] = $this->input($def, $r, $existing);
+        [$input, $pending, $alts, $altErrors] = $this->input($def, $r, $existing);
         $errors = [];
         $data = [];
         try {
@@ -149,6 +157,7 @@ final class CollectionController
         } catch (ValidationException $e) {
             $errors = $e->errors();
         }
+        $errors += $altErrors;
         if (!$errors) {
             $errors = $this->uniqueSlug($def, $items, $data, $id);
         }
@@ -158,7 +167,7 @@ final class CollectionController
 
         // 2. Всё верно — только теперь принимаем файлы (описание делает сервер)
         $created = [];
-        $uploadErrors = $this->storeUploads($def, $pending, $data, $created);
+        $uploadErrors = $this->storeUploads($def, $pending, $alts, $data, $created);
         if ($uploadErrors) {
             return $this->editPage($name, $id, $display, $uploadErrors, 422, null, false, $postedHash);
         }
@@ -317,6 +326,47 @@ final class CollectionController
         return Response::redirect('/admin/shifts/?ok=status#row-' . $id, 303);
     }
 
+    /**
+     * Быстро скрыть запись с сайта или вернуть (кнопка в списке): меняет поле «hidden» (у отзывов — «visible»).
+     *
+     * @param array<string,string> $params
+     */
+    public function visibility(Request $r, array $params): Response
+    {
+        $name = $this->name($params);
+        $id = $this->id($params);
+        $field = $name !== null ? $this->hideField(Collections::get($name)) : null;
+        if ($name === null || $id === null || $id === 'new' || $field === null || $this->find($name, $id) === null) {
+            return $this->notFound();
+        }
+        $state = $r->post('state');
+        if (!in_array($state, ['hide', 'show'], true)) {
+            return $this->badRequest('Не понятно, скрыть запись или показать.');
+        }
+        // «hidden»: скрыть = true; «visible»: скрыть = false
+        $value = $field === 'hidden' ? $state === 'hide' : $state === 'show';
+        $actor = $this->app->actor();
+        $now = $this->app->clock()->now()->format('c');
+        $changed = $this->mutate($name, function (array $items) use ($id, $field, $value, $actor, $now): ?array {
+            $hit = false;
+            foreach ($items as $i => $item) {
+                if (($item['id'] ?? null) === $id && (($item[$field] ?? null) !== $value)) {
+                    $items[$i][$field] = $value;
+                    $items[$i]['updatedAt'] = $now;
+                    $items[$i]['updatedBy'] = $actor;
+                    $hit = true;
+                }
+            }
+
+            return $hit ? $items : null;
+        });
+        if ($changed) {
+            $this->app->audit()->record($actor, $name . '.visibility', $id);
+        }
+
+        return Response::redirect('/admin/' . $name . '/?ok=visibility#row-' . $id, 303);
+    }
+
     // ---------- сборка страниц ----------
 
     /**
@@ -333,6 +383,9 @@ final class CollectionController
         foreach ($def['fields'] as $f) {
             if (isset($errors[$f['name']])) {
                 $summary[] = ['id' => 'f-' . $f['name'], 'label' => (string) $f['label'], 'message' => $errors[$f['name']]];
+            }
+            if (isset($errors[$f['name'] . '__alt'])) {
+                $summary[] = ['id' => 'f-' . $f['name'] . ($f['type'] === 'gallery' ? '' : '__alt'), 'label' => (string) $f['label'] . ': что на фото', 'message' => $errors[$f['name'] . '__alt']];
             }
         }
         $pattern = $def['publicUrl'];
@@ -399,18 +452,23 @@ final class CollectionController
     // ---------- вход формы ----------
 
     /**
-     * Что пришло из формы → вход для Validator. Фото и файлы: берётся только выбор «оставить / убрать» и факт загрузки;
-     * любое «готовое описание» в запросе игнорируется.
+     * Что пришло из формы → вход для Validator. Фото и файлы: берётся только выбор «оставить / убрать», факт загрузки
+     * и текст подписи; любое «готовое описание» в запросе игнорируется.
+     *
+     * Галерея: из запроса берутся только «метки» уже имеющихся фото (порядок, «убрать», подпись) и новые файлы;
+     * сами описания фото берутся из сохранённой записи.
      *
      * @param array{fields:list<array<string,mixed>>} $def
      * @param array<string,mixed> $existing
-     * @return array{0:array<string,mixed>,1:array<string,array<string,mixed>>} [вход, отложенные загрузки]
+     * @return array{0:array<string,mixed>,1:array<string,mixed>,2:array<string,mixed>,3:array<string,string>} [вход, отложенные загрузки, подписи новых фото, ошибки подписей]
      */
     private function input(array $def, Request $r, array $existing): array
     {
         $post = $r->allPost();
         $input = [];
         $pending = [];
+        $alts = [];
+        $altErrors = [];
         foreach ($def['fields'] as $f) {
             $n = (string) $f['name'];
             switch ($f['type']) {
@@ -418,15 +476,33 @@ final class CollectionController
                 case 'file':
                     $file = $r->file($n);
                     $action = $post[$n . '__action'] ?? 'keep';
-                    if (is_array($file) && (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+                    $uploaded = is_array($file) && (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+                    if ($uploaded) {
                         $pending[$n] = $file;
-                        $input[$n] = $f['type'] === 'image' ? 'pending-upload' : ['url' => '/pending', 'bytes' => 0, 'originalName' => 'pending'];
+                        $input[$n] = $f['type'] === 'image' ? self::PLACEHOLDER : ['url' => '/pending', 'bytes' => 0, 'originalName' => 'pending'];
                     } else {
                         $input[$n] = $action === 'remove' ? null : ($existing[$n] ?? null);
                     }
+                    if ($f['type'] === 'image') {
+                        $alt = $this->cleanAlt($post[$n . '__alt'] ?? '');
+                        $alts[$n] = $alt;
+                        if (is_array($input[$n])) {
+                            $input[$n]['alt'] = $alt; // подпись уже загруженного фото меняется из поля формы
+                        }
+                        // Подпись обязательна у своего (загруженного) фото; фото из библиотеки сайта подписано в библиотеке
+                        if (($uploaded || is_array($input[$n])) && $alt === '') {
+                            $altErrors[$n . '__alt'] = self::MSG_ALT;
+                        }
+                    }
                     break;
                 case 'gallery':
-                    $input[$n] = $existing[$n] ?? [];
+                    [$input[$n], $pending[$n], $alts[$n], $missing] = $this->galleryInput((array) ($existing[$n] ?? []), $post, $r, $n);
+                    if ($pending[$n] === []) {
+                        unset($pending[$n]);
+                    }
+                    if ($missing) {
+                        $altErrors[$n . '__alt'] = self::MSG_ALT;
+                    }
                     break;
                 case 'list':
                     $raw = $post[$n] ?? '';
@@ -437,19 +513,132 @@ final class CollectionController
             }
         }
 
-        return [$input, $pending];
+        return [$input, $pending, $alts, $altErrors];
     }
 
     /**
-     * Загружает отложенные файлы; описания пишет в $data. При ошибке убирает уже загруженное.
+     * Галерея: что оставить (по меткам), в каком порядке и с какими подписями, плюс новые файлы.
+     *
+     * @param array<int,mixed> $existing
+     * @param array<string,mixed> $post
+     * @return array{0:list<mixed>,1:list<array<string,mixed>>,2:list<string>,3:bool} [список для проверки, новые файлы, их подписи, не хватает подписи]
+     */
+    private function galleryInput(array $existing, array $post, Request $r, string $n): array
+    {
+        $list = [];
+        $missing = false;
+        foreach ($this->galleryRows($existing, $post, $n, true) as $row) {
+            if ($row['del']) {
+                continue;
+            }
+            $value = $row['value'];
+            if (is_array($value)) {
+                $value['alt'] = $row['alt'];
+                $missing = $missing || $row['alt'] === '';
+            }
+            $list[] = $value;
+        }
+        $files = [];
+        $alts = [];
+        $slots = [];
+        foreach ($r->files() as $key => $file) {
+            if (preg_match('/^' . preg_quote($n, '/') . '__new_(\d{1,3})$/', (string) $key, $m) === 1
+                && is_array($file) && (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+                $slots[(int) $m[1]] = $file;
+            }
+        }
+        ksort($slots);
+        foreach (array_slice($slots, 0, self::NEW_PHOTOS_MAX, true) as $num => $file) {
+            $alt = $this->cleanAlt($post[$n . '__newalt_' . $num] ?? '');
+            $missing = $missing || $alt === '';
+            $files[] = $file;
+            $alts[] = $alt;
+            $list[] = self::PLACEHOLDER;
+        }
+
+        return [$list, $files, $alts, $missing];
+    }
+
+    /**
+     * Строки галереи: фото из записи в порядке запроса (не названные — в конец), с подписью и отметкой «убрать».
+     * Фото узнаётся по метке (ключ библиотеки или имя файла), а не по номеру: если запись тем временем изменили, чужое фото не заденется.
+     *
+     * @param array<int,mixed> $existing
+     * @param array<string,mixed> $post
+     * @return list<array{token:string,value:mixed,alt:string,del:bool}>
+     */
+    private function galleryRows(array $existing, array $post, string $n, bool $submitted): array
+    {
+        $byToken = [];
+        foreach (array_values($existing) as $v) {
+            $byToken[$this->photoToken($v)] ??= $v;
+        }
+        $order = [];
+        $posted = $submitted ? ($post[$n . '__old'] ?? null) : null;
+        foreach (is_array($posted) ? $posted : [] as $t) {
+            if (is_string($t) && isset($byToken[$t]) && !in_array($t, $order, true)) {
+                $order[] = $t;
+            }
+        }
+        foreach (array_keys($byToken) as $t) {
+            if (!in_array((string) $t, $order, true)) {
+                $order[] = (string) $t;
+            }
+        }
+        $rows = [];
+        foreach ($order as $t) {
+            $v = $byToken[$t];
+            $rows[] = [
+                'token' => $t,
+                'value' => $v,
+                'alt' => $submitted
+                    ? $this->cleanAlt($post[$n . '__alt_' . $t] ?? '')
+                    : (is_array($v) && is_string($v['alt'] ?? null) ? $v['alt'] : ''),
+                'del' => $submitted && !empty($post[$n . '__del_' . $t]) && $post[$n . '__del_' . $t] !== '0',
+            ];
+        }
+
+        return $rows;
+    }
+
+    /** Метка фото в форме: ключ библиотеки сайта или имя файла загрузки; безопасна для имени поля. */
+    private function photoToken(mixed $photo): string
+    {
+        if (is_string($photo) && preg_match('/^[a-z0-9-]+$/', $photo) === 1) {
+            return $photo;
+        }
+        if (is_array($photo) && is_string($photo['src'] ?? null)) {
+            $base = basename($photo['src']);
+            if (preg_match('/^[0-9a-f]{16}$/', $base) === 1) {
+                return $base;
+            }
+        }
+
+        return 'x' . substr(md5((string) json_encode($photo)), 0, 12);
+    }
+
+    /** Подпись к фото: одна строка, без управляющих знаков, не длиннее ALT_MAX. */
+    private function cleanAlt(mixed $v): string
+    {
+        if (!is_scalar($v)) {
+            return '';
+        }
+        $s = trim((string) preg_replace('/[\p{C}\s]+/u', ' ', mb_scrub((string) $v)));
+
+        return trim(mb_substr($s, 0, self::ALT_MAX));
+    }
+
+    /**
+     * Загружает отложенные файлы; описания (с подписями) пишет в $data. При ошибке убирает уже загруженное.
      *
      * @param array{fields:list<array<string,mixed>>} $def
-     * @param array<string,array<string,mixed>> $pending
+     * @param array<string,mixed> $pending
+     * @param array<string,mixed> $alts
      * @param array<string,mixed> $data
      * @param list<string> $created
      * @return array<string,string> ошибки по полям
      */
-    private function storeUploads(array $def, array $pending, array &$data, array &$created): array
+    private function storeUploads(array $def, array $pending, array $alts, array &$data, array &$created): array
     {
         $uploads = $this->app->uploads();
         foreach ($def['fields'] as $f) {
@@ -461,6 +650,18 @@ final class CollectionController
                 if ($f['type'] === 'image') {
                     $data[$n] = $uploads->storeImage($pending[$n]);
                     $created[] = $data[$n]['src'];
+                    $data[$n]['alt'] = (string) ($alts[$n] ?? '');
+                } elseif ($f['type'] === 'gallery') {
+                    $k = 0;
+                    foreach ($data[$n] as $i => $v) {
+                        if ($v === self::PLACEHOLDER && isset($pending[$n][$k])) {
+                            $d = $uploads->storeImage($pending[$n][$k]);
+                            $created[] = $d['src'];
+                            $d['alt'] = (string) ($alts[$n][$k] ?? '');
+                            $data[$n][$i] = $d;
+                            $k++;
+                        }
+                    }
                 } else {
                     $data[$n] = $uploads->storePdf($pending[$n]);
                     $created[] = $data[$n]['url'];
@@ -490,7 +691,21 @@ final class CollectionController
         $submitted = $post !== [];
         foreach ($def['fields'] as $f) {
             $n = (string) $f['name'];
-            if (!$submitted || in_array($f['type'], ['image', 'file', 'gallery'], true) || !empty($f['computed'])) {
+            if ($f['type'] === 'image') {
+                $out[$n] = $item[$n] ?? null;
+                $out[$n . '__alt'] = $submitted
+                    ? $this->cleanAlt($post[$n . '__alt'] ?? '')
+                    : (is_array($item[$n] ?? null) && is_string($item[$n]['alt'] ?? null) ? $item[$n]['alt'] : '');
+            } elseif ($f['type'] === 'gallery') {
+                $new = [];
+                foreach ($submitted ? $post : [] as $key => $v) {
+                    if (preg_match('/^' . preg_quote($n, '/') . '__newalt_(\d{1,3})$/', (string) $key, $m) === 1) {
+                        $new[(int) $m[1]] = $this->cleanAlt($v);
+                    }
+                }
+                ksort($new);
+                $out[$n] = ['rows' => $this->galleryRows((array) ($item[$n] ?? []), $post, $n, $submitted), 'new' => $new];
+            } elseif (!$submitted || $f['type'] === 'file' || !empty($f['computed'])) {
                 $out[$n] = $item[$n] ?? null;
             } elseif ($f['type'] === 'bool') {
                 $out[$n] = !empty($post[$n]) && $post[$n] !== '0';
@@ -681,6 +896,12 @@ final class CollectionController
                 $refs[] = $v['src'];
             } elseif ($f['type'] === 'file' && is_array($v) && is_string($v['url'] ?? null)) {
                 $refs[] = $v['url'];
+            } elseif ($f['type'] === 'gallery' && is_array($v)) {
+                foreach ($v as $photo) {
+                    if (is_array($photo) && is_string($photo['src'] ?? null)) {
+                        $refs[] = $photo['src'];
+                    }
+                }
             }
         }
 
@@ -753,14 +974,49 @@ final class CollectionController
             if (count($facts) >= 2 || $v === null || $v === '' || !in_array($f['type'], ['text', 'enum', 'date'], true) || $key === 'slug') {
                 continue;
             }
-            $facts[] = match ($f['type']) {
+            $fact = match ($f['type']) {
                 'enum' => (string) ($f['options'][$v] ?? $v),
                 'date' => self::date((string) $v),
                 default => (string) $v,
             };
+            if (!in_array($fact, $facts, true) && mb_strtolower($fact) !== mb_strtolower($this->itemTitle($def, $item))) { // «Вожатый · Вожатый» не нужен
+                $facts[] = $fact;
+            }
+        }
+        // Документ: тип и размер файла («PDF, 1,4 МБ»)
+        foreach ($def['fields'] as $f) {
+            $file = $item[$f['name']] ?? null;
+            if ($f['type'] === 'file' && is_array($file) && is_string($file['url'] ?? null)) {
+                $facts[] = SvedeniyaPage::fileMeta($file['url'], (int) ($file['bytes'] ?? 0));
+            }
         }
 
         return $facts;
+    }
+
+    /** Поле, которым запись скрывается с сайта: «hidden» или (у отзывов) «visible»; нет такого — null. @param array{fields:list<array<string,mixed>>} $def */
+    private function hideField(array $def): ?string
+    {
+        $names = array_column($def['fields'], 'name');
+
+        return in_array('hidden', $names, true) ? 'hidden' : (in_array('visible', $names, true) ? 'visible' : null);
+    }
+
+    /**
+     * Счётчик над списком («На главной: 3 из 5»), если он описан в коллекции.
+     *
+     * @param array<string,mixed> $def
+     * @param list<array<string,mixed>> $items
+     */
+    private function counter(array $def, array $items): ?string
+    {
+        $c = $def['counter'] ?? null;
+        if (!is_array($c)) {
+            return null;
+        }
+        $n = count(array_filter($items, static fn (array $i): bool => !empty($i[$c['field']])));
+
+        return $c['label'] . ': ' . $n . ' из ' . $c['max'];
     }
 
     private static function date(string $iso): string

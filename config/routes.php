@@ -69,6 +69,7 @@ return static function (Router $router, App $app): void {
     $router->get('/admin/{collection}/{id}/delete/', [$collections, 'confirmDelete']);
     $router->post('/admin/{collection}/{id}/delete/', [$collections, 'delete']);
     $router->post('/admin/{collection}/{id}/move/', [$collections, 'move']);
+    $router->post('/admin/{collection}/{id}/visibility/', [$collections, 'visibility']);
     $router->get('/admin/{collection}/{id}/', [$collections, 'show']);
     $router->post('/admin/{collection}/{id}/', [$collections, 'save']);
 

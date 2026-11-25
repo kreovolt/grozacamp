@@ -32,14 +32,33 @@ final class FormRenderer
     {
         $html = '';
         foreach ($collectionDef['fields'] as $field) {
-            $html .= $this->field($field, $values[$field['name']] ?? null, $errors[$field['name']] ?? null);
+            $html .= $this->heading($field)
+                . $this->field($field, $values[$field['name']] ?? null, $errors[$field['name']] ?? null, $values, $errors);
         }
 
         return $html;
     }
 
-    /** @param array<string,mixed> $f */
-    private function field(array $f, mixed $value, ?string $error): string
+    /** Заголовок группы полей (например, «Доступная среда (п. 11)») перед первым полем группы. @param array<string,mixed> $f */
+    private function heading(array $f): string
+    {
+        $h = $f['heading'] ?? null;
+        if (!is_array($h)) {
+            return '';
+        }
+        $id = 'h-' . $this->e((string) $f['name']);
+
+        return '<h2 class="form-heading" id="' . $id . '">' . $this->e((string) $h['title']) . '</h2>'
+            . (isset($h['help']) ? '<p class="hint form-heading__hint">' . $this->e((string) $h['help']) . '</p>' : '') . "
+";
+    }
+
+    /**
+     * @param array<string,mixed> $f
+     * @param array<string,mixed> $values все значения формы (подпись к фото лежит рядом: «photo__alt»)
+     * @param array<string,string> $errors
+     */
+    private function field(array $f, mixed $value, ?string $error, array $values = [], array $errors = []): string
     {
         $name = (string) $f['name'];
         $type = (string) $f['type'];
@@ -54,6 +73,8 @@ final class FormRenderer
             'id' => $id,
             'value' => $value,
             'error' => $error,
+            'alt' => is_scalar($values[$name . '__alt'] ?? null) ? (string) $values[$name . '__alt'] : '',
+            'altError' => $errors[$name . '__alt'] ?? null,
             'aria' => trim($aria),
             'options' => $f['options'] ?? [],
             'refOptions' => isset($f['ref']) ? ($this->refOptions[(string) $f['ref']] ?? []) : [],
@@ -74,9 +95,15 @@ final class FormRenderer
                 . $len . ' из ' . (int) $f['max'] . '</p>';
         }
 
-        return '<div class="field field--' . $this->e($type) . ($error !== null ? ' has-error' : '') . '" data-field="' . $this->e($name) . '">'
+        $legal = isset($f['legal'])
+            ? '<details class="legal"><summary>Что сказано в приказе № 201</summary><p>' . $this->e((string) $f['legal']) . '</p></details>'
+            : '';
+        $hasError = $error !== null || isset($errors[$name . '__alt']);
+
+        return '<div class="field field--' . $this->e($type) . ($hasError ? ' has-error' : '') . '" data-field="' . $this->e($name) . '">'
             . $inner
             . $counter
+            . $legal
             . ($help !== '' ? '<p class="hint" id="' . $id . '-help">' . $this->e($help) . '</p>' : '')
             . ($error !== null ? '<p class="field-error" id="' . $id . '-error">' . $this->e($error) . '</p>' : '')
             . '</div>' . "\n";

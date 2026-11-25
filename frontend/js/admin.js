@@ -54,7 +54,8 @@ function snapshot(form) {
   for (const el of Array.from(form.elements)) {
     if (!el.name || SKIP.has(el.name) || el.disabled) continue;
     const type = el.type;
-    if (type === 'file' || type === 'submit' || type === 'button' || type === 'reset') continue;
+    // hidden: служебные поля (токены, метки фото в галерее) — не ввод человека; черновик их не хранит и не возвращает
+    if (type === 'file' || type === 'submit' || type === 'button' || type === 'reset' || type === 'hidden') continue;
     if (type === 'radio') {
       if (el.checked) out[el.name] = el.value;
       else if (!(el.name in out)) out[el.name] = null;
@@ -212,6 +213,67 @@ function initFiles(root) {
   }
 }
 
+// Галерея: кнопки ↑ ↓ двигают строки (порядок сохранения — порядок строк), «Ещё фото» добавляет место для нового фото.
+// Без скрипта порядок не меняется, а новое фото добавляется по одному за сохранение.
+function initGallery(root) {
+  for (const gallery of Array.from(root.querySelectorAll('[data-gallery]'))) {
+    const list = gallery.querySelector('[data-gallery-list]');
+    const items = () => Array.from(list.querySelectorAll('[data-gallery-item]'));
+    const sync = () => {
+      const all = items();
+      all.forEach((item, i) => {
+        const up = item.querySelector('[data-gallery-up]');
+        const down = item.querySelector('[data-gallery-down]');
+        up.hidden = false;
+        down.hidden = false;
+        up.disabled = i === 0;
+        down.disabled = i === all.length - 1;
+      });
+    };
+    gallery.addEventListener('click', (ev) => {
+      const btn = ev.target instanceof Element ? ev.target.closest('[data-gallery-up], [data-gallery-down]') : null;
+      if (!btn) return;
+      const item = btn.closest('[data-gallery-item]');
+      const up = btn.hasAttribute('data-gallery-up');
+      const other = up ? item.previousElementSibling : item.nextElementSibling;
+      if (!other) return;
+      if (up) list.insertBefore(item, other);
+      else list.insertBefore(other, item);
+      sync();
+      btn.focus();
+      // порядок — часть ввода: черновик должен его заметить
+      gallery.closest('form').dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    sync();
+
+    const add = gallery.querySelector('[data-gallery-add]');
+    const box = gallery.querySelector('[data-gallery-new]');
+    if (add && box) {
+      add.hidden = false;
+      add.addEventListener('click', () => {
+        const slots = box.querySelectorAll('[data-gallery-slot]');
+        const last = slots[slots.length - 1];
+        const copy = last.cloneNode(true);
+        const number = Array.from(slots).reduce((max, slot) => {
+          const m = /__new_(d+)$/.exec(slot.querySelector('input[type=file]').name);
+          return m ? Math.max(max, Number(m[1])) : max;
+        }, 0) + 1;
+        for (const el of Array.from(copy.querySelectorAll('[id], [name], [for]'))) {
+          for (const attr of ['id', 'name', 'for']) {
+            const v = el.getAttribute(attr);
+            if (v) el.setAttribute(attr, v.replace(/(__new(?:alt)?_)d+$/, '$1' + number));
+          }
+          if (el.tagName === 'INPUT') el.value = '';
+          if (el.classList.contains('file-pick')) el.textContent = 'Добавить фото';
+        }
+        box.insertBefore(copy, add);
+        initFiles(copy);
+        copy.querySelector('input[type=file]').focus();
+      });
+    }
+  }
+}
+
 function focusProblem() {
   const first = document.querySelector('.has-error [aria-invalid="true"]');
   if (first) {
@@ -230,6 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (form) {
     initCounters(form);
     initFiles(form);
+    initGallery(form);
     initDraft(form);
     focusProblem();
   }

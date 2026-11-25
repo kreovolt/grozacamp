@@ -178,10 +178,15 @@ final class Validator
             return $raw;
         }
         if (is_array($raw) && self::isDescriptor($raw)) {
-            return [
+            $out = [
                 'src' => $raw['src'], 'widths' => array_values($raw['widths']),
                 'formats' => array_values($raw['formats']), 'w' => $raw['w'], 'h' => $raw['h'],
             ];
+            if (isset($raw['alt']) && is_string($raw['alt']) && $raw['alt'] !== '') {
+                $out['alt'] = $raw['alt']; // подпись к фото: её задаёт сервер из поля формы, не клиент
+            }
+
+            return $out;
         }
         throw new FieldError('Некорректное изображение');
     }

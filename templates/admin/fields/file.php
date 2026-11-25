@@ -1,11 +1,13 @@
 <?php
 /**
- * PDF-файл: показ текущего, «оставить / убрать» и загрузка нового. Описание файла делает сервер.
+ * PDF-файл: текущий (имя, размер, «Открыть»), выбор «оставить / убрать» и «Заменить». Описание файла делает сервер.
  * @var array<string,mixed> $f
  * @var string $id
  * @var mixed $value
  * @var string $aria
  */
+use Groza\Pages\SvedeniyaPage;
+
 use function Groza\View\e;
 
 $name = (string) $f['name'];
@@ -14,7 +16,7 @@ $has = is_array($value) && !empty($value['url']);
 <span class="label" id="<?= e($id) ?>-label"><?= e((string) $f['label']) ?><?php if (!empty($f['required'])): ?> <span class="req" aria-hidden="true">*</span><?php endif ?></span>
 <?php if ($has): ?>
 <div class="current">
-  <p class="current__file"><a href="<?= e((string) $value['url']) ?>" target="_blank" rel="noopener"><?= e((string) ($value['originalName'] ?? 'Открыть файл')) ?></a><?php if (!empty($value['bytes'])): ?> · <?= e(number_format(((int) $value['bytes']) / 1048576, 1, ',', '')) ?> МБ<?php endif ?></p>
+  <p class="current__file"><strong><?= e((string) ($value['originalName'] ?? 'Файл')) ?></strong> · <?= e(SvedeniyaPage::fileMeta((string) $value['url'], (int) ($value['bytes'] ?? 0))) ?> · <a href="<?= e((string) $value['url']) ?>" target="_blank" rel="noopener">Открыть</a></p>
   <div class="choices choices--row">
     <label class="choice"><input type="radio" name="<?= e($name) ?>__action" value="keep" checked><span>Оставить</span></label>
     <label class="choice"><input type="radio" name="<?= e($name) ?>__action" value="remove"><span>Убрать</span></label>
