@@ -13,6 +13,7 @@ use Groza\Forms\ValidationResult;
 use Groza\Forms\VacancyForm;
 use Groza\Http\Request;
 use Groza\Http\Response;
+use Groza\Mail\MailException;
 
 /**
  * Приём публичных форм: POST /form/booking/ и /form/vacancy/, страница /spasibo/.
@@ -100,9 +101,10 @@ final class FormController
             } else {
                 $mailer->vacancyApplication($result->data);
             }
-        } catch (\Throwable) {
-            // текст ошибки может содержать данные заявки — наружу и в журнал не идёт
-            $this->log($formId, 'mail_failed');
+        } catch (\Throwable $e) {
+            // текст ошибки может содержать данные заявки — наружу и в журнал не идёт, только короткий код причины
+            $reason = $e instanceof MailException && preg_match('/^[a-z_]{1,24}$/D', $e->reason) === 1 ? $e->reason : 'error';
+            $this->log($formId, 'mail_failed:' . $reason);
 
             return $this->fallback($r, 503);
         }

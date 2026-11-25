@@ -206,6 +206,28 @@ final class FormControllerTest extends TestCase
         }
     }
 
+    public function test_mail_failure_log_has_reason_code_only(): void
+    {
+        $app = $this->app();
+        $app->setMailTransport(new class () implements MailTransport {
+            public int $n = 0;
+
+            public function send(Message $m): void
+            {
+                throw ++$this->n === 1
+                    ? new MailException('ответ сервера с телефоном 9504411299', 'smtp_auth')
+                    : new \RuntimeException('что-то про Секретная Персона');
+            }
+        });
+        $this->booking($app, ['parentName' => 'Секретная Персона']);
+        $this->booking($app, ['parentName' => 'Секретная Персона']);
+        $log = (string) file_get_contents($app->config()['storageDir'] . '/logs/forms.log');
+        $this->assertStringContainsString(' booking mail_failed:smtp_auth', $log);
+        $this->assertStringContainsString(' booking mail_failed:error', $log);
+        $this->assertStringNotContainsString('9504411299', $log);
+        $this->assertStringNotContainsString('Секретная', $log);
+    }
+
     public function test_vacancy_flow(): void
     {
         $app = $this->app();

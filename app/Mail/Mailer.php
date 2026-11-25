@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Groza\Mail;
 
 use Groza\Support\Clock;
+use Groza\Support\Dates;
 use Groza\Support\Phone;
 
 /** Письма офису: текст простой, по полю на строке. Адресат — настройка mailTo. */
@@ -30,7 +31,7 @@ final class Mailer
         $name = (string) ($data['parentName'] ?? '');
 
         $lines = [
-            'Смена: ' . ($shift !== null ? $title : 'не выбрана'),
+            'Смена: ' . ($shift !== null ? $title . self::dates($shift) : 'не выбрана'),
             'Родитель: ' . $name,
             'Телефон: ' . Phone::pretty((string) ($data['phone'] ?? '')),
             'Возраст ребёнка: ' . (string) ($data['childAge'] ?? ''),
@@ -65,6 +66,20 @@ final class Mailer
         $email = (string) ($data['email'] ?? '');
 
         $this->deliver('Анкета на вакансию: ' . $position . ' — ' . $name, $lines, $email !== '' ? $email : null);
+    }
+
+    /**
+     * « (2–22 июля 2027)» — если у смены заданы корректные даты, иначе пусто.
+     *
+     * @param array<string,mixed> $shift
+     */
+    private static function dates(array $shift): string
+    {
+        $a = (string) ($shift['dateStart'] ?? '');
+        $b = (string) ($shift['dateEnd'] ?? '');
+        $ok = static fn (string $d): bool => preg_match('/^\d{4}-\d{2}-\d{2}$/D', $d) === 1 && strtotime($d) !== false;
+
+        return $ok($a) && $ok($b) ? ' (' . Dates::range($a, $b) . ')' : '';
     }
 
     /** @param list<string> $lines */

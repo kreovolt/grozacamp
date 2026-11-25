@@ -18,7 +18,7 @@ final class SmtpTransport implements MailTransport
     {
         $c = $this->mailConfig;
         if (trim((string) ($c['host'] ?? '')) === '') {
-            throw new MailException('SMTP не настроен.');
+            throw new MailException('SMTP не настроен.', 'not_configured');
         }
         $mail = new PHPMailer(true);
         try {
@@ -36,8 +36,7 @@ final class SmtpTransport implements MailTransport
             $mail->Encoding = PHPMailer::ENCODING_BASE64;
             $mail->isHTML(false);
 
-            $from = $m->from !== '' ? $m->from : (string) ($c['from'] ?? '');
-            $mail->setFrom($from, $m->fromName !== '' ? $m->fromName : (string) ($c['fromName'] ?? ''));
+            $mail->setFrom($this->fromAddress($m), $m->fromName !== '' ? $m->fromName : (string) ($c['fromName'] ?? ''));
             $mail->addAddress($m->to);
             if ($m->replyTo !== null) {
                 $mail->addReplyTo($m->replyTo);
@@ -46,7 +45,29 @@ final class SmtpTransport implements MailTransport
             $mail->Body = $m->text;
             $mail->send();
         } catch (PhpMailerException $e) {
-            throw new MailException('Не удалось отправить письмо: ' . $mail->ErrorInfo, 0, $e);
+            throw new MailException('Не удалось отправить письмо.', self::reason($mail->ErrorInfo . ' ' . $e->getMessage()), $e);
         }
+    }
+
+    /** Адрес отправителя: из письма, иначе настройка from, иначе логин почтового ящика (если он — адрес). */
+    public function fromAddress(Message $m): string
+    {
+        foreach ([$m->from, (string) ($this->mailConfig['from'] ?? ''), (string) ($this->mailConfig['user'] ?? '')] as $candidate) {
+            if ($candidate !== '' && filter_var($candidate, FILTER_VALIDATE_EMAIL) !== false) {
+                return $candidate;
+            }
+        }
+
+        return '';
+    }
+
+    /** Грубая причина по тексту ошибки PHPMailer; сам текст (в нём бывают адреса) дальше не уходит. */
+    private static function reason(string $info): string
+    {
+        return match (true) {
+            stripos($info, 'authenticate') !== false => 'smtp_auth',
+            stripos($info, 'connect') !== false => 'smtp_connect',
+            default => 'send_failed',
+        };
     }
 }

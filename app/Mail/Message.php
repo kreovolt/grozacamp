@@ -22,7 +22,7 @@ final class Message
     ) {
         $to = self::header($to);
         if (filter_var($to, FILTER_VALIDATE_EMAIL) === false) {
-            throw new MailException('Некорректный адрес получателя.');
+            throw new MailException('Некорректный адрес получателя.', 'bad_recipient');
         }
         $this->to = $to;
         $this->subject = self::header($subject);

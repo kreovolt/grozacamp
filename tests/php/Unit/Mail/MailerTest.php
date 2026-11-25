@@ -33,12 +33,20 @@ final class MailerTest extends TestCase
         $this->assertSame('Заявка на путёвку: Спасатель — Иванова Анна', $m->subject);
         $this->assertSame('noreply@grozacamp.ru', $m->from);
         $this->assertNull($m->replyTo);
-        $this->assertStringContainsString('Смена: Спасатель', $m->text);
+        $this->assertStringContainsString('Смена: Спасатель (2–22 июля 2027)', $m->text);
         $this->assertStringContainsString('Родитель: Иванова Анна', $m->text);
         $this->assertStringContainsString('Телефон: +7 (950) 441-12-99', $m->text);
         $this->assertStringContainsString('Возраст ребёнка: 11', $m->text);
         $this->assertStringContainsString('Комментарий: Позвоните после 18:00', $m->text);
         $this->assertStringContainsString('Отправлено с сайта grozacamp.ru, 15.01.2027 12:00', $m->text);
+    }
+
+    public function test_booking_shift_without_valid_dates_has_no_brackets(): void
+    {
+        $t = new ArrayTransport();
+        $this->mailer($t)->bookingRequest($this->booking(), ['title' => 'Спасатель']);
+        $this->assertStringContainsString("Смена: Спасатель
+", $t->sent[0]->text);
     }
 
     public function test_booking_without_shift(): void
