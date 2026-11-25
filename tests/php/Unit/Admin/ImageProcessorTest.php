@@ -125,17 +125,66 @@ final class ImageProcessorTest extends TestCase
         $this->assertSame([], $this->files());
     }
 
-    public function test_same_pixel_count_upright_passes_the_guard_and_rotated_does_not(): void
+    public function test_small_budget_arithmetic_and_upright_passes(): void
     {
-        // rotated.jpg и upright.jpg — по 60000 пикселей; лимит памяти подобран так, что 5 байт/пиксель хватает (80000), а 9 — нет (44444)
+        // 60000 пикселей: лимит подобран так, что по 5 байт/пиксель хватает (80000), а по 9 — нет (44444)
         $limit = 33954432;
         $this->assertSame(80000, (new ImageProcessor(memoryLimit: $limit))->effectiveMaxPixels());
         $this->assertSame(44444, (new ImageProcessor(memoryLimit: $limit))->effectiveMaxPixels(true));
-        $d = (new ImageProcessor(memoryLimit: $limit))->process($this->fx('upright.jpg'), $this->dir, 'abcd1234abcd1234');
+        $d = (new ImageProcessor(memoryLimit: 34300000))->process($this->fx('upright.jpg'), $this->dir, 'abcd1234abcd1234');
         $this->assertSame(300, $d['w']);
-        $this->expectException(UploadException::class);
-        $this->expectExceptionMessage('Фото слишком большое');
-        (new ImageProcessor(memoryLimit: $limit))->process($this->fx('rotated.jpg'), $this->dir, 'abcd1234abcd1234');
+    }
+
+    /** Узкая и высокая картинка: самая большая ширина равна исходной — копий в полный размер быть не должно. */
+    private function tallFile(string $kind, int $w = 600, int $h = 4800): string
+    {
+        $path = $this->dir . "/tall-src.$kind";
+        $im = imagecreatetruecolor($w, $h);
+        imagefill($im, 0, 0, 0x3366aa);
+        $kind === 'jpg' ? imagejpeg($im, $path, 50) : imagepng($im, $path, 9);
+        unset($im);
+
+        return $path;
+    }
+
+    /** @return array{0:int,1:int} пик памяти в байтах и число пикселей */
+    private function peakOf(string $path, int $limit): array
+    {
+        $before = memory_get_usage();
+        memory_reset_peak_usage();
+        (new ImageProcessor(memoryLimit: $limit))->process($path, $this->dir, 'abcd1234abcd1234');
+        $peak = memory_get_peak_usage() - $before;
+        [$w, $h] = getimagesize($path);
+
+        return [$peak, $w * $h];
+    }
+
+    public function test_peak_memory_of_full_width_output_stays_within_the_estimate(): void
+    {
+        foreach (['jpg' => 10.5, 'png' => 16.0] as $kind => $factor) {
+            $path = $this->tallFile($kind);
+            [$peak, $n] = $this->peakOf($path, 512 * 1048576);
+            $this->assertLessThanOrEqual($factor * $n + 2 * 1048576, $peak, "$kind: пик {$peak} Б на $n пикселей");
+            unlink($path);
+            foreach (glob($this->dir . '/abcd*') as $f) {
+                unlink($f);
+            }
+        }
+    }
+
+    public function test_narrow_tall_photo_that_would_not_fit_is_rejected_gracefully(): void
+    {
+        $path = $this->tallFile('jpg'); // 2,88 Мп: нужно ≈ 10,5 Б/пикс = 30 МБ + 32 МБ запаса
+        try {
+            (new ImageProcessor(memoryLimit: 56 * 1048576))->process($path, $this->dir, 'abcd1234abcd1234');
+            $this->fail('нужно исключение');
+        } catch (UploadException $e) {
+            $this->assertMatchesRegularExpression('/^Фото слишком большое: уменьшите до [1-9][0-9]* мегапикселей$/u', $e->getMessage());
+        }
+        $this->assertSame([], $this->files());
+        $d = (new ImageProcessor(memoryLimit: 70 * 1048576))->process($path, $this->dir, 'abcd1234abcd1234');
+        $this->assertSame([480, 600], $d['widths']);
+        unlink($path);
     }
 
     public function test_unreadable_image_rejected(): void

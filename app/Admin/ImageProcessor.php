@@ -56,19 +56,82 @@ final class ImageProcessor
      */
     public function effectiveMaxPixels(bool $rotates = false): int
     {
-        $limit = $this->memoryLimit ?? \Groza\App::iniBytes((string) ini_get('memory_limit'));
-        if ($limit <= 0) { // -1 — без лимита
+        $limit = $this->memoryBudget();
+        if ($limit <= 0) {
             return $this->maxPixels;
-        }
-        if ($limit < self::RAISED_MEMORY) {
-            $limit = max($limit, ($this->raiseMemory)($limit));
-            if ($limit <= 0) {
-                return $this->maxPixels;
-            }
         }
         $bpp = $rotates ? self::BYTES_PER_PIXEL_ROTATE : self::BYTES_PER_PIXEL;
 
         return max(0, min($this->maxPixels, intdiv($limit - self::MEMORY_RESERVE, $bpp)));
+    }
+
+    /** Лимит памяти в байтах после попытки поднять его до 256 МБ; 0 — без лимита. */
+    private function memoryBudget(): int
+    {
+        $limit = $this->memoryLimit ?? \Groza\App::iniBytes((string) ini_get('memory_limit'));
+        if ($limit <= 0) { // -1 — без лимита
+            return 0;
+        }
+        if ($limit < self::RAISED_MEMORY) {
+            $limit = max($limit, ($this->raiseMemory)($limit));
+        }
+
+        return max(0, $limit);
+    }
+
+    /**
+     * Оценка пика памяти по размерам (измерено на GD этой сборки): раскодирование JPEG ≈ 6 Б/пикс, PNG/WebP ≈ 10; поворот ≈ 9;
+     * кодирование самой большой ширины — к снимку в памяти добавляется уменьшенная копия и буфер кодировщика.
+     *
+     * @param list<int> $widths
+     */
+    private function estimatePeak(int $w, int $h, bool $alpha, bool $rotates, array $widths): int
+    {
+        $n = $w * $h;
+        $sizes = $this->sizes($w, $widths);
+        $tw = max($sizes);
+        $out = $tw * max(1, (int) round($h * $tw / $w));
+        $same = $tw === $w;
+        $encode = $alpha
+            ? 6 * $n + ($same ? 10 * $n : (int) (9.5 * $out))
+            : 6 * $n + ($same ? (int) (4.5 * $n) : (int) (8.5 * $out));
+
+        return max($alpha ? 10 * $n : 6 * $n, $rotates ? 9 * $n : 0, $encode);
+    }
+
+    /**
+     * Точная проверка по оценке пика (форма снимка важна: узкий и длинный выходит в полный размер).
+     * Не влезает — понятный отказ, а не фатальная ошибка памяти.
+     *
+     * @param list<int> $widths
+     */
+    private function assertFitsMemory(int $w, int $h, int $type, int $orientation, array $widths): void
+    {
+        $limit = $this->memoryBudget();
+        if ($limit <= 0) {
+            return;
+        }
+        if ($orientation >= 5) {
+            [$w, $h] = [$h, $w];
+        }
+        $alpha = $type !== IMAGETYPE_JPEG;
+        $rotates = in_array($orientation, [3, 5, 6, 7, 8], true);
+        $fits = fn (int $a, int $b): bool => $this->estimatePeak($a, $b, $alpha, $rotates, $widths) + self::MEMORY_RESERVE <= $limit;
+        if ($fits($w, $h)) {
+            return;
+        }
+        $lo = 0.0; // наибольшая доля сторон, которая ещё влезает (форма снимка сохраняется)
+        $hi = 1.0;
+        for ($i = 0; $i < 24; $i++) {
+            $mid = ($lo + $hi) / 2;
+            if ($fits(max(1, (int) floor($w * $mid)), max(1, (int) floor($h * $mid)))) {
+                $lo = $mid;
+            } else {
+                $hi = $mid;
+            }
+        }
+        $mp = intdiv(max(1, (int) floor($w * $lo)) * max(1, (int) floor($h * $lo)), 1000000);
+        throw new UploadException('Фото слишком большое: уменьшите до ' . max(1, $mp) . ' мегапикселей');
     }
 
     /**
@@ -93,6 +156,7 @@ final class ImageProcessor
         if (!in_array($type, [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_WEBP], true)) {
             throw new UploadException('Файл не похож на фото. Подходят JPEG, PNG и WebP');
         }
+        $this->assertFitsMemory($srcW, $srcH, $type, $orientation, $widths);
 
         $img = match ($type) {
             IMAGETYPE_JPEG => @imagecreatefromjpeg($path),
@@ -112,6 +176,7 @@ final class ImageProcessor
             }
             $w = imagesx($img);
             $h = imagesy($img);
+            $hasAlpha = $type !== IMAGETYPE_JPEG; // у JPEG прозрачности не бывает
             $sizes = $this->sizes($w, $widths);
             if (!is_dir($destDir) && !@mkdir($destDir, 0755, true) && !is_dir($destDir)) {
                 throw new UploadException('Не удалось сохранить фото. Попробуйте ещё раз');
@@ -119,21 +184,23 @@ final class ImageProcessor
             $out = ['w' => 0, 'h' => 0];
             foreach ($sizes as $tw) {
                 $th = max(1, (int) round($h * $tw / $w));
-                $scaled = $this->scale($img, $w, $h, $tw, $th);
-                try {
-                    $made[] = $webp = "$destDir/$base-$tw.webp";
-                    $okWebp = @imagewebp($scaled, $webp, self::WEBP_QUALITY);
-                    $flat = $this->flatten($scaled, $tw, $th);
-                    try {
-                        imageinterlace($flat, true); // progressive
-                        $made[] = $jpg = "$destDir/$base-$tw.jpg";
-                        $okJpg = @imagejpeg($flat, $jpg, self::JPEG_QUALITY);
-                    } finally {
-                        unset($flat);
-                    }
-                } finally {
+                // Память: лишних полноразмерных копий не держим. Той же ширины, что у исходника, — копия не нужна вовсе;
+                // у JPEG прозрачности нет, значит одна уменьшенная картинка годится и для WebP, и для JPEG;
+                // с прозрачностью (PNG/WebP) промежуточная картинка для WebP освобождается до создания плоской копии для JPEG.
+                $scaled = $tw === $w && $th === $h ? $img : $this->scale($img, $w, $h, $tw, $th);
+                $made[] = $webp = "$destDir/$base-$tw.webp";
+                $okWebp = @imagewebp($scaled, $webp, self::WEBP_QUALITY);
+                if ($hasAlpha) {
+                    unset($scaled);
+                    $flat = $this->flatten($img, $w, $h, $tw, $th);
+                } else {
+                    $flat = $scaled;
                     unset($scaled);
                 }
+                imageinterlace($flat, true); // progressive
+                $made[] = $jpg = "$destDir/$base-$tw.jpg";
+                $okJpg = @imagejpeg($flat, $jpg, self::JPEG_QUALITY);
+                unset($flat);
                 if (!$okWebp || !$okJpg) {
                     throw new UploadException('Не удалось сохранить фото. Попробуйте ещё раз');
                 }
@@ -220,16 +287,16 @@ final class ImageProcessor
         return $dst;
     }
 
-    /** Прозрачность для JPEG невозможна: подкладываем белый фон. */
-    private function flatten(\GdImage $img, int $w, int $h): \GdImage
+    /** Прозрачность для JPEG невозможна: белый фон, и уменьшение сразу на него — одна копия вместо двух. */
+    private function flatten(\GdImage $img, int $w, int $h, int $tw, int $th): \GdImage
     {
-        $flat = @imagecreatetruecolor($w, $h);
+        $flat = @imagecreatetruecolor($tw, $th);
         if ($flat === false) {
             throw new UploadException('Не удалось обработать фото. Попробуйте уменьшить его');
         }
         imagefill($flat, 0, 0, (int) imagecolorallocate($flat, 255, 255, 255));
         imagealphablending($flat, true);
-        imagecopy($flat, $img, 0, 0, 0, 0, $w, $h);
+        imagecopyresampled($flat, $img, 0, 0, 0, 0, $tw, $th, $w, $h);
 
         return $flat;
     }
