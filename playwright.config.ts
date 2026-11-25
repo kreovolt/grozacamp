@@ -3,10 +3,11 @@ import { resolve } from 'node:path';
 
 const PORT = 8099;
 
-// Сквозные тесты: встроенный сервер PHP в окружении test со своим каталогом данных storage/test
-// (заполнение тестовыми данными перед прогоном добавляет Task 6 через globalSetup).
+// Сквозные тесты: встроенный сервер PHP в окружении test со своим каталогом данных storage/test;
+// перед прогоном globalSetup кладёт туда примерные данные seed/demo.
 export default defineConfig({
   testDir: 'tests/e2e',
+  globalSetup: './tests/e2e/global-setup.ts',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,

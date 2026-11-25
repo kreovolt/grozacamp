@@ -1,0 +1,32 @@
+{
+    "items": [
+        {
+            "id": "9e962b16100c",
+            "title": "Программа воспитательной работы (пример)",
+            "section": "programma-vospitaniya",
+            "file": {
+                "url": "/uploads/docs/demo-programma-vospitaniya.pdf",
+                "bytes": 1468673,
+                "originalName": "programma-vospitaniya-2026.pdf"
+            },
+            "date": "2026-05-01",
+            "order": 10,
+            "updatedAt": "2026-11-25T12:00:00+05:00",
+            "updatedBy": "seed"
+        },
+        {
+            "id": "ef554c07225d",
+            "title": "Календарный план воспитательной работы (пример)",
+            "section": "kalendarnyj-plan",
+            "file": {
+                "url": "/uploads/docs/demo-kalendarnyj-plan.pdf",
+                "bytes": 896778,
+                "originalName": "kalendarnyj-plan-2026.pdf"
+            },
+            "date": "2026-05-01",
+            "order": 20,
+            "updatedAt": "2026-11-25T12:00:00+05:00",
+            "updatedBy": "seed"
+        }
+    ]
+}

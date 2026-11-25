@@ -6,6 +6,7 @@ namespace Groza;
 use Groza\Content\Nav;
 use Groza\Data\AuditLog;
 use Groza\Data\JsonStore;
+use Groza\Data\Seeder;
 use Groza\Http\Request;
 use Groza\Http\Response;
 use Groza\Http\Router;
@@ -38,7 +39,25 @@ final class App
             ? new FixedClock($config['fakeNow'], $config['timezone'])
             : new SystemClock($config['timezone']);
 
-        return new App($config, $clock);
+        $app = new App($config, $clock);
+        $app->seedMissing();
+
+        return $app;
+    }
+
+    /** На хостинге без SSH стартовые данные появляются при первом запросе (seed/data, без перезаписи). */
+    private function seedMissing(): void
+    {
+        $seedDir = $this->config['rootDir'] . '/seed/data';
+        if (!is_dir($seedDir)) {
+            return;
+        }
+        try {
+            Seeder::seedMissing($this->store(), $seedDir);
+        } catch (\Exception $e) {
+            // сайт продолжит работать на умолчаниях; причину видно в журнале ошибок PHP
+            error_log('Groza seed: ' . $e->getMessage());
+        }
     }
 
     public function handle(Request $r): Response
