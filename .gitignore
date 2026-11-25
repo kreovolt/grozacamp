@@ -1,0 +1,13 @@
+vendor/
+node_modules/
+storage/
+public/uploads/*
+!public/uploads/.htaccess
+_source/
+tools/
+config/local.php
+config/deploy.local.json
+.superpowers/
+.worktrees/
+test-results/
+playwright-report/
