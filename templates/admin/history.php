@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * История изменений: версии по файлам данных, откат с подтверждением.
  * @var list<array{name:string,label:string,versions:list<array{id:string,at:string,who:string,what:string}>}> $files

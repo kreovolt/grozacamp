@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /** Уведомление о cookie: показывается только при подключённой Метрике; «Понятно» запоминается в localStorage (frontend/js/cookie.js). */
 ?>
 <div class="fixed inset-x-0 bottom-0 z-50 p-3 sm:p-4" data-cookie-notice role="region" aria-label="Уведомление о cookie" hidden>

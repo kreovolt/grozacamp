@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Переключатель «да / нет».
  * @var array<string,mixed> $f

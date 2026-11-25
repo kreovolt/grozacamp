@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Тексты сайта: одна группа — одна форма.
  * @var string $group

@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Список записей раздела. У смен — крупные кнопки статуса (одно нажатие).
  * @var string $collection

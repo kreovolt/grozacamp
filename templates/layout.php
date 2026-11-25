@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Общий макет страниц сайта.
  * @var string $content  разметка страницы

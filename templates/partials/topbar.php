@@ -25,21 +25,21 @@ $hours = array_values(array_filter([$settings['hoursWeekdays'] ?? '', $settings[
     <ul class="flex items-center gap-6" role="list">
       <?php if (!empty($settings['phone'])): ?>
         <li>
-          <a class="link-quiet tabular flex items-center gap-2 font-semibold text-cream" href="<?= e(tel($settings['phone'])) ?>">
-            <?= icon('phone', 'size-4 text-gold') ?><?= e(Phone::pretty($settings['phone'])) ?>
+          <a class="link-quiet tabular flex items-center gap-2 font-semibold text-cream" href="<?= e(tel((string) $settings['phone'])) ?>">
+            <?= icon('phone', 'size-4 text-gold') ?><?= e(Phone::pretty((string) $settings['phone'])) ?>
           </a>
         </li>
       <?php endif ?>
       <?php if (!empty($settings['whatsapp'])): ?>
         <li>
-          <a class="link-quiet flex items-center gap-2" href="https://wa.me/<?= e(ltrim($settings['whatsapp'], '+')) ?>" rel="noopener" target="_blank">
+          <a class="link-quiet flex items-center gap-2" href="https://wa.me/<?= e(ltrim((string) $settings['whatsapp'], '+')) ?>" rel="noopener" target="_blank">
             <?= icon('message-circle', 'size-4 text-gold') ?>WhatsApp
           </a>
         </li>
       <?php endif ?>
-      <?php if (safe_url($settings['vk'] ?? '') !== ''): ?>
+      <?php if (safe_url((string) ($settings['vk'] ?? '')) !== ''): ?>
         <li>
-          <a class="link-quiet flex items-center gap-2" href="<?= e(safe_url($settings['vk'])) ?>" rel="noopener" target="_blank">
+          <a class="link-quiet flex items-center gap-2" href="<?= e(safe_url((string) $settings['vk'])) ?>" rel="noopener" target="_blank">
             <?= icon('vk', 'size-4 text-gold') ?>ВКонтакте
           </a>
         </li>

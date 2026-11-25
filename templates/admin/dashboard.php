@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Главная: «Готовность к проверке», последние изменения, разделы админки.
  * @var array{login:string,name:string}|null $user

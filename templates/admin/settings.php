@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Настройки сайта: контакты, часы, соцсети, получатель заявок, счётчик.
  * @var list<array<string,mixed>> $fields

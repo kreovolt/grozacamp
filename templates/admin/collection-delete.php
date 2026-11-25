@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Подтверждение удаления: само удаление — только POST с токеном.
  * @var string $collection

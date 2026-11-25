@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Список строк: один пункт на строке.
  * @var array<string,mixed> $f

@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Вычисляемое поле: только показывается, в запросе не участвует.
  * @var array<string,mixed> $f

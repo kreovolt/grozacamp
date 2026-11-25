@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Ссылка на запись другого списка: выпадающий список с названиями.
  * @var array<string,mixed> $f
