@@ -1,0 +1,15 @@
+Options -Indexes
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Служебные папки проекта и файлы с точкой в начале имени недоступны снаружи
+  RewriteRule ^(app|config|storage|templates|vendor|seed|scripts|tests|frontend)(/|$) - [F,L]
+  RewriteRule (^|/)\. - [F,L]
+
+  # Всё, что не файл и не папка, обрабатывает index.php
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^ index.php [L]
+</IfModule>

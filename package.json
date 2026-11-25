@@ -1,0 +1,25 @@
+{
+  "name": "groza-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "node scripts/build-assets.mjs",
+    "test": "node scripts/php.mjs vendor/bin/phpunit",
+    "e2e": "playwright test",
+    "photos": "node scripts/optimize-photos.mjs",
+    "deploy": "node scripts/deploy.mjs"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.14.1",
+    "@fontsource/manrope": "^5.3.0",
+    "@fontsource/oswald": "^5.3.0",
+    "@playwright/test": "^1.65.1",
+    "basic-ftp": "^6.2.6",
+    "esbuild": "^0.28.2",
+    "gsap": "^3.15.1",
+    "sharp": "^0.35.5",
+    "tailwindcss": "^3.4.19",
+    "trix": "^2.1.19"
+  }
+}
