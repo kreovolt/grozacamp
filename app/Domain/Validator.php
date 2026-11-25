@@ -10,7 +10,10 @@ use Groza\Support\Slug;
 final class Validator
 {
     private const REQUIRED = 'Заполните поле';
-    private const KEY = '/^[a-z0-9-]+$/';
+    private const KEY = '/^[a-z0-9-]+$/D';
+    private const INT_MAX = 999_999_999;
+    /** Загруженные файлы и фото из манифеста: только внутри /uploads/ и /assets/, без «..» и схем. */
+    private const LOCAL_PATH = '#^/(?:uploads|assets)/[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*$#D';
 
     /**
      * Нормализует запись по схеме; поля вне схемы отбрасываются.
@@ -123,6 +126,9 @@ final class Validator
         if (isset($field['max'])) {
             $s = trim(mb_substr($s, 0, (int) $field['max']));
         }
+        if (($field['name'] ?? '') === 'slug') {
+            $s = rtrim($s, '-'); // обрезка по max не оставляет дефис в конце адреса
+        }
         return $s;
     }
 
@@ -130,13 +136,17 @@ final class Validator
     private static function int(mixed $raw): ?int
     {
         if (is_int($raw)) {
-            return $raw >= 0 ? $raw : throw new FieldError('Введите целое число');
+            return $raw >= 0 && $raw <= self::INT_MAX ? $raw : throw new FieldError('Введите целое число');
         }
         $s = is_string($raw) ? preg_replace('/[\s\x{00A0}]+/u', '', $raw) : '';
         if ($s === '' || $s === null) {
             return null;
         }
-        if (!ctype_digit($s) || strlen($s) > 9) {
+        if (!ctype_digit($s)) {
+            throw new FieldError('Введите целое число');
+        }
+        $s = ltrim($s, '0');
+        if (strlen($s) > 9) {
             throw new FieldError('Введите целое число');
         }
         return (int) $s;
@@ -195,10 +205,21 @@ final class Validator
     private static function isDescriptor(array $a): bool
     {
         return isset($a['src'], $a['widths'], $a['formats'], $a['w'], $a['h'])
-            && is_string($a['src']) && $a['src'] !== ''
-            && is_int($a['w']) && is_int($a['h'])
-            && is_array($a['widths']) && $a['widths'] === array_filter($a['widths'], 'is_int')
-            && is_array($a['formats']) && $a['formats'] === array_filter($a['formats'], 'is_string');
+            && is_string($a['src']) && self::isLocalPath($a['src'])
+            && self::isPositiveInt($a['w']) && self::isPositiveInt($a['h'])
+            && is_array($a['widths']) && $a['widths'] !== [] && array_is_list($a['widths']) && array_filter($a['widths'], self::isPositiveInt(...)) === $a['widths']
+            && is_array($a['formats']) && $a['formats'] !== [] && array_is_list($a['formats'])
+            && array_filter($a['formats'], static fn (mixed $f): bool => is_string($f) && preg_match('/^[a-z0-9]{2,5}$/D', $f) === 1) === $a['formats'];
+    }
+
+    private static function isLocalPath(string $path): bool
+    {
+        return preg_match(self::LOCAL_PATH, $path) === 1 && !str_contains($path, '..');
+    }
+
+    private static function isPositiveInt(mixed $v): bool
+    {
+        return is_int($v) && $v > 0 && $v <= self::INT_MAX;
     }
 
     /** @throws FieldError */
@@ -227,7 +248,7 @@ final class Validator
             return null;
         }
         if (is_array($raw) && isset($raw['url'], $raw['bytes'], $raw['originalName'])
-            && is_string($raw['url']) && $raw['url'] !== '' && is_int($raw['bytes']) && is_string($raw['originalName'])) {
+            && is_string($raw['url']) && self::isLocalPath($raw['url']) && is_int($raw['bytes']) && $raw['bytes'] >= 0 && is_string($raw['originalName'])) {
             return ['url' => $raw['url'], 'bytes' => $raw['bytes'], 'originalName' => $raw['originalName']];
         }
         throw new FieldError('Некорректный файл');

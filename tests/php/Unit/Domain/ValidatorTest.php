@@ -169,4 +169,62 @@ final class ValidatorTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         Collections::get('nope');
     }
+
+    public function test_slug_cut_at_max_does_not_end_with_dash(): void
+    {
+        $title = str_repeat('а', 79) . ' ' . 'бвг'; // 79 букв, дефис на 80-й позиции
+        $slug = $this->ok($this->shift(['title' => $title, 'slug' => '']))['slug'];
+        $this->assertLessThanOrEqual(80, strlen($slug));
+        $this->assertStringEndsNotWith('-', $slug);
+    }
+
+    public function test_slug_exact_max_length_is_kept(): void
+    {
+        $slug = str_repeat('a', 80);
+        $this->assertSame($slug, $this->ok($this->shift(['slug' => $slug]))['slug']);
+        $this->assertSame(80, strlen($this->ok($this->shift(['slug' => $slug . 'b']))['slug']));
+    }
+
+    public function test_int_edge_cases(): void
+    {
+        $this->assertSame(1, $this->ok($this->shift(['price' => '0000000001']))['price']);
+        $this->assertSame(0, $this->ok($this->shift(['price' => '0']))['price']);
+        $this->assertSame(999999999, $this->ok($this->shift(['price' => '999999999']))['price']);
+        foreach (['1000000000', '-5', '1.5', '1e3', '12a'] as $bad) {
+            $this->assertArrayHasKey('price', $this->errors('shifts', $this->shift(['price' => $bad])), $bad);
+        }
+        $this->assertArrayHasKey('price', $this->errors('shifts', $this->shift(['price' => PHP_INT_MAX])));
+        $this->assertArrayHasKey('price', $this->errors('shifts', $this->shift(['price' => -1])));
+    }
+
+    public function test_ref_key_regex_rejects_trailing_newline(): void
+    {
+        $this->assertArrayHasKey('photo', $this->errors('shifts', $this->shift(['photo' => "base-cabins\n"])));
+    }
+
+    public function test_image_descriptor_is_constrained_defence_in_depth(): void
+    {
+        $good = ['src' => '/uploads/img/a1b2', 'widths' => [480], 'formats' => ['jpg'], 'w' => 10, 'h' => 10];
+        $this->assertSame($good, $this->ok($this->shift(['photo' => $good]))['photo']);
+        $assets = ['src' => '/assets/img/friends-selfie'] + $good;
+        $this->assertSame($assets, $this->ok($this->shift(['photo' => $assets]))['photo']);
+        $bad = [
+            ['src' => 'https://evil.example/x.jpg'], ['src' => '//evil.example/x'], ['src' => '/etc/passwd'],
+            ['src' => '/uploads/img/../../x'], ['src' => "/uploads/img/a\n"], ['src' => '/uploads/'],
+            ['w' => 0], ['h' => -3], ['widths' => [0]], ['widths' => [-480]], ['widths' => []], ['formats' => []],
+            ['formats' => ['../x']],
+        ];
+        foreach ($bad as $i => $patch) {
+            $this->assertArrayHasKey('photo', $this->errors('shifts', $this->shift(['photo' => $patch + $good])), 'case ' . $i);
+        }
+    }
+
+    public function test_file_descriptor_is_constrained(): void
+    {
+        $doc = ['title' => 'Устав', 'section' => 'uchreditelnye'];
+        $f = ['url' => '/uploads/docs/ustav.pdf', 'bytes' => 1024, 'originalName' => 'Устав.pdf'];
+        foreach ([['url' => 'https://evil.example/a.pdf'], ['url' => '/uploads/docs/../../x'], ['url' => '/etc/passwd'], ['bytes' => -1]] as $i => $patch) {
+            $this->assertArrayHasKey('file', $this->errors('documents', $doc + ['file' => $patch + $f]), 'case ' . $i);
+        }
+    }
 }

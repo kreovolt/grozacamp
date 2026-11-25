@@ -15,6 +15,20 @@ final class ShiftsTest extends TestCase
         return (new DateTimeImmutable($iso))->setTimezone(new DateTimeZone('Asia/Yekaterinburg'));
     }
 
+    public function test_days_do_not_depend_on_server_timezone_or_dst(): void
+    {
+        $old = date_default_timezone_get();
+        try {
+            foreach (['UTC', 'Europe/Berlin', 'America/New_York', 'Asia/Yekaterinburg'] as $tz) {
+                date_default_timezone_set($tz);
+                $this->assertSame(3, Shifts::days('2026-03-28', '2026-03-30'), $tz);
+                $this->assertSame(2, Shifts::days('2026-03-07', '2026-03-08'), $tz);
+            }
+        } finally {
+            date_default_timezone_set($old);
+        }
+    }
+
     public function test_days_inclusive(): void
     {
         $this->assertSame(21, Shifts::days('2026-07-02', '2026-07-22'));

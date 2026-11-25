@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Groza\Domain;
 
 use DateTimeImmutable;
+use DateTimeZone;
 
 final class Shifts
 {
@@ -12,8 +13,10 @@ final class Shifts
     /** Число дней включительно. */
     public static function days(string $start, string $end): int
     {
-        $a = new DateTimeImmutable($start);
-        $b = new DateTimeImmutable($end);
+        // Календарные даты считаем в UTC: без перехода часовых поясов и летнего времени сервера
+        $utc = new DateTimeZone('UTC');
+        $a = new DateTimeImmutable($start, $utc);
+        $b = new DateTimeImmutable($end, $utc);
         return (int) $a->diff($b)->days + 1;
     }
 

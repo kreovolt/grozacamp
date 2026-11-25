@@ -489,7 +489,7 @@ final class CollectionController
                     $uploaded = is_array($file) && (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
                     if ($uploaded) {
                         $pending[$n] = $file;
-                        $input[$n] = $f['type'] === 'image' ? self::PLACEHOLDER : ['url' => '/pending', 'bytes' => 0, 'originalName' => 'pending'];
+                        $input[$n] = $f['type'] === 'image' ? self::PLACEHOLDER : ['url' => '/uploads/docs/pending', 'bytes' => 0, 'originalName' => 'pending'];
                     } else {
                         $input[$n] = $action === 'remove' ? null : ($existing[$n] ?? null);
                     }
