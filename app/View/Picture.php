@@ -12,6 +12,33 @@ declare(strict_types=1);
 namespace Groza\View;
 
 use InvalidArgumentException;
+use RuntimeException;
+
+/**
+ * Читает манифест фото из первого существующего файла списка. Нет файла или он испорчен — это сбой сборки, а не «неизвестное фото»:
+ * поэтому отдельное исключение с понятным текстом (запустите `npm run photos`).
+ *
+ * @param list<string> $files
+ * @return array<string,mixed>
+ * @throws RuntimeException
+ */
+function load_photo_manifest(array $files): array
+{
+    foreach ($files as $file) {
+        if (!is_file($file)) {
+            continue;
+        }
+        $raw = file_get_contents($file);
+        $data = $raw === false ? null : json_decode($raw, true);
+        if (!is_array($data)) {
+            throw new RuntimeException('Манифест фото повреждён: ' . basename(dirname($file)) . '/' . basename($file) . ' (пересоберите: npm run photos)');
+        }
+
+        return $data;
+    }
+
+    throw new RuntimeException('Манифест фото не найден (assets/img/manifest.json). Соберите фото: npm run photos');
+}
 
 /**
  * Дескриптор фото по ключу из манифеста (создаётся `npm run photos`).
@@ -21,16 +48,7 @@ use InvalidArgumentException;
 function photo(string $key): array
 {
     static $manifest = null;
-    if ($manifest === null) {
-        $manifest = [];
-        foreach ([dirname(__DIR__, 2) . '/public/assets/img/manifest.json', dirname(__DIR__, 2) . '/assets/img/manifest.json'] as $file) {
-            if (is_file($file)) {
-                $data = json_decode((string) file_get_contents($file), true);
-                $manifest = is_array($data) ? $data : [];
-                break;
-            }
-        }
-    }
+    $manifest ??= load_photo_manifest([dirname(__DIR__, 2) . '/public/assets/img/manifest.json', dirname(__DIR__, 2) . '/assets/img/manifest.json']);
     if (!isset($manifest[$key]) || !is_array($manifest[$key])) {
         throw new InvalidArgumentException("Неизвестное фото: {$key}");
     }
@@ -62,6 +80,9 @@ function picture(array $img, string $alt, string $sizes = '100vw', bool $eager =
 {
     $types = ['avif' => 'image/avif', 'webp' => 'image/webp', 'jpg' => 'image/jpeg'];
     $widths = array_values($img['widths']);
+    if ($widths === []) {
+        throw new InvalidArgumentException('У фото нет ни одного размера (widths пуст)');
+    }
     $srcset = static function (string $format) use ($img, $widths): string {
         return implode(', ', array_map(static fn (int $w): string => e("{$img['src']}-{$w}.{$format}") . " {$w}w", $widths));
     };

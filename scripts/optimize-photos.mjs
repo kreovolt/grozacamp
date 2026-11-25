@@ -2,7 +2,7 @@
 // а также фавиконы, логотип шапки и OG-картинка из шеврона. Результат коммитится (на хостинге нет Node).
 // Запуск: npm run photos [-- --force | --only=ключ,ключ]. Без них пропускает файлы, которые новее исходника;
 // --only пересобирает только эти ключи. После смены crop/position/качества в config/photos.json исходник не меняется,
-// поэтому нужен --force или --only. Манифест всегда пишется целиком.
+// поэтому нужен --force или --only (свежесть считается только по времени исходника, не по настройкам). Манифест пишется целиком и только при успешной сборке; наличие исходников проверяется до начала работы.
 // crop в photos.json — доли исходника {top, left, width, height}; вырезается ДО уменьшения (так убираем водяной знак
 // фотографа с шевроном в правом верхнем углу кадра — спека §6), w/h в манифесте — уже после кропа.
 // alt — описание снимка по-русски; попадает в манифест и служит подписью по умолчанию (карточки смен, фото баз).
@@ -33,20 +33,31 @@ const encode = {
 };
 
 const photos = JSON.parse(readFileSync(join(root, 'config/photos.json'), 'utf8'));
+// Всё нужное проверяем до начала долгой работы: лучше упасть сразу, чем оставить половину файлов и неполный манифест
+if (!existsSync(srcDir)) {
+  console.error(`Нет папки с исходниками: ${srcDir} (оригиналы лежат вне git — _source/photos)`);
+  process.exit(1);
+}
 const files = readdirSync(srcDir);
+const missing = Object.entries(photos)
+  .filter(([, cfg]) => !files.some((f) => f.startsWith(`${cfg.file}__`)))
+  .map(([key, cfg]) => `${key} (${cfg.file})`);
+if (missing.length) {
+  console.error(`Нет исходников: ${missing.join(', ')}`);
+  process.exit(1);
+}
+if (!existsSync(chevron)) {
+  console.error(`Нет файла шеврона: ${chevron}`);
+  process.exit(1);
+}
 mkdirSync(outDir, { recursive: true });
 
 const newer = (out, src) => existsSync(out) && statSync(out).mtimeMs >= statSync(src).mtimeMs;
 const rows = [];
 const manifest = {};
-const missing = [];
 
 for (const [key, cfg] of Object.entries(photos)) {
   const name = files.find((f) => f.startsWith(`${cfg.file}__`));
-  if (!name) {
-    missing.push(`${key} (${cfg.file})`);
-    continue;
-  }
   const src = join(srcDir, name);
   const meta = await sharp(src).rotate().metadata(); // rotate() — учесть ориентацию EXIF
   const oriented = (meta.orientation ?? 1) >= 5; // 90°/270°: ширина и высота меняются местами
@@ -78,8 +89,6 @@ for (const [key, cfg] of Object.entries(photos)) {
     ...(cfg.alt ? { alt: cfg.alt } : {}),
   };
 }
-
-writeFileSync(join(outDir, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
 
 /** Исходник, повёрнутый по EXIF, и (если задан crop) вырезанная область — до любого resize. */
 function load(file, region) {
@@ -156,10 +165,6 @@ const total = rows.reduce((s, r) => s + r[3], 0);
 console.log(`\nфото: ${Object.keys(manifest).length}, файлов: ${rows.length}, всего ${(total / 1048576).toFixed(1)} МБ`);
 
 let fail = false;
-if (missing.length) {
-  console.error(`Нет исходников: ${missing.join(', ')}`);
-  fail = true;
-}
 const hero = rows.find((r) => r[0] === HERO_KEY && r[1] === 1920 && r[2] === 'avif');
 if (!hero) {
   console.error(`Не найден ${HERO_KEY}-1920.avif`);
@@ -168,4 +173,6 @@ if (!hero) {
   console.error(`${HERO_KEY}-1920.avif ${(hero[3] / 1024).toFixed(0)} КБ > 200 КБ — снизьте avifQuality героя`);
   fail = true;
 }
+// Манифест пишется только когда всё собралось: полуготовый манифест ссылался бы на несуществующие файлы
+if (!fail) writeFileSync(join(outDir, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
 process.exit(fail ? 1 : 0);

@@ -5,8 +5,10 @@ namespace Groza\Tests\Unit\View;
 
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 use function Groza\View\image;
+use function Groza\View\load_photo_manifest;
 use function Groza\View\photo;
 use function Groza\View\picture;
 
@@ -87,6 +89,43 @@ final class PictureTest extends TestCase
 
         $this->expectException(InvalidArgumentException::class);
         photo('no-such-photo');
+    }
+
+    public function testMissingManifestIsADistinctError(): void
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Манифест фото не найден');
+        load_photo_manifest([sys_get_temp_dir() . '/groza-no-such-manifest.json']);
+    }
+
+    public function testCorruptManifestIsADistinctError(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'groza-man-');
+        file_put_contents($file, '{ not json');
+        try {
+            $this->expectException(RuntimeException::class);
+            $this->expectExceptionMessage('Манифест фото повреждён');
+            load_photo_manifest([$file]);
+        } finally {
+            unlink($file);
+        }
+    }
+
+    public function testManifestUsesFirstExistingFile(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'groza-man-');
+        file_put_contents($file, '{"a":{"src":"/x"}}');
+        try {
+            $this->assertSame(['a' => ['src' => '/x']], load_photo_manifest([sys_get_temp_dir() . '/groza-none.json', $file]));
+        } finally {
+            unlink($file);
+        }
+    }
+
+    public function testEmptyWidthsAreRejectedLoudly(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        picture([...$this->img(), 'widths' => []], 'x');
     }
 
     public function testImageResolvesKeyDescriptorAndNull(): void
