@@ -33,6 +33,18 @@ final class AuditLogTest extends TestCase
         $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/', $first['at']);
     }
 
+    public function test_recent_can_filter_before_limiting(): void
+    {
+        $log = new AuditLog($this->file);
+        $log->record('anna', 'keep', '1');
+        for ($i = 0; $i < 10; $i++) {
+            $log->record('anna', 'noise', (string) $i);
+        }
+        $log->record('anna', 'keep', '2');
+        $rows = $log->recent(2, static fn (array $row): bool => $row['action'] === 'keep');
+        $this->assertSame(['2', '1'], array_column($rows, 'target'));
+    }
+
     public function test_timestamp_comes_from_the_injected_clock(): void
     {
         $log = new AuditLog($this->file, new \Groza\Support\FixedClock('2027-01-15T12:00:00+05:00'));

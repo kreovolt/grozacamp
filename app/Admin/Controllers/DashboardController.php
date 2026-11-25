@@ -17,8 +17,6 @@ use Groza\Support\Dates;
 final class DashboardController
 {
     private const RECENT = 15;
-    /** Сколько записей журнала просматриваем, чтобы набрать RECENT содержательных (входы и выходы в «изменения» не идут). */
-    private const SCAN = 80;
     /** Что человек сделал с записью → глагол в прошедшем времени. */
     private const VERBS = ['create' => 'добавил(а)', 'update' => 'изменил(а)', 'delete' => 'удалил(а)'];
     /** Раздел → «кого/что» (винительный падеж). */
@@ -95,8 +93,10 @@ final class DashboardController
     private function recent(): array
     {
         $out = [];
-        foreach ($this->app->audit()->recent(self::SCAN) as $row) {
-            $described = $this->describe((string) ($row['action'] ?? ''), (string) ($row['target'] ?? ''));
+        $describe = fn (array $row): ?array => $this->describe((string) ($row['action'] ?? ''), (string) ($row['target'] ?? ''));
+        // Входы и выходы отсеиваются до подсчёта лимита: длинная череда неудачных входов не вытесняет настоящие изменения
+        foreach ($this->app->audit()->recent(self::RECENT, static fn (array $row): bool => $describe($row) !== null) as $row) {
+            $described = $describe($row);
             if ($described === null) {
                 continue;
             }

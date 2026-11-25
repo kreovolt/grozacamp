@@ -338,8 +338,10 @@ final class SeedTest extends TestCase
             $this->assertFileExists($source);
             $this->assertSame(filesize($source), $doc['file']['bytes']);
         }
-        foreach (['programma-vospitaniya-2026.pdf', 'kalendarnyj-plan-2026.pdf'] as $pdf) {
-            $this->assertStringStartsWith('%PDF-', (string) file_get_contents(self::root() . '/seed/files/docs/' . $pdf, false, null, 0, 5));
+        // единственное хранилище демо-PDF — seed/files/demo (копия под другим именем в seed/files/docs была дублем на 2,3 МБ)
+        $this->assertDirectoryDoesNotExist(self::root() . '/seed/files/docs');
+        foreach (glob(self::root() . '/seed/files/demo/*.pdf') ?: [] as $pdf) {
+            $this->assertStringStartsWith('%PDF-', (string) file_get_contents($pdf, false, null, 0, 5));
         }
     }
 

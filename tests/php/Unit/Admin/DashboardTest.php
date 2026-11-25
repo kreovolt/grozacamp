@@ -151,6 +151,16 @@ final class DashboardTest extends TestCase
         $this->assertStringContainsString('скачал(а) резервную копию', $body);
     }
 
+    public function test_dashboard_finds_real_changes_behind_a_long_run_of_login_noise(): void
+    {
+        $this->app->audit()->record('olga', 'texts.update', 'svedeniya');
+        for ($i = 0; $i < 300; $i++) {
+            $this->app->audit()->record('olga', 'auth.login.fail', 'olga');
+        }
+
+        $this->assertStringContainsString('изменил(а) тексты', $this->page());
+    }
+
     public function test_dashboard_hides_login_noise_and_escapes(): void
     {
         $this->app->audit()->record('<b>x</b>', 'shifts.delete', 'abc');

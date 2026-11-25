@@ -28,14 +28,17 @@ final class AuditLog
         }
     }
 
-    /** @return list<array{actor:string, action:string, target:string, at:string}> newest first */
-    public function recent(int $limit = 50): array
+    /**
+     * @param (callable(array<string,mixed>):bool)|null $accept оставить только подходящие записи; проверяется до подсчёта лимита
+     * @return list<array{actor:string, action:string, target:string, at:string}> newest first
+     */
+    public function recent(int $limit = 50, ?callable $accept = null): array
     {
         $lines = is_file($this->file) ? file($this->file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : false;
         $result = [];
         foreach (array_reverse($lines ?: []) as $line) {
             $row = json_decode($line, true);
-            if (is_array($row)) {
+            if (is_array($row) && ($accept === null || $accept($row))) {
                 $result[] = $row;
             }
             if (count($result) >= $limit) {
