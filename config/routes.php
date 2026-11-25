@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+use Groza\Admin\Controllers\AuthController;
 use Groza\App;
 use Groza\Http\Request;
 use Groza\Http\Response;
@@ -44,6 +45,14 @@ return static function (Router $router, App $app): void {
     $router->post('/form/booking/', [$forms, 'booking']);
     $router->post('/form/vacancy/', [$forms, 'vacancy']);
     $router->get('/spasibo/', [$forms, 'thanks']);
+
+    $auth = new AuthController($app);
+    $router->get('/admin/', [$auth, 'home']);
+    $router->get('/admin/login/', [$auth, 'showLogin']);
+    $router->post('/admin/login/', [$auth, 'login']);
+    $router->post('/admin/logout/', [$auth, 'logout']);
+    $router->get('/admin/password/', [$auth, 'showPassword']);
+    $router->post('/admin/password/', [$auth, 'changePassword']);
 
     // Витрина дизайн-системы для разработки (не для посетителей): /_styleguide/ только в dev и test.
     if (in_array($app->config()['env'], ['dev', 'test'], true)) {

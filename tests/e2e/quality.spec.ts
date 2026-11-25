@@ -139,7 +139,7 @@ test('only own hosts', async ({ page }) => {
 });
 
 test('axe has no serious issues', async ({ page }) => {
-  for (const path of ['/', '/booking/', '/info/', '/svedeniya/ob-organizacii/']) {
+  for (const path of ['/', '/booking/', '/info/', '/svedeniya/ob-organizacii/', '/admin/login/']) {
     await page.goto(path);
     await page.waitForLoadState('networkidle');
     await scrollThrough(page);

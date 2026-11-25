@@ -19,4 +19,10 @@ final class FixedClock implements Clock
     {
         return $this->moment;
     }
+
+    /** Для тестов: сдвинуть «сейчас» («+31 minutes»). */
+    public function advance(string $modifier): void
+    {
+        $this->moment = $this->moment->modify($modifier);
+    }
 }

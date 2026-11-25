@@ -1,0 +1,102 @@
+<?php
+declare(strict_types=1);
+
+namespace Groza\Tests\Unit\Admin;
+
+use Groza\Admin\Users;
+use Groza\Data\JsonStore;
+use PHPUnit\Framework\TestCase;
+
+final class UsersTest extends TestCase
+{
+    private string $dir;
+    private JsonStore $store;
+
+    protected function setUp(): void
+    {
+        $this->dir = sys_get_temp_dir() . '/groza-users-' . bin2hex(random_bytes(5));
+        $this->store = new JsonStore($this->dir . '/data', $this->dir . '/versions');
+    }
+
+    protected function tearDown(): void
+    {
+        foreach (glob($this->dir . '/*/*') ?: [] as $f) {
+            @unlink($f);
+        }
+        foreach (glob($this->dir . '/*') ?: [] as $d) {
+            @rmdir($d);
+        }
+        @rmdir($this->dir);
+    }
+
+    public function test_add_stores_hash_not_password_in_documented_shape(): void
+    {
+        (new Users($this->store))->add('Olga.Office', 'Ольга', 'long-enough-pass');
+
+        $item = $this->store->read('users')['items'][0];
+        $this->assertSame(['login', 'name', 'hash', 'createdAt'], array_keys($item));
+        $this->assertSame('olga.office', $item['login']);
+        $this->assertSame('Ольга', $item['name']);
+        $this->assertTrue(password_verify('long-enough-pass', $item['hash']));
+        $this->assertStringNotContainsString('long-enough-pass', (string) file_get_contents($this->dir . '/data/users.json'));
+    }
+
+    public function test_users_short_password_rejected(): void
+    {
+        $users = new Users($this->store);
+        $this->expectException(\InvalidArgumentException::class);
+        $users->add('olga', 'Ольга', '123456789');
+    }
+
+    public function test_set_password_rejects_short_and_keeps_old_hash(): void
+    {
+        $users = new Users($this->store);
+        $users->add('olga', 'Ольга', 'long-enough-pass');
+        try {
+            $users->setPassword('olga', 'short');
+            $this->fail('short password accepted');
+        } catch (\InvalidArgumentException) {
+        }
+        $this->assertTrue(password_verify('long-enough-pass', $users->find('olga')['hash']));
+
+        $users->setPassword('OLGA', 'another-long-pass');
+        $this->assertTrue(password_verify('another-long-pass', $users->find('olga')['hash']));
+    }
+
+    /** @dataProvider badLogins */
+    public function test_bad_logins_rejected(string $login): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        (new Users($this->store))->add($login, 'X', 'long-enough-pass');
+    }
+
+    /** @return array<string,array{string}> */
+    public static function badLogins(): array
+    {
+        return [
+            'short' => ['ab'], 'long' => [str_repeat('a', 33)], 'space' => ['ol ga'], 'cyrillic' => ['ольга'],
+            'slash' => ['a/b/c'], 'empty' => [''], 'newline' => ["olga\n"],
+        ];
+    }
+
+    public function test_duplicate_login_rejected_case_insensitively(): void
+    {
+        $users = new Users($this->store);
+        $users->add('olga', 'Ольга', 'long-enough-pass');
+        $this->expectException(\InvalidArgumentException::class);
+        $users->add('OLGA', 'Другая', 'long-enough-pass');
+    }
+
+    public function test_remove_and_unknown_login(): void
+    {
+        $users = new Users($this->store);
+        $users->add('olga', 'Ольга', 'long-enough-pass');
+        $users->add('petr', 'Пётр', 'long-enough-pass');
+        $users->remove('olga');
+
+        $this->assertNull($users->find('olga'));
+        $this->assertNotNull($users->find('petr'));
+        $this->expectException(\InvalidArgumentException::class);
+        $users->remove('nobody');
+    }
+}

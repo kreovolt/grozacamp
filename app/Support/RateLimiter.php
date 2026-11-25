@@ -27,7 +27,7 @@ final class RateLimiter
         $now = $this->clock->now()->getTimestamp();
         $this->prune($now);
 
-        $file = $this->dir . '/' . hash('sha256', $this->secret . $bucket . '|' . $key) . '.json';
+        $file = $this->file($bucket, $key);
         $fh = @fopen($file, 'c+');
         if ($fh === false) {
             return true;
@@ -52,6 +52,27 @@ final class RateLimiter
             flock($fh, LOCK_UN);
             fclose($fh);
         }
+    }
+
+    /** Сколько обращений учтено за последние $windowSec секунд (без учёта нового). */
+    public function count(string $bucket, string $key, int $windowSec): int
+    {
+        $data = json_decode((string) @file_get_contents($this->file($bucket, $key)), true);
+        $now = $this->clock->now()->getTimestamp();
+        $hits = is_array($data['hits'] ?? null) ? $data['hits'] : [];
+
+        return count(array_filter($hits, static fn ($t): bool => is_int($t) && $t > $now - $windowSec));
+    }
+
+    /** Обнулить счётчик пары «ведро + ключ». */
+    public function reset(string $bucket, string $key): void
+    {
+        @unlink($this->file($bucket, $key));
+    }
+
+    private function file(string $bucket, string $key): string
+    {
+        return $this->dir . '/' . hash('sha256', $this->secret . $bucket . '|' . $key) . '.json';
     }
 
     private function prune(int $now): void

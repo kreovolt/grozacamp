@@ -6,12 +6,14 @@ namespace Groza\Tests\Support;
 use Groza\App;
 use Groza\Http\Request;
 use Groza\Http\Response;
+use Groza\Support\Session;
 
 final class TestApp
 {
     /** @param array<string,mixed> $overrides */
     public static function make(array $overrides = []): App
     {
+        Session::reset(); // каждый тест — «браузер без cookie»
         $root = dirname(__DIR__, 3);
         $storage = sys_get_temp_dir() . '/groza-test-' . bin2hex(random_bytes(6));
         foreach (['data', 'versions', 'logs', 'ratelimit', 'mail'] as $dir) {

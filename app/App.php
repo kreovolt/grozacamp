@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Groza;
 
+use Groza\Admin\Auth;
 use Groza\Content\Nav;
 use Groza\Data\AuditLog;
 use Groza\Data\JsonStore;
@@ -17,9 +18,11 @@ use Groza\Mail\FileTransport;
 use Groza\Mail\Mailer;
 use Groza\Mail\MailTransport;
 use Groza\Mail\SmtpTransport;
+use Groza\Support\Csrf;
 use Groza\Support\RateLimiter;
 use Groza\Support\Clock;
 use Groza\Support\FixedClock;
+use Groza\Support\Session;
 use Groza\Support\SystemClock;
 use Groza\View\View;
 
@@ -32,6 +35,7 @@ final class App
     private Router $router;
     private ?JsonStore $store = null;
     private ?AuditLog $audit = null;
+    private ?Auth $auth = null;
     private ?View $view = null;
     private ?MailTransport $mailTransport = null;
     private string $currentPath = '/';
@@ -82,12 +86,60 @@ final class App
         $this->currentPath = $r->path();
         $this->view = null; // глобальные переменные шаблонов — свежие на каждый запрос
 
-        $response = $this->canonicalHost($r) ?? $this->stagingGate($r) ?? $this->router->dispatch($r);
-        if (str_starts_with($r->path(), '/admin/')) {
-            $response = $response->withHeader('X-Robots-Tag', 'noindex, nofollow');
-        }
+        $response = $this->canonicalHost($r) ?? $this->stagingGate($r) ?? $this->dispatch($r);
 
         return SecurityHeaders::apply($response, ['env' => $this->config['env'], 'metrikaId' => $this->metrikaId()]);
+    }
+
+    private static function isAdminPath(string $path): bool
+    {
+        return $path === '/admin' || str_starts_with($path, '/admin/');
+    }
+
+    /**
+     * Публичные страницы идут напрямую (без сессии и cookie). Всё под /admin/ — через ворота админки,
+     * и каждый ответ получает «не кэшировать» и «не индексировать».
+     */
+    private function dispatch(Request $r): Response
+    {
+        if (!self::isAdminPath($r->path())) {
+            return $this->router->dispatch($r);
+        }
+        $issuesToken = in_array($r->method(), ['GET', 'HEAD'], true) && $r->path() === '/admin/login/';
+        if (Session::wanted($r->header('Cookie'), $issuesToken)) {
+            Session::start($this->config);
+        }
+        try {
+            $response = $this->adminGate($r) ?? $this->router->dispatch($r);
+        } finally {
+            Session::close();
+        }
+
+        return $response
+            ->withHeader('Cache-Control', 'no-store, private')
+            ->withHeader('X-Robots-Tag', 'noindex, nofollow');
+    }
+
+    /**
+     * Ворота админки (до маршрутизации): сначала CSRF для любого изменяющего запроса (любой метод, кроме чтения;
+     * токен — из тела запроса или заголовка X-CSRF-Token, не из адреса), затем вход. Исключение только для самой страницы входа.
+     */
+    private function adminGate(Request $r): ?Response
+    {
+        if (!in_array($r->method(), ['GET', 'HEAD', 'OPTIONS'], true)) {
+            $token = $r->post(Csrf::FIELD);
+            if (!is_string($token)) {
+                $token = $r->header('X-CSRF-Token');
+            }
+            if (!Csrf::verify($token)) {
+                return Response::html($this->view()->render('admin/expired'), 419);
+            }
+        }
+        if ($r->path() === '/admin/login/') {
+            return null;
+        }
+
+        return $this->auth()->requireUser($r);
     }
 
     /** Адрес с www. ведёт на основной (baseUrl) с тем же путём и строкой запроса. */
@@ -173,6 +225,21 @@ final class App
     public function audit(): AuditLog
     {
         return $this->audit ??= new AuditLog($this->config['storageDir'] . '/logs/audit.jsonl');
+    }
+
+    public function auth(): Auth
+    {
+        return $this->auth ??= new Auth(
+            $this->store(),
+            new RateLimiter($this->config['storageDir'] . '/ratelimit', $this->clock, (string) $this->config['appSecret']),
+            $this->clock
+        );
+    }
+
+    /** Логин вошедшего пользователя для JsonStore::write и журнала; «-», если никто не вошёл. */
+    public function actor(): string
+    {
+        return $this->auth()->user()['login'] ?? '-';
     }
 
     /** Контакты и общие настройки: умолчания из config/settings.defaults.php, поверх — storage/data/settings.json. @return array<string,mixed> */

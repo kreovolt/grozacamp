@@ -1,0 +1,61 @@
+/*
+ * Админка «Гроза»: те же токены и шрифты, что у сайта, но без декора. Собирается Tailwind'ом в public/assets/css/admin.css.
+ * Только локальные шрифты (CSP: font-src 'self').
+ */
+@font-face { font-family: 'Oswald'; font-style: normal; font-weight: 600; font-display: swap; src: url('/assets/fonts/oswald-cyrillic-600.woff2') format('woff2'); unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116; }
+@font-face { font-family: 'Oswald'; font-style: normal; font-weight: 600; font-display: swap; src: url('/assets/fonts/oswald-latin-600.woff2') format('woff2'); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: 'Manrope'; font-style: normal; font-weight: 400; font-display: swap; src: url('/assets/fonts/manrope-cyrillic-400.woff2') format('woff2'); unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116; }
+@font-face { font-family: 'Manrope'; font-style: normal; font-weight: 400; font-display: swap; src: url('/assets/fonts/manrope-latin-400.woff2') format('woff2'); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: 'Manrope'; font-style: normal; font-weight: 600; font-display: swap; src: url('/assets/fonts/manrope-cyrillic-600.woff2') format('woff2'); unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116; }
+@font-face { font-family: 'Manrope'; font-style: normal; font-weight: 600; font-display: swap; src: url('/assets/fonts/manrope-latin-600.woff2') format('woff2'); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: 'Manrope'; font-style: normal; font-weight: 700; font-display: swap; src: url('/assets/fonts/manrope-cyrillic-700.woff2') format('woff2'); unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116; }
+@font-face { font-family: 'Manrope'; font-style: normal; font-weight: 700; font-display: swap; src: url('/assets/fonts/manrope-latin-700.woff2') format('woff2'); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root { color-scheme: light; accent-color: theme('colors.rust.dark'); }
+  html { -webkit-text-size-adjust: 100%; }
+  body { @apply bg-sand font-sans text-base leading-relaxed text-ink; }
+  :focus { outline: none; }
+  :focus-visible { outline: 2px solid theme('colors.rust.dark'); outline-offset: 3px; }
+  [tabindex='-1']:focus-visible { outline: none; }
+  [hidden] { display: none !important; }
+  a { @apply text-rust-deep underline; text-underline-offset: 0.2em; text-decoration-thickness: 1px; }
+}
+
+@layer components {
+  .skip-link { @apply absolute -top-20 left-4 z-50 rounded-btn bg-paper px-4 py-2 font-semibold text-ink no-underline shadow-pop; }
+  .skip-link:focus { @apply top-4; }
+
+  .admin-bar { @apply bg-forest text-cream; }
+  .admin-bar__in { @apply mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-3 px-4 py-3; }
+  .admin-brand { @apply font-display text-lg font-semibold uppercase tracking-brand text-cream no-underline; }
+  .admin-bar__user { @apply flex flex-wrap items-center gap-3 text-sm; }
+  .admin-bar__name { @apply font-semibold; }
+  .admin-link-light { @apply text-cream underline; }
+  .admin-bar :focus-visible { outline-color: theme('colors.gold'); }
+
+  .admin-main { @apply mx-auto w-full max-w-3xl px-4 py-8; }
+  .card { @apply rounded-card bg-paper p-6 shadow-card; }
+  .card-narrow { @apply mx-auto max-w-md; }
+  .h1 { @apply mb-4 font-display text-3xl font-semibold uppercase tracking-nav text-forest; }
+
+  .form { @apply mt-4 grid gap-4; }
+  .field label { @apply mb-1 block text-sm font-semibold text-ink; }
+  .field input { @apply block w-full rounded-btn border border-ink-soft bg-paper px-3 py-2 text-base text-ink; min-height: 44px; }
+  .hint { @apply mt-1 text-sm text-ink-soft; }
+
+  .btn { @apply inline-flex items-center justify-center rounded-btn px-5 py-2 font-display text-base font-semibold uppercase tracking-btn no-underline; min-height: 44px; }
+  .btn-primary { @apply bg-rust-dark text-paper; }
+  .btn-primary:hover { @apply bg-rust-deep; }
+  .btn-light { @apply border border-cream bg-transparent text-cream; min-height: 36px; padding: 0.25rem 0.9rem; }
+  .btn-light:hover { @apply bg-forest-deep; }
+
+  .alert { @apply rounded-btn px-3 py-2 text-sm font-semibold; }
+  .alert-error { @apply bg-[#fbe9e3] text-rust-deep; }
+  .alert-ok { @apply bg-[#e6efdd] text-forest; }
+  .back { @apply mt-6 text-sm; }
+}
