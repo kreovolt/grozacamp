@@ -5,6 +5,7 @@ namespace Groza\Tests\Unit\Seo;
 
 use Groza\Seo\Meta;
 use Groza\Tests\Support\TestApp;
+use Groza\View\View;
 use PHPUnit\Framework\TestCase;
 
 final class MetaTest extends TestCase
@@ -70,7 +71,7 @@ final class MetaTest extends TestCase
 
         $app = TestApp::make(['baseUrl' => self::BASE]);
         $app->store()->write('texts', ['rules.description' => $desc], 'test');
-        $html = (new GrozaViewView(dirname(__DIR__, 4) . '/templates', ['settings' => [], 'nav' => [], 'currentPath' => '/x/', 'env' => 'test', 'baseUrl' => self::BASE, 'metrikaId' => '', 'year' => '2027']))
+        $html = (new View(dirname(__DIR__, 4) . '/templates', ['settings' => [], 'nav' => [], 'currentPath' => '/x/', 'env' => 'test', 'baseUrl' => self::BASE, 'metrikaId' => '', 'year' => '2027']))
             ->render('layout', ['content' => '', 'page' => 'text', 'title' => 'Х', 'description' => $desc]);
         $this->assertMatchesRegularExpression('#<meta name="description" content="[^"]+' . preg_quote($ending, '#') . '…">#u', $html);
     }
