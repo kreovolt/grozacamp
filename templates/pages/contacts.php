@@ -12,10 +12,7 @@ use function Groza\View\e;
 use function Groza\View\icon;
 use function Groza\View\tel;
 
-$this->layout('layout', [
-    'title' => 'Контакты — детский лагерь «Гроза», Пермь',
-    'description' => 'Телефон, WhatsApp, почта и адрес офиса детского лагеря «Гроза» в Перми. Часы работы: Пн–Пт 10:00–19:00, Сб–Вс 12:00–17:00.',
-]);
+$this->layout('layout', ['page' => 'contacts']);
 
 $phone = trim((string) ($settings['phone'] ?? ''));
 $wa = preg_replace('/\D+/', '', (string) ($settings['whatsapp'] ?? '')) ?? '';

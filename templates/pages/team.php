@@ -9,10 +9,7 @@ use function Groza\View\e;
 use function Groza\View\image;
 use function Groza\View\picture;
 
-$this->layout('layout', [
-    'title' => 'Команда — детский лагерь «Гроза», Пермь',
-    'description' => 'Руководители, педагоги и вожатые детского лагеря «Гроза»: кто будет рядом с вашим ребёнком на смене.',
-]);
+$this->layout('layout', ['page' => 'team']);
 
 // Инициалы: «Фамилия Имя Отчество» → «ИФ»
 $initials = static function (string $name): string {

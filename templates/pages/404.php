@@ -10,7 +10,7 @@ use Groza\Support\Phone;
 use function Groza\View\e;
 use function Groza\View\tel;
 
-$this->layout('layout', ['title' => 'Страница не найдена — детский лагерь «Гроза», Пермь', 'noindex' => true]);
+$this->layout('layout', ['page' => 'not-found', 'noindex' => true]);
 $phone = trim((string) ($settings['phone'] ?? ''));
 ?>
 <section class="on-dark relative isolate overflow-hidden bg-forest text-cream" aria-labelledby="nf-title">

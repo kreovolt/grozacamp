@@ -1,15 +1,49 @@
 Options -Indexes
 DirectoryIndex index.php
 
+# --- Закрытое: работает и без mod_rewrite (mod_alias / mod_authz), регистр не важен --------------------------
+# Служебные папки проекта (если сайт лежит в одной общей папке с кодом)
+RedirectMatch 404 (?i)^/(app|config|storage|templates|vendor|seed|scripts|tests|frontend|node_modules|docs|content|tools|_source)(/|$)
+# Файлы и папки с точкой в начале имени; исключение — /.well-known/acme-challenge/ (проверка домена для HTTPS-сертификата)
+RedirectMatch 404 ^/(?:.*/)?\.(?!well-known/acme-challenge/)
+# Файлы сборки и документация в корне
+<FilesMatch "(?i)^(composer\.(json|lock)|package(-lock)?\.json|phpunit\.xml(\.dist)?|playwright\.config\.ts|tailwind\.config\.js|.+\.md)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+# Basic-авторизация тестового адреса: передать заголовок в PHP при работе через CGI/FastCGI
+<IfModule mod_setenvif.c>
+  SetEnvIf Authorization "(.+)" HTTP_AUTHORIZATION=$1
+</IfModule>
+
+# Статика с версией в адресе (?v=хеш) — кэш на год
+<IfModule mod_headers.c>
+  <If "%{REQUEST_URI} =~ m#^/assets/#">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </If>
+</IfModule>
+
 <IfModule mod_rewrite.c>
   RewriteEngine On
 
-  # Служебные папки проекта и файлы с точкой в начале имени недоступны снаружи
-  RewriteRule ^(app|config|storage|templates|vendor|seed|scripts|tests|frontend)(/|$) - [F,L]
-  RewriteRule (^|/)\. - [F,L]
+  # То же самое запретом (403), на случай если RedirectMatch на хостинге отключён
+  RewriteRule ^(app|config|storage|templates|vendor|seed|scripts|tests|frontend|node_modules)(/|$) - [F,NC,L]
+  RewriteRule (^|/)\.(?!well-known/acme-challenge/) - [F,NC,L]
+  RewriteRule ^(composer\.(json|lock)|package(-lock)?\.json|phpunit\.xml(\.dist)?|playwright\.config\.ts|tailwind\.config\.js|[^/]+\.md)$ - [F,NC,L]
 
   # Всё, что не файл и не папка, обрабатывает index.php
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule ^ index.php [L]
+</IfModule>
+
+# Без mod_rewrite адреса страниц всё равно приходят в index.php
+<IfModule !mod_rewrite.c>
+  FallbackResource /index.php
 </IfModule>

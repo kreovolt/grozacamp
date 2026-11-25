@@ -8,7 +8,7 @@ declare(strict_types=1);
 use function Groza\View\e;
 
 $isVacancy = ($form ?? 'booking') === 'vacancy';
-$this->layout('layout', ['title' => 'Спасибо — детский лагерь «Гроза», Пермь', 'noindex' => true]);
+$this->layout('layout', ['page' => 'thanks', 'noindex' => true]);
 ?>
 <div class="wrap py-16 desk:py-24">
   <h1 class="font-display text-[clamp(2.25rem,1.5rem+3vw,4rem)] font-bold uppercase leading-[1.02]"><?= e($isVacancy ? 'Спасибо! Мы свяжемся с вами' : 'Спасибо! Мы перезвоним') ?></h1>

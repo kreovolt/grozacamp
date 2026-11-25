@@ -18,10 +18,7 @@ use function Groza\View\e;
 use function Groza\View\photo;
 use function Groza\View\picture;
 
-$this->layout('layout', [
-    'title' => 'Вакансии — работа вожатым и инструктором в детском лагере «Гроза», Пермь',
-    'description' => 'Детский лагерь «Гроза» набирает вожатых, педагогов и инструкторов. Расскажите о себе в анкете, офис перезвонит.',
-]);
+$this->layout('layout', ['page' => 'vacancies']);
 
 $section = 'py-16 sm:py-20 desk:py-24';
 $shot = static function (string $key, string $sizes): string {

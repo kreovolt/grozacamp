@@ -34,8 +34,7 @@ final class ShiftPage
         }
 
         if ($shift === null) {
-            $redirects = require $this->app->config()['rootDir'] . '/config/redirects.php';
-            if (in_array($slug, $redirects['legacyShiftSlugs'] ?? [], true)) {
+            if (in_array($slug, $this->app->redirects()['legacyShiftSlugs'], true)) {
                 return Response::redirect('/booking/', 301);
             }
 

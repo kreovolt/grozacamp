@@ -13,7 +13,7 @@ declare(strict_types=1);
  */
 use function Groza\View\e;
 
-$this->layout('layout', ['title' => $title . ' — детский лагерь «Гроза», Пермь', 'description' => $description]);
+$this->layout('layout', ['page' => 'svedeniya', 'title' => $title, 'description' => $description]);
 $withToc = ($toc ?? []) !== [];
 ?>
 <section class="on-dark relative isolate overflow-hidden bg-forest text-cream" data-block="hero" aria-labelledby="sved-title">

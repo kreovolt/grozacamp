@@ -41,6 +41,15 @@ final class Request
                 $headers[$name] = (string) $_SERVER[$key];
             }
         }
+        // Basic-авторизация: PHP кладёт её в PHP_AUTH_*, а под CGI/FastCGI заголовок приходит через переменную окружения
+        if (!isset($headers['AUTHORIZATION'])) {
+            $auth = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? null;
+            if (is_string($auth) && $auth !== '') {
+                $headers['AUTHORIZATION'] = $auth;
+            } elseif (isset($_SERVER['PHP_AUTH_USER'])) {
+                $headers['AUTHORIZATION'] = 'Basic ' . base64_encode($_SERVER['PHP_AUTH_USER'] . ':' . ($_SERVER['PHP_AUTH_PW'] ?? ''));
+            }
+        }
         $uri = (string) ($_SERVER['REQUEST_URI'] ?? '/');
         $path = rawurldecode((string) (parse_url($uri, PHP_URL_PATH) ?? '/'));
 
@@ -108,6 +117,12 @@ final class Request
     public function header(string $name): ?string
     {
         return $this->headers[strtolower($name)] ?? null;
+    }
+
+    /** Хост запроса в нижнем регистре (с портом, если он указан); пусто, если заголовка нет. */
+    public function host(): string
+    {
+        return strtolower(trim((string) $this->header('Host')));
     }
 
     public function ip(): string

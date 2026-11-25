@@ -8,7 +8,7 @@ declare(strict_types=1);
 use function Groza\View\e;
 use function Groza\View\pending;
 
-$this->layout('layout', ['title' => 'Дизайн-система — «Гроза»', 'noindex' => true]);
+$this->layout('layout', ['page' => 'styleguide', 'title' => 'Дизайн-система', 'noindex' => true]);
 
 $photo = static fn (string $label, string $tone): string =>
     '<div class="flex h-full w-full items-end p-3 ' . $tone . '"><span class="font-display text-xs uppercase tracking-[0.16em] text-paper/80">' . e($label) . '</span></div>';

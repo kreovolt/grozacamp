@@ -13,7 +13,7 @@ use function Groza\View\e;
 use function Groza\View\icon;
 use function Groza\View\pending;
 
-$this->layout('layout', ['title' => $title . ' — детский лагерь «Гроза», Пермь', 'description' => $description]);
+$this->layout('layout', ['page' => 'text', 'title' => $title, 'description' => $description]);
 
 $size = static function (int $bytes): string {
     if ($bytes <= 0) {

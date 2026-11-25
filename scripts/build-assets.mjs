@@ -21,7 +21,7 @@ const watchMode = process.argv.includes('--watch');
 const CSS = [['frontend/css/app.css', 'css/app.css'], ['frontend/css/admin.css', 'css/admin.css']]
   .filter(([input]) => existsSync(join(root, input)));
 // Точки входа JS: остальные модули (nav.js, forms.js, motion.js…) подключаются через import
-const JS = ['main', 'admin'].map((n) => `frontend/js/${n}.js`).filter((f) => existsSync(join(root, f)));
+const JS = ['main', 'metrika', 'admin'].map((n) => `frontend/js/${n}.js`).filter((f) => existsSync(join(root, f)));
 
 const FONTS = [
   ['oswald', [500, 600, 700]],

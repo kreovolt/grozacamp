@@ -22,11 +22,7 @@ use function Groza\View\e;
 use function Groza\View\icon;
 use function Groza\View\tel;
 
-$this->layout('layout', [
-    'title' => 'Купить путёвку — детский лагерь «Гроза», Пермь',
-    'description' => 'Выберите смену детского лагеря «Гроза» и оставьте заявку: офис перезвонит в рабочее время. '
-        . 'Можно позвонить или написать в WhatsApp. Проживание, питание и трансфер из Перми входят в стоимость.',
-]);
+$this->layout('layout', ['page' => 'booking']);
 
 $section = 'py-16 sm:py-20 desk:py-24';
 $phone = trim((string) ($settings['phone'] ?? ''));

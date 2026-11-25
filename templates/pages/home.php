@@ -28,10 +28,7 @@ use function Groza\View\photo;
 use function Groza\View\picture;
 use function Groza\View\tel;
 
-$this->layout('layout', [
-    'description' => 'Детский лагерь «Гроза» в Пермском крае: походы, спорт, командные игры и вечера у костра. '
-        . 'Отряды до 24 детей, с каждым — двое вожатых. Трансфер из Перми и питание пять раз в день входят в стоимость.',
-]);
+$this->layout('layout', ['page' => 'home']);
 
 $section = 'py-16 sm:py-20 desk:py-24';
 // Фото из библиотеки: подпись alt — описание снимка из config/photos.json (один источник для всех страниц)

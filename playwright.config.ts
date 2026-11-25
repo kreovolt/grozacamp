@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 import { resolve } from 'node:path';
 
 const PORT = 8099;
+const PORT_METRIKA = 8098;
 
 // Сквозные тесты: встроенный сервер PHP в окружении test со своим каталогом данных storage/test;
 // перед прогоном globalSetup кладёт туда примерные данные seed/demo.
@@ -18,7 +19,8 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
-  webServer: {
+  webServer: [
+    {
     command: `node scripts/php.mjs -S 127.0.0.1:${PORT} -t public public/index.php`,
     url: `http://127.0.0.1:${PORT}/`,
     reuseExistingServer: !process.env.CI,
@@ -29,5 +31,19 @@ export default defineConfig({
       GROZA_ENV: 'test',
       GROZA_STORAGE_DIR: resolve('storage/test'),
     },
-  },
+    },
+    // Второй сервер — с подключённой Метрикой (счётчик-образец): уведомление о cookie и CSP
+    {
+      command: `node scripts/php.mjs -S 127.0.0.1:${PORT_METRIKA} -t public public/index.php`,
+      url: `http://127.0.0.1:${PORT_METRIKA}/`,
+      reuseExistingServer: false, // у сервера своё окружение (Метрика): чужой запущенный нам не подходит
+      timeout: 30_000,
+      stderr: 'ignore',
+      env: {
+        GROZA_ENV: 'test',
+        GROZA_STORAGE_DIR: resolve('storage/test'),
+        GROZA_METRIKA_ID: '12345678',
+      },
+    },
+  ],
 });

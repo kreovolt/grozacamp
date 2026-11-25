@@ -11,6 +11,9 @@ final class Router
     /** @var array<string,string> */
     private array $redirects = [];
 
+    /** @var list<string> */
+    private array $gone = [];
+
     /** @var callable|null обработчик 404 (страница «не найдено»); без него — короткий текст */
     private $notFound = null;
 
@@ -38,14 +41,25 @@ final class Router
         }
     }
 
+    /** Адреса старого сайта, которых нет: «/dir/» закрывает и всё внутри, «/file.php» — только сам файл. Отвечают 404 на любой метод. @param list<string> $paths */
+    public function gone(array $paths): void
+    {
+        $this->gone = array_values(array_merge($this->gone, $paths));
+    }
+
     public function dispatch(Request $r): Response
     {
         $path = $r->path();
         $method = $r->method() === 'HEAD' ? 'GET' : $r->method();
 
-        $target = $this->redirects[$path] ?? $this->redirects[$path . '/'] ?? null;
+        if ($this->isGone($path)) {
+            return $this->notFound !== null ? ($this->notFound)($r, []) : Response::html('Not Found', 404);
+        }
+
+        // Переадресации — только для чтения страниц; запись (POST и др.) идёт обычным маршрутом
+        $target = $method === 'GET' ? ($this->redirects[$path] ?? $this->redirects[$path . '/'] ?? null) : null;
         if ($target !== null) {
-            return Response::redirect($target, 301);
+            return Response::redirect(self::withQuery($target, $r->queryString()), 301);
         }
 
         $allowed = [];
@@ -73,6 +87,32 @@ final class Router
         return $this->notFound !== null ? ($this->notFound)($r, []) : Response::html('Not Found', 404);
     }
 
+    private function isGone(string $path): bool
+    {
+        foreach ($this->gone as $entry) {
+            if ($path === $entry || ($path . '/' === $entry) || (str_ends_with($entry, '/') && str_starts_with($path, $entry))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** Строка запроса уходит в цель до «#якоря»: /faq/?a=1 → /info/?a=1#faq. */
+    private static function withQuery(string $target, string $query): string
+    {
+        if ($query === '') {
+            return $target;
+        }
+        $hash = '';
+        if (($pos = strpos($target, '#')) !== false) {
+            $hash = substr($target, $pos);
+            $target = substr($target, 0, $pos);
+        }
+
+        return $target . (str_contains($target, '?') ? '&' : '?') . $query . $hash;
+    }
+
     private function add(string $method, string $pattern, callable $handler): void
     {
         $regex = preg_replace_callback(
@@ -80,7 +120,7 @@ final class Router
             static fn (array $m): string => '(?P<' . $m[1] . '>[a-z0-9-]+)',
             preg_quote($pattern, '#')
         );
-        $this->routes[] = [$method, '#^' . $regex . '$#', $handler];
+        $this->routes[] = [$method, '#^' . $regex . '$#D', $handler];
     }
 
     private function matchesAny(string $path): bool

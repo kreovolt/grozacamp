@@ -84,7 +84,7 @@ final class LayoutTest extends TestCase
         $this->assertMatchesRegularExpression('#<link rel="stylesheet" href="/assets/css/app\.css\?v=[a-f0-9]{10}">#', $html);
         $this->assertMatchesRegularExpression('#<script src="/assets/js/main\.js\?v=[a-f0-9]{10}" defer></script>#', $html);
         $this->assertSame(2, substr_count($html, 'rel="preload"'), 'предзагрузка только двух шрифтов');
-        $this->assertDoesNotMatchRegularExpression('#(src|href)="(https?:)?//(?!vk\.com|wa\.me|www\.youtube\.com)#', $html, 'никаких внешних ресурсов, кроме ссылок на соцсети');
+        $this->assertDoesNotMatchRegularExpression('#(src|href)="(https?:)?//(?!vk\.com|wa\.me|www\.youtube\.com|127\.0\.0\.1)#', $html, 'никаких внешних ресурсов, кроме ссылок на соцсети и собственного канонического адреса');
     }
 
     public function test_breadcrumbs_on_inner_svedeniya_page(): void

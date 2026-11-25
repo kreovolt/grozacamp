@@ -14,11 +14,7 @@ use function Groza\View\pending;
 use function Groza\View\photo;
 use function Groza\View\picture;
 
-$this->layout('layout', [
-    'title' => 'Информация для родителей — детский лагерь «Гроза», Пермь',
-    'description' => 'Что взять с собой, какие документы нужны, как передать лекарства, как связаться с ребёнком и где сбор на трансфер. '
-        . 'Всё, что стоит узнать до первой поездки в детский лагерь «Гроза».',
-]);
+$this->layout('layout', ['page' => 'info']);
 
 $shot = static function (string $key, string $sizes): string {
     $img = photo($key);

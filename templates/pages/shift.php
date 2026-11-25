@@ -13,6 +13,7 @@ declare(strict_types=1);
  */
 use Groza\Domain\Shifts;
 use Groza\Pages\HomePage;
+use Groza\Seo\JsonLd;
 use Groza\Support\Dates;
 use Groza\Support\Phone;
 
@@ -72,9 +73,11 @@ $bookLabel = $soon ? 'Оставить заявку' : 'Забронироват
 
 $desc = trim((string) ($shift['lead'] ?? ''));
 $this->layout('layout', [
-    'title' => $title . ($start !== '' && $end !== '' ? ', ' . Dates::range($start, $end) : '') . ' — детский лагерь «Гроза», Пермь',
+    'page' => 'shift',
+    'title' => $title . ($start !== '' && $end !== '' ? ', ' . Dates::range($start, $end) : ''),
     'description' => $desc !== '' ? $desc : 'Смена «' . $title . '» детского лагеря «Гроза» в Пермском крае.',
     'noindex' => $past,
+    'jsonLd' => $past ? [] : [JsonLd::event($shift, $venue, $baseUrl)],
 ]);
 
 $section = 'py-16 sm:py-20 desk:py-24';

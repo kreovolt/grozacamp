@@ -7,7 +7,7 @@ declare(strict_types=1);
  */
 use function Groza\View\e;
 
-$this->layout('layout', ['title' => 'Не удалось отправить — детский лагерь «Гроза»', 'noindex' => true]);
+$this->layout('layout', ['page' => 'form-error', 'noindex' => true]);
 $lead = ($status ?? 503) === 429 ? 'Слишком много попыток подряд.' : 'Не получилось отправить форму.';
 ?>
 <div class="wrap py-16 desk:py-24">

@@ -11,6 +11,8 @@ use Groza\Pages\FormController;
 use Groza\Pages\HomePage;
 use Groza\Pages\InfoPage;
 use Groza\Pages\NotFoundPage;
+use Groza\Pages\RobotsController;
+use Groza\Pages\SitemapController;
 use Groza\Pages\ShiftPage;
 use Groza\Pages\SvedeniyaPage;
 use Groza\Pages\TeamPage;
@@ -34,6 +36,8 @@ return static function (Router $router, App $app): void {
     $router->get('/svedeniya/uslugi/', SvedeniyaPage::uslugi($app));
     $router->get('/svedeniya/dostupnaya-sreda/', SvedeniyaPage::dostupnaya($app));
     $router->get('/svedeniya/inaya-informaciya/', SvedeniyaPage::inaya($app));
+    $router->get('/robots.txt', new RobotsController($app));
+    $router->get('/sitemap.xml', new SitemapController($app));
     $router->notFound(new NotFoundPage($app));
 
     $forms = new FormController($app);

@@ -11,6 +11,7 @@ use Groza\Http\Request;
 use Groza\Http\Response;
 use Groza\Forms\FormGuard;
 use Groza\Http\Router;
+use Groza\Http\SecurityHeaders;
 use Groza\Mail\ArrayTransport;
 use Groza\Mail\FileTransport;
 use Groza\Mail\Mailer;
@@ -39,6 +40,9 @@ final class App
     private function __construct(private array $config, private Clock $clock)
     {
         $this->router = new Router();
+        $redirects = $this->redirects();
+        $this->router->redirects($redirects['map']);
+        $this->router->gone($redirects['gone']);
         $register = require $config['rootDir'] . '/config/routes.php';
         $register($this->router, $this);
     }
@@ -72,12 +76,80 @@ final class App
         }
     }
 
+    /** Каждый ответ — страница, ошибка или переадресация — получает заголовки безопасности. */
     public function handle(Request $r): Response
     {
         $this->currentPath = $r->path();
         $this->view = null; // глобальные переменные шаблонов — свежие на каждый запрос
 
-        return $this->router->dispatch($r);
+        $response = $this->canonicalHost($r) ?? $this->stagingGate($r) ?? $this->router->dispatch($r);
+        if (str_starts_with($r->path(), '/admin/')) {
+            $response = $response->withHeader('X-Robots-Tag', 'noindex, nofollow');
+        }
+
+        return SecurityHeaders::apply($response, ['env' => $this->config['env'], 'metrikaId' => $this->metrikaId()]);
+    }
+
+    /** Адрес с www. ведёт на основной (baseUrl) с тем же путём и строкой запроса. */
+    private function canonicalHost(Request $r): ?Response
+    {
+        $base = (string) $this->config['baseUrl'];
+        $parts = parse_url($base);
+        $host = strtolower((string) ($parts['host'] ?? ''));
+        if ($host === '' || $r->host() === '') {
+            return null;
+        }
+        $canonical = $host . (isset($parts['port']) ? ':' . $parts['port'] : '');
+        if ($r->host() !== 'www.' . $canonical) {
+            return null;
+        }
+        $path = implode('/', array_map('rawurlencode', explode('/', $r->path())));
+        $query = $r->queryString();
+
+        return Response::redirect(rtrim($base, '/') . $path . ($query !== '' ? '?' . $query : ''), 301);
+    }
+
+    /** Тестовый адрес закрыт паролем. Логин и пароль не заданы — закрыт для всех. */
+    private function stagingGate(Request $r): ?Response
+    {
+        if ($this->config['env'] !== 'staging') {
+            return null;
+        }
+        $user = (string) ($this->config['staging']['user'] ?? '');
+        $pass = (string) ($this->config['staging']['pass'] ?? '');
+        $header = (string) $r->header('Authorization');
+        if ($user !== '' && $pass !== '' && stripos($header, 'Basic ') === 0) {
+            $given = explode(':', (string) base64_decode(substr($header, 6), true), 2);
+            if (count($given) === 2 && hash_equals($user, $given[0]) && hash_equals($pass, $given[1])) {
+                return null;
+            }
+        }
+
+        return Response::html('Требуется авторизация', 401)->withHeader('WWW-Authenticate', 'Basic realm="Groza staging", charset="UTF-8"');
+    }
+
+    /**
+     * Переадресации и «несуществующие» адреса старого сайта (config/redirects.php) — единый загрузчик.
+     *
+     * @return array{map:array<string,string>, legacyShiftSlugs:list<string>, gone:list<string>}
+     */
+    public function redirects(): array
+    {
+        $cfg = (array) require $this->config['rootDir'] . '/config/redirects.php';
+
+        return [
+            'map' => (array) ($cfg['map'] ?? []),
+            'legacyShiftSlugs' => array_values((array) ($cfg['legacyShiftSlugs'] ?? [])),
+            'gone' => array_values((array) ($cfg['gone'] ?? [])),
+        ];
+    }
+
+    /** Номер счётчика Метрики: настройка из админки, иначе config; только цифры (идёт в разметку и CSP). Пусто — Метрика выключена. */
+    public function metrikaId(): string
+    {
+        $id = trim((string) ($this->settings()['metrikaId'] ?? '')) ?: trim((string) $this->config['metrikaId']);
+
+        return preg_match('/^[0-9]{1,12}$/', $id) === 1 ? $id : '';
     }
 
     /** @return array<string,mixed> */
@@ -190,6 +262,8 @@ final class App
             'nav' => Nav::main(),
             'currentPath' => $this->currentPath,
             'env' => $this->config['env'],
+            'baseUrl' => rtrim((string) $this->config['baseUrl'], '/'),
+            'metrikaId' => $this->metrikaId(),
             'year' => $this->clock->now()->format('Y'),
         ]);
     }
