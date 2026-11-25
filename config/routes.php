@@ -59,8 +59,9 @@ return static function (Router $router, App $app): void {
     $router->post('/admin/password/', [$auth, 'changePassword']);
 
     // Редактор списков. Порядок важен: сначала точные адреса (статус смены, «new», действия над записью),
-    // потом общий /admin/{collection}/{id}/. Новые разделы админки с одним сегментом (/admin/settings/ и т. п.)
-    // регистрируются ВЫШЕ этого блока, иначе их перехватит {collection}.
+    // потом общий /admin/{collection}/{id}/. ВСЕ маршруты админки с фиксированным первым сегментом
+    // (/admin/settings/, а также двухсегментные вроде /admin/texts/{group}/ и /admin/history/{name}/)
+    // регистрируются ВЫШЕ этого блока, иначе их перехватит {collection}/{id}.
     $collections = new CollectionController($app);
     $router->post('/admin/shifts/{id}/status/', [$collections, 'status']);
     $router->get('/admin/{collection}/', [$collections, 'list']);

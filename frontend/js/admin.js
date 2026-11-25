@@ -111,11 +111,24 @@ function initDraft(form) {
   const key = DRAFT_PREFIX + location.pathname;
   const hashField = form.elements.namedItem('_hash');
   const server = snapshot(form);
+  // Форма показана после отказа (409/422): значения в ней — несохранённый ввод человека, а не данные сервера.
+  // Такой черновик не удаляем, пока ввод не сохранён (иначе при истёкшей сессии текст пропал бы).
+  const unsaved = form.hasAttribute('data-draft-unsaved');
 
   // Успешное сохранение: сервер вернул ?saved=1 — черновик (и черновик «новой записи») больше не нужен
-  if (/[?&]saved=1(&|$)/.test(location.search)) {
+  // Один раз: адрес очищается от saved/created, чтобы обновление страницы потом не стирало новый ввод.
+  const params = new URLSearchParams(location.search);
+  if (params.get('saved') === '1') {
     remove(key);
-    remove(DRAFT_PREFIX + location.pathname.replace(/\/[a-f0-9]{12}\/$/, '/new/'));
+    if (params.get('created') === '1') remove(DRAFT_PREFIX + location.pathname.replace(/\/[a-f0-9]{12}\/$/, '/new/'));
+    params.delete('saved');
+    params.delete('created');
+    const rest = params.toString();
+    try {
+      window.history.replaceState(null, '', location.pathname + (rest ? '?' + rest : '') + location.hash);
+    } catch (e) {
+      /* ничего */
+    }
   }
 
   const draft = read(key);
@@ -124,13 +137,14 @@ function initDraft(form) {
     apply(form, draft.values);
     // Черновик писался при том состоянии файла, которое было открыто тогда: если за это время кто-то сохранил,
     // сервер ответит «кто-то сохранил» и покажет введённое, а не затрёт чужое молча.
-    if (hashField && typeof draft.hash === 'string' && draft.hash !== '') hashField.value = draft.hash;
+    // (для новой записи чужое сохранение ничего не перетирает — берём свежий хеш)
+    if (hashField && !/\/new\/$/.test(location.pathname) && typeof draft.hash === 'string' && draft.hash !== '') hashField.value = draft.hash;
     if (notice) notice.hidden = false;
   }
 
   const persist = () => {
     const now = snapshot(form);
-    if (same(now, server)) {
+    if (!unsaved && same(now, server)) {
       remove(key);
       return;
     }
@@ -187,7 +201,9 @@ function initFiles(root) {
 function focusProblem() {
   const first = document.querySelector('.has-error [aria-invalid="true"]');
   if (first) {
-    first.focus();
+    // у группы радиокнопок ошибка помечена на fieldset: фокус — на выбранную (или первую) кнопку внутри
+    const target = first.tagName === 'FIELDSET' ? first.querySelector('input:checked') || first.querySelector('input') : first;
+    (target || first).focus();
     return;
   }
   const banner = document.getElementById('form-banner') || document.getElementById('error-summary');

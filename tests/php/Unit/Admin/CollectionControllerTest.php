@@ -140,7 +140,7 @@ final class CollectionControllerTest extends TestCase
         $this->assertSame(10, $new['days']);
         $this->assertSame('olga', $new['updatedBy']);
         $this->assertNotEmpty($new['updatedAt']);
-        $this->assertSame('/admin/shifts/' . $new['id'] . '/?saved=1', $res->header('Location'));
+        $this->assertSame('/admin/shifts/' . $new['id'] . '/?saved=1&created=1', $res->header('Location'));
         $this->assertContains('shifts.create', $this->auditActions());
         $this->assertSame($new['id'], $this->app->audit()->recent(1)[0]['target']);
         $this->assertSame('olga', $this->app->audit()->recent(1)[0]['actor']);
@@ -262,24 +262,34 @@ final class CollectionControllerTest extends TestCase
 
     public function test_move_up_swaps_order(): void
     {
-        $ids = array_column($this->items(), 'id');
-        $res = AdminHttp::postWithToken($this->app, '/admin/shifts/' . $ids[1] . '/move/', ['dir' => 'up']);
+        $ids = array_column($this->items('venues'), 'id');
+        $res = AdminHttp::postWithToken($this->app, '/admin/venues/' . $ids[1] . '/move/', ['dir' => 'up']);
 
         $this->assertSame(303, $res->status());
-        $this->assertSame([$ids[1], $ids[0], $ids[2], $ids[3]], array_column($this->items(), 'id'));
-        $this->assertSame('shifts.move', $this->app->audit()->recent(1)[0]['action']);
+        $this->assertSame([$ids[1], $ids[0]], array_column($this->items('venues'), 'id'));
+        $this->assertSame('venues.move', $this->app->audit()->recent(1)[0]['action']);
 
-        AdminHttp::postWithToken($this->app, '/admin/shifts/' . $ids[1] . '/move/', ['dir' => 'down']);
-        $this->assertSame($ids, array_column($this->items(), 'id'));
+        AdminHttp::postWithToken($this->app, '/admin/venues/' . $ids[1] . '/move/', ['dir' => 'down']);
+        $this->assertSame($ids, array_column($this->items('venues'), 'id'));
     }
 
     public function test_move_at_the_edge_changes_nothing(): void
     {
+        $hash = $this->hash('venues');
+        $first = $this->items('venues')[0]['id'];
+        $this->assertSame(303, AdminHttp::postWithToken($this->app, "/admin/venues/$first/move/", ['dir' => 'up'])->status());
+        $this->assertSame($hash, $this->hash('venues'));
+        $this->assertSame(422, AdminHttp::postWithToken($this->app, "/admin/venues/$first/move/", ['dir' => 'sideways'])->status());
+    }
+
+    public function test_shifts_are_not_orderable(): void
+    {
         $hash = $this->hash();
         $first = $this->items()[0]['id'];
-        $this->assertSame(303, AdminHttp::postWithToken($this->app, "/admin/shifts/$first/move/", ['dir' => 'up'])->status());
+        $this->assertSame(422, AdminHttp::postWithToken($this->app, "/admin/shifts/$first/move/", ['dir' => 'down'])->status());
         $this->assertSame($hash, $this->hash());
-        $this->assertSame(422, AdminHttp::postWithToken($this->app, "/admin/shifts/$first/move/", ['dir' => 'sideways'])->status());
+        $this->assertStringNotContainsString('name="dir"', AdminHttp::get($this->app, '/admin/shifts/')->body());
+        $this->assertStringContainsString('name="dir"', AdminHttp::get($this->app, '/admin/venues/')->body());
     }
 
     public function test_move_renumbers_order_field(): void
@@ -339,7 +349,7 @@ final class CollectionControllerTest extends TestCase
     {
         $this->assertSame(404, AdminHttp::get($this->app, '/admin/shifts/zzzzzzzzzzzz/')->status());
         $this->assertSame(404, AdminHttp::get($this->app, '/admin/shifts/aaaaaaaaaaaa/')->status());
-        $this->assertSame(404, $this->save('aaaaaaaaaaaa', $this->valid())->status());
+        $this->assertSame(404, AdminHttp::get($this->app, '/admin/shifts/aaaaaaaaaaaa/delete/')->status());
         $this->assertSame(404, $this->save('not-an-id', $this->valid())->status());
     }
 
@@ -386,7 +396,6 @@ final class CollectionControllerTest extends TestCase
         $this->assertSame(1, preg_match_all('#value="' . $s['status'] . '"[^>]*aria-pressed="true"#', $body));
         $this->assertStringContainsString('href="/admin/shifts/new/"', $body);
         $this->assertStringContainsString('href="/admin/shifts/' . $s['id'] . '/"', $body);
-        $this->assertStringContainsString('name="dir" value="up"', $body);
         $this->assertStringContainsString('/delete/', $body);
         $this->assertStringContainsString('name="_csrf"', $body);
     }
@@ -557,16 +566,78 @@ final class CollectionControllerTest extends TestCase
         $this->assertSame($stored, $this->shift($s['id'])['photo']);
     }
 
-    public function test_conflict_deletes_just_uploaded_file(): void
+    public function test_write_time_conflict_deletes_just_uploaded_file(): void
+    {
+        // Гонка: хеш при проверке верный, но пока файл принимается, кто-то сохраняет документы
+        $app = $this->app;
+        $app->setUploads(new Uploads(
+            $this->uploadsDir,
+            '/uploads',
+            new ImageProcessor(),
+            10485760,
+            20971520,
+            static fn (string $f): bool => true,
+            static function (string $a, string $b) use ($app): bool {
+                $data = $app->store()->read('documents');
+                $data['items'][1]['title'] = 'Чужая правка в момент загрузки';
+                $app->store()->write('documents', $data, 'other');
+
+                return copy($a, $b);
+            }
+        ));
+        $doc = $this->items('documents')[0];
+        $other = $this->items('documents')[1]['title'];
+        $post = ['_hash' => $this->hash('documents'), 'title' => $doc['title'], 'section' => $doc['section'], 'order' => '10'];
+
+        $res = $this->save($doc['id'], $post, ['file' => $this->upload('real.pdf', 'Устав.pdf')], 'documents');
+
+        $this->assertSame(409, $res->status());
+        $this->assertStringContainsString('Пока вы редактировали, кто-то сохранил изменения', $res->body());
+        $this->assertSame([], $this->uploadedFiles(), 'только что загруженный файл удалён');
+        $this->assertSame('Чужая правка в момент загрузки', $this->items('documents')[1]['title']);
+        $this->assertNotSame($other, $this->items('documents')[1]['title']);
+        $this->assertSame($doc['file'], $this->items('documents')[0]['file']);
+    }
+
+    public function test_422_keeps_submitted_hash_so_interleaved_change_gives_409(): void
     {
         $s = $this->items()[0];
-        $stale = $this->hash();
-        $this->save('new', $this->valid(['title' => 'Чужая', '_hash' => $stale]));
+        $h0 = $this->hash();
+        $res = $this->save($s['id'], $this->valid(['title' => '', '_hash' => $h0]));
+        $this->assertSame(422, $res->status());
 
-        // Гонка: _hash совпал при проверке, но файл изменили до записи — эмулируем через подмену хранилища ниже
-        $res = $this->save($s['id'], $this->valid(['_hash' => $stale]), ['photo' => $this->upload('small.jpg', 'a.jpg')]);
+        // пока форма с ошибкой открыта, с телефона переключили статус другой смены
+        $other = $this->items()[1]['id'];
+        AdminHttp::postWithToken($this->app, "/admin/shifts/$other/status/", ['status' => 'closed']);
+        $this->assertNotSame($h0, $this->hash());
+        $this->assertStringContainsString('name="_hash" value="' . $h0 . '"', $res->body(), 'в форме с ошибкой — прежний _hash');
+
+        $again = $this->save($s['id'], $this->valid(['_hash' => $h0]));
+        $this->assertSame(409, $again->status());
+        $this->assertSame('closed', $this->shift($other)['status'], 'чужое переключение не затёрто');
+        $this->assertStringContainsString('name="_hash" value="' . $this->hash() . '"', $again->body(), 'после 409 — свежий');
+    }
+
+    public function test_record_deleted_while_editing_shows_values_not_bare_404(): void
+    {
+        $s = $this->items()[0];
+        AdminHttp::postWithToken($this->app, '/admin/shifts/' . $s['id'] . '/delete/', ['confirm' => '1']);
+        $res = $this->save($s['id'], $this->valid(['title' => 'Моя правка', 'body' => 'Мой длинный текст']));
+
         $this->assertSame(409, $res->status());
-        $this->assertSame([], $this->uploadedFiles());
+        $this->assertStringContainsString('Эту запись удалили, пока вы её редактировали', $res->body());
+        $this->assertStringContainsString('Моя правка', $res->body());
+        $this->assertStringContainsString('Мой длинный текст', $res->body());
+        $this->assertStringContainsString('action="/admin/shifts/new/"', $res->body());
+        $this->assertStringContainsString('data-draft-unsaved', $res->body());
+    }
+
+    public function test_unsaved_marker_only_on_rerendered_forms(): void
+    {
+        $s = $this->items()[0];
+        $this->assertStringNotContainsString('data-draft-unsaved', AdminHttp::get($this->app, '/admin/shifts/' . $s['id'] . '/')->body());
+        $this->assertStringContainsString('data-draft-unsaved', $this->save($s['id'], $this->valid(['title' => '']))->body());
+        $this->assertStringContainsString('data-draft-unsaved', $this->save($s['id'], $this->valid(['_hash' => 'stale']))->body());
     }
 
     public function test_old_file_deleted_only_after_successful_save(): void

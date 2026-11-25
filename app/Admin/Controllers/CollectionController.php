@@ -27,6 +27,7 @@ use Groza\Support\Csrf;
  */
 final class CollectionController
 {
+    public const MSG_DELETED = 'Эту запись удалили, пока вы её редактировали. Ваши данные ниже — если они нужны, нажмите «Сохранить»: запись будет создана заново.';
     public const MSG_CONFLICT = 'Пока вы редактировали, кто-то сохранил изменения. Ваши данные ниже — проверьте и сохраните ещё раз.';
     private const ID = '/^[a-f0-9]{12}$/';
     private const RETRIES = 3;
@@ -49,6 +50,7 @@ final class CollectionController
         }
         $def = Collections::get($name);
         $isShifts = $name === 'shifts';
+        $orderable = ($def['orderable'] ?? true) !== false;
         $rows = [];
         $items = $this->ordered($name, $def);
         foreach ($items as $i => $item) {
@@ -68,6 +70,7 @@ final class CollectionController
             'collection' => $name,
             'def' => $def,
             'rows' => $rows,
+            'orderable' => $orderable,
             'statusOptions' => $isShifts ? Shifts::STATUS_LABELS : null,
             'flash' => $flash,
         ]);
@@ -127,7 +130,8 @@ final class CollectionController
                 }
             }
             if ($index === null) {
-                return $this->notFound();
+                // Запись удалили, пока её правили: введённое не теряем — форма предлагает создать её заново
+                return $this->editPage($name, 'new', $this->displayValues($def, $r->allPost(), []), [], 409, self::MSG_DELETED);
             }
         }
         $display = $this->displayValues($def, $r->allPost(), $existing);
@@ -149,14 +153,14 @@ final class CollectionController
             $errors = $this->uniqueSlug($def, $items, $data, $id);
         }
         if ($errors) {
-            return $this->editPage($name, $id, $display, $errors, 422);
+            return $this->editPage($name, $id, $display, $errors, 422, null, false, $postedHash);
         }
 
         // 2. Всё верно — только теперь принимаем файлы (описание делает сервер)
         $created = [];
         $uploadErrors = $this->storeUploads($def, $pending, $data, $created);
         if ($uploadErrors) {
-            return $this->editPage($name, $id, $display, $uploadErrors, 422);
+            return $this->editPage($name, $id, $display, $uploadErrors, 422, null, false, $postedHash);
         }
 
         // 3. Запись с проверкой хеша
@@ -184,7 +188,7 @@ final class CollectionController
         $this->discard(array_diff($this->fileRefs($def, $existing), $this->fileRefs($def, $record)));
         $this->app->audit()->record($actor, $name . ($isNew ? '.create' : '.update'), $record['id']);
 
-        return Response::redirect('/admin/' . $name . '/' . $record['id'] . '/?saved=1', 303);
+        return Response::redirect('/admin/' . $name . '/' . $record['id'] . '/?saved=1' . ($isNew ? '&created=1' : ''), 303);
     }
 
     /** Страница «Удалить?». Сам запрос на удаление — только POST. @param array<string,string> $params */
@@ -246,6 +250,9 @@ final class CollectionController
             return $this->badRequest('Не понятно, куда переместить запись.');
         }
         $def = Collections::get($name);
+        if (($def['orderable'] ?? true) === false) {
+            return $this->badRequest('У этого раздела порядок задаётся датами, переставлять не нужно.');
+        }
         $hasOrder = in_array('order', array_column($def['fields'], 'name'), true);
         $moved = $this->mutate($name, function (array $items) use ($id, $dir, $hasOrder): ?array {
             if ($hasOrder) { // порядок задаёт поле order (шаг 10), читаем по нему
@@ -316,7 +323,7 @@ final class CollectionController
      * @param array<string,mixed> $values
      * @param array<string,string> $errors
      */
-    private function editPage(string $name, string $id, array $values, array $errors, int $status, ?string $banner = null, bool $saved = false): Response
+    private function editPage(string $name, string $id, array $values, array $errors, int $status, ?string $banner = null, bool $saved = false, ?string $hash = null): Response
     {
         $def = Collections::get($name);
         $isNew = $id === 'new';
@@ -337,7 +344,9 @@ final class CollectionController
             'isNew' => $isNew,
             'heading' => $isNew ? 'Новая запись' : $this->itemTitle($def, $item),
             'form' => $renderer->render($def, $values, $errors),
-            'hash' => $this->app->store()->hash($name),
+            // 422: тот же _hash, что прислан (чужая правка между отправками должна дать 409); 409 и открытие — свежий
+            'hash' => $hash ?? $this->app->store()->hash($name),
+            'unsaved' => $status !== 200,
             'summary' => $summary,
             'banner' => $banner,
             'saved' => $saved,

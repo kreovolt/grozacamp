@@ -83,7 +83,7 @@ test('черновик: набранное в «Описание» возвра�
   await expect(page.getByText('Восстановлен черновик')).toBeVisible();
 
   await page.getByRole('button', { name: 'Сохранить' }).click();
-  await expect(page).toHaveURL(/\?saved=1$/);
+  await expect(page.locator('.alert-ok')).toContainText('Сохранено');
   await expect(page.getByRole('status').first()).toContainText('Сохранено');
   await expect(page.getByRole('link', { name: 'Посмотреть на сайте' }).first()).toBeVisible();
   await expect(page.getByLabel('Описание')).toHaveValue(typed);
@@ -94,7 +94,7 @@ test('черновик: набранное в «Описание» возвра�
   // вернуть описание
   await page.getByLabel('Описание').fill(original);
   await page.getByRole('button', { name: 'Сохранить' }).click();
-  await expect(page).toHaveURL(/\?saved=1$/);
+  await expect(page.locator('.alert-ok')).toContainText('Сохранено');
 });
 
 test('ошибка проверки: сводка со ссылками, фокус на первом неверном поле, введённое не пропадает', async ({ page }) => {
@@ -121,7 +121,7 @@ test('две вкладки: второе сохранение видит «кт
 
   await page2.getByLabel('Коротко о смене').fill('Правка офиса');
   await page2.getByRole('button', { name: 'Сохранить' }).click();
-  await expect(page2).toHaveURL(/\?saved=1$/);
+  await expect(page2.locator('.alert-ok')).toContainText('Сохранено');
 
   await page.getByLabel('Коротко о смене').fill('Правка руководителя');
   await page.getByRole('button', { name: 'Сохранить' }).click();
@@ -129,7 +129,7 @@ test('две вкладки: второе сохранение видит «кт
   await expect(page.getByLabel('Коротко о смене')).toHaveValue('Правка руководителя');
 
   await page.getByRole('button', { name: 'Сохранить' }).click(); // осознанно, со свежим _hash
-  await expect(page).toHaveURL(/\?saved=1$/);
+  await expect(page.locator('.alert-ok')).toContainText('Сохранено');
   await expect(page.getByLabel('Коротко о смене')).toHaveValue('Правка руководителя');
   await other.close();
 });
@@ -145,7 +145,8 @@ test('новая смена: сохранение ведёт на страниц
   await page.getByLabel('Возраст до').fill('14');
   await page.getByLabel('Идёт набор').check();
   await page.getByRole('button', { name: 'Сохранить' }).click();
-  await expect(page).toHaveURL(/\/admin\/shifts\/[a-f0-9]{12}\/\?saved=1$/);
+  await expect(page.locator('.alert-ok')).toContainText('Сохранено');
+  await expect(page).toHaveURL(/\/admin\/shifts\/[a-f0-9]{12}\/$/); // saved/created убраны из адреса
   await expect(page.getByRole('heading', { level: 1, name: 'Проверочная смена' })).toBeVisible();
   expect(await draftKeys(page)).toEqual([]); // и черновик «новой записи» убран
 
@@ -154,4 +155,71 @@ test('новая смена: сохранение ведёт на страниц
   await page.getByRole('button', { name: 'Да, удалить' }).click();
   await expect(page).toHaveURL(/\/admin\/shifts\/\?ok=delete$/);
   await expect(page.getByText('Проверочная смена')).toHaveCount(0);
+});
+
+test('после ошибки проверки черновик не пропадает (даже через 6 с), текст виден после возврата на страницу', async ({ page }) => {
+  await login(page);
+  await page.goto('/admin/shifts/new/');
+  await page.getByLabel('Описание').fill('Полчаса работы, которую нельзя терять');
+  await page.getByRole('button', { name: 'Сохранить' }).click(); // нет названия — 422
+  await expect(page.locator('#error-summary')).toBeVisible();
+  await page.waitForTimeout(6500); // дольше периода автосохранения
+  expect(await draftKeys(page)).toHaveLength(1);
+  await page.goto('/admin/shifts/new/'); // вернулись на страницу (например, после повторного входа)
+  await expect(page.getByLabel('Описание')).toHaveValue('Полчаса работы, которую нельзя терять');
+  await expect(page.getByText('Восстановлен черновик')).toBeVisible();
+});
+
+test('обновление страницы после сохранения не стирает новый ввод; черновик «новой» стирается только после создания', async ({ page }) => {
+  await login(page);
+  // черновик новой записи
+  await page.goto('/admin/shifts/new/');
+  await page.getByLabel('Название').fill('Незаконченная смена');
+  await page.goto('/admin/shifts/'); // уход сохраняет черновик
+  expect(await draftKeys(page)).toEqual(['draft:/admin/shifts/new/']);
+
+  // сохранение другой, существующей записи не трогает черновик «новой»
+  await openShift(page, 'Штурмовик');
+  await page.getByRole('button', { name: 'Сохранить' }).click();
+  await expect(page.locator('.alert-ok')).toContainText('Сохранено');
+  expect(await draftKeys(page)).toEqual(['draft:/admin/shifts/new/']);
+
+  // продолжили править и обновили страницу: ввод возвращается
+  await page.getByLabel('Коротко о смене').fill('Текст после сохранения');
+  await page.reload();
+  await expect(page.getByLabel('Коротко о смене')).toHaveValue('Текст после сохранения');
+  await expect(page.getByText('Восстановлен черновик')).toBeVisible();
+  await page.getByRole('button', { name: 'Отменить' }).click();
+
+  // создание новой записи убирает черновик «новой»
+  await page.goto('/admin/shifts/new/');
+  await expect(page.getByLabel('Название')).toHaveValue('Незаконченная смена');
+  await page.getByLabel('Название').fill('Созданная смена');
+  await page.getByLabel('Дата начала').fill('2030-08-01');
+  await page.getByLabel('Дата окончания').fill('2030-08-05');
+  await page.getByLabel('Возраст от').fill('8');
+  await page.getByLabel('Возраст до').fill('14');
+  await page.getByLabel('Скоро').check();
+  await page.getByRole('button', { name: 'Сохранить' }).click();
+  await expect(page.locator('.alert-ok')).toContainText('Сохранено');
+  expect(await draftKeys(page)).toEqual([]);
+
+  await page.getByRole('link', { name: 'Удалить' }).first().click();
+  await page.getByRole('button', { name: 'Да, удалить' }).click();
+  await expect(page.getByText('Запись удалена')).toBeVisible();
+});
+
+test('ошибка в выборе (радиокнопки): фокус на кнопку внутри группы, а не на рамку', async ({ page }) => {
+  await login(page);
+  await page.goto('/admin/shifts/new/');
+  await page.getByLabel('Название').fill('Без статуса');
+  await page.getByRole('button', { name: 'Сохранить' }).click();
+  // первое неверное поле по порядку — дата начала; поменяем: заполним остальное, оставив только статус пустым
+  await page.getByLabel('Дата начала').fill('2030-08-01');
+  await page.getByLabel('Дата окончания').fill('2030-08-05');
+  await page.getByLabel('Возраст от').fill('8');
+  await page.getByLabel('Возраст до').fill('14');
+  await page.getByRole('button', { name: 'Сохранить' }).click();
+  await expect(page.locator('#f-status-error')).toBeVisible();
+  await expect(page.locator('fieldset input[name=status]').first()).toBeFocused();
 });

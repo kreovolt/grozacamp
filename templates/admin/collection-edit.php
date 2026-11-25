@@ -12,6 +12,7 @@
  * @var string|null $banner
  * @var bool $saved
  * @var bool $hasFiles
+ * @var bool $unsaved
  * @var string|null $siteUrl
  * @var string|null $sitePattern
  * @var array{login:string,name:string}|null $user
@@ -60,7 +61,7 @@ $action = '/admin/' . $collection . '/' . $id . '/';
   <span>Восстановлен черновик</span>
   <button type="button" class="btn btn-ghost" data-draft-cancel>Отменить</button>
 </div>
-<form method="post" action="<?= e($action) ?>" enctype="multipart/form-data" class="form edit-form" data-draft novalidate autocomplete="off">
+<form method="post" action="<?= e($action) ?>" enctype="multipart/form-data" class="form edit-form" data-draft<?= $unsaved ? ' data-draft-unsaved' : '' ?> novalidate autocomplete="off">
   <input type="hidden" name="_csrf" value="<?= e($csrf) ?>">
   <input type="hidden" name="_hash" value="<?= e($hash) ?>">
   <p class="hint"><span class="req" aria-hidden="true">*</span> — обязательное поле</p>

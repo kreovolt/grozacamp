@@ -4,6 +4,7 @@
  * @var string $collection
  * @var array{label:string} $def
  * @var list<array{id:string,title:string,facts:list<string>,hidden:bool,status:?string,first:bool,last:bool}> $rows
+ * @var bool $orderable
  * @var array<string,string>|null $statusOptions
  * @var string|null $flash
  * @var array{login:string,name:string}|null $user
@@ -43,11 +44,13 @@ $this->layout('admin/layout', ['title' => $def['label'], 'user' => $user, 'csrf'
 <?php endif ?>
     <div class="row__tools">
       <a class="btn btn-ghost" href="/admin/<?= e($collection) ?>/<?= e($row['id']) ?>/">Изменить</a>
+<?php if ($orderable): ?>
       <form method="post" action="/admin/<?= e($collection) ?>/<?= e($row['id']) ?>/move/" class="move">
         <input type="hidden" name="_csrf" value="<?= e($csrf) ?>">
         <button type="submit" name="dir" value="up" class="btn btn-icon" aria-label="Выше: <?= e($row['title']) ?>"<?= $row['first'] ? ' disabled' : '' ?>>↑</button>
         <button type="submit" name="dir" value="down" class="btn btn-icon" aria-label="Ниже: <?= e($row['title']) ?>"<?= $row['last'] ? ' disabled' : '' ?>>↓</button>
       </form>
+<?php endif ?>
       <a class="btn btn-ghost btn-quiet" href="/admin/<?= e($collection) ?>/<?= e($row['id']) ?>/delete/">Удалить</a>
     </div>
   </li>

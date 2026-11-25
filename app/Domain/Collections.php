@@ -11,7 +11,7 @@ final class Collections
     /** @var array<string,array<string,mixed>>|null */
     private static ?array $cache = null;
 
-    /** @return array<string,array{label:string, publicUrl:?string, fields:list<array<string,mixed>>}> */
+    /** @return array<string,array{label:string, publicUrl:?string, fields:list<array<string,mixed>>, orderable?:bool}> */
     public static function all(): array
     {
         return self::$cache ??= self::build();
@@ -63,6 +63,7 @@ final class Collections
             'shifts' => [
                 'label' => 'Смены',
                 'publicUrl' => '/program/{slug}/',
+                'orderable' => false, // на сайте смены идут по дате начала, ручной порядок ни на что не влияет
                 'fields' => [
                     $f('title', 'text', 'Название', $req + ['max' => 120]),
                     $f('slug', 'text', 'Адрес страницы (латиницей)', ['max' => 80, 'help' => 'Если оставить пустым, возьмётся из названия']),
