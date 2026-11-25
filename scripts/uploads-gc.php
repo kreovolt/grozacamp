@@ -61,8 +61,7 @@ $failed = 0;
 if (!$dry) {
     $swept = $uploads->sweepTemp($minAge);
     if ($swept > 0) {
-        fwrite(STDOUT, "removed temp dirs: $swept
-");
+        fwrite(STDOUT, "removed temp dirs: $swept\n");
     }
 }
 foreach ($orphans as $url) {
