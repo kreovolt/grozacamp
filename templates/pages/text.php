@@ -20,9 +20,7 @@ $size = static function (int $bytes): string {
         return '';
     }
 
-    return $bytes >= 1048576
-        ? number_format($bytes / 1048576, 1, ',', '') . "\u{00A0}МБ"
-        : max(1, (int) round($bytes / 1024)) . "\u{00A0}КБ";
+    return \Groza\Pages\SvedeniyaPage::fileSize($bytes);
 };
 $withToc = count($toc) >= 2;
 ?>

@@ -74,7 +74,7 @@ final class InfoPage
     /** Вступление правил — всё до первого подзаголовка; сами правила — на /pravila/. */
     public static function rulesLead(string $html): string
     {
-        $parts = preg_split('#<h3[\s>]#u', $html, 2);
+        $parts = preg_split('#<h3[\s>]#iu', $html, 2);
 
         return trim($parts[0] ?? '');
     }

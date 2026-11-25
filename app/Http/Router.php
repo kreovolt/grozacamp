@@ -89,7 +89,9 @@ final class Router
 
     private function isGone(string $path): bool
     {
+        $path = strtolower($path); // «/WP-Admin/» — тот же служебный адрес
         foreach ($this->gone as $entry) {
+            $entry = strtolower($entry);
             if ($path === $entry || ($path . '/' === $entry) || (str_ends_with($entry, '/') && str_starts_with($path, $entry))) {
                 return true;
             }

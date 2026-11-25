@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace Groza\Tests\Unit\Pages;
 
 use Groza\App;
+use Groza\Pages\InfoPage;
+use Groza\Pages\TextPage;
 use Groza\Tests\Support\TestApp;
 use PHPUnit\Framework\TestCase;
 
@@ -27,6 +29,24 @@ final class ContentPagesTest extends TestCase
         $this->assertSame(1, preg_match('#<section[^>]*\sid="' . $id . '"[^>]*>(.*?)</section>#us', $html, $m), 'нет секции #' . $id);
 
         return $m[1];
+    }
+
+    public function test_rules_lead_is_everything_before_the_first_subheading(): void
+    {
+        $this->assertSame('<p>Вступление</p>', InfoPage::rulesLead('<p>Вступление</p><h3>Раздел</h3><p>Правило</p>'));
+        $this->assertSame('', InfoPage::rulesLead('<h3>Раздел</h3><p>Правило</p>'), 'правила сразу с подзаголовка: вступления нет');
+        $this->assertSame('', InfoPage::rulesLead('<H3 class="x">Раздел</H3><p>Правило</p>'));
+        $this->assertSame('<p>Всё</p>', InfoPage::rulesLead('<p>Всё</p>'));
+        $this->assertSame('', InfoPage::rulesLead(''));
+    }
+
+    public function test_repeated_existing_heading_ids_are_made_unique(): void
+    {
+        [$html, $toc] = TextPage::withAnchors('<h3 id="a">Один</h3><h3 id="a">Два</h3><h3>Три</h3><h3>Три</h3>');
+        $ids = array_column($toc, 'id');
+        $this->assertSame($ids, array_values(array_unique($ids)));
+        $this->assertCount(4, $ids);
+        $this->assertSame(4, substr_count($html, ' id="'));
     }
 
     public function test_info_sections_in_order(): void

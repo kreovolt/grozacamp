@@ -88,7 +88,7 @@ final class TextPage
         $used = [];
         $out = preg_replace_callback('#<h3([^>]*)>(.*?)</h3>#us', static function (array $m) use (&$toc, &$used, $aliases): string {
             $label = trim(html_entity_decode(strip_tags($m[2]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
-            if (preg_match('/\sid="([^"]+)"/u', $m[1], $found) === 1) {
+            if (preg_match('/\sid="([^"]+)"/u', $m[1], $found) === 1 && !isset($used[$found[1]])) {
                 $id = $found[1];
                 $attrs = $m[1];
             } else {
@@ -97,7 +97,7 @@ final class TextPage
                 for ($n = 2; isset($used[$id]); $n++) {
                     $id = $base . '-' . $n;
                 }
-                $attrs = $m[1] . ' id="' . $id . '"';
+                $attrs = (preg_replace('/\sid="[^"]*"/u', '', $m[1]) ?? $m[1]) . ' id="' . $id . '"'; // повторный id заменяется
             }
             $used[$id] = true;
             if ($label !== '') {

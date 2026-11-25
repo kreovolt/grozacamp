@@ -513,11 +513,17 @@ final class SvedeniyaPage
         if ($bytes <= 0) {
             return $type;
         }
-        $size = $bytes >= 1048576
-            ? number_format($bytes / 1048576, 1, ',', '') . self::NBSP . 'МБ'
-            : max(1, (int) round($bytes / 1024)) . self::NBSP . 'КБ';
+        return $type . ', ' . self::fileSize($bytes);
+    }
 
-        return $type . ', ' . $size;
+    /** «500 КБ» / «1,2 МБ»; граница по округлённому значению, чтобы не получилось «1024 КБ». */
+    public static function fileSize(int $bytes): string
+    {
+        $kb = max(1, (int) round($bytes / 1024));
+
+        return $kb >= 1024
+            ? number_format($bytes / 1048576, 1, ',', '') . self::NBSP . 'МБ'
+            : $kb . self::NBSP . 'КБ';
     }
 
     /** «≈ 2 857 ₽ в день»: разряды и знак рубля неразрывными пробелами. */

@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Groza\Tests\Unit\Pages;
 
 use Groza\App;
+use Groza\Pages\SvedeniyaPage;
 use Groza\Tests\Support\TestApp;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -485,6 +486,16 @@ final class SvedeniyaPageTest extends TestCase
             $this->assertSame(200, $res->status(), $path);
         }
         $this->assertStringContainsString('Информация обновляется', TestApp::get($app, '/svedeniya/mto/')->body());
+    }
+
+    public function test_file_size_switches_to_megabytes_without_a_1024_kb_edge(): void
+    {
+        $nb = "\u{00A0}";
+        $this->assertSame('1' . $nb . 'КБ', SvedeniyaPage::fileSize(1));
+        $this->assertSame('500' . $nb . 'КБ', SvedeniyaPage::fileSize(512000));
+        $this->assertSame('1023' . $nb . 'КБ', SvedeniyaPage::fileSize(1047552));
+        $this->assertSame('1,0' . $nb . 'МБ', SvedeniyaPage::fileSize(1048200), '1048200 Б округляется до 1024 КБ — это уже мегабайт');
+        $this->assertSame('1,2' . $nb . 'МБ', SvedeniyaPage::fileSize(1258291));
     }
 
     /** Старые заглушки меню заменены настоящими страницами. */

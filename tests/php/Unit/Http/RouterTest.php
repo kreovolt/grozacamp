@@ -26,6 +26,18 @@ final class RouterTest extends TestCase
         $this->assertSame('ok', $res->body());
     }
 
+    public function test_gone_paths_match_regardless_of_case(): void
+    {
+        $router = new Router();
+        $router->gone(['/wp-admin/', '/wp-login.php']);
+        $router->get('/{x}/', $this->ok());
+
+        foreach (['/wp-admin/', '/WP-Admin/', '/wp-admin/x/y', '/WP-LOGIN.PHP', '/Wp-Login.php'] as $path) {
+            $this->assertSame(404, $router->dispatch(Request::create('GET', $path))->status(), $path);
+        }
+        $this->assertSame(200, $router->dispatch(Request::create('GET', '/wp-adminx/'))->status());
+    }
+
     public function test_missing_trailing_slash_redirects(): void
     {
         $router = new Router();
