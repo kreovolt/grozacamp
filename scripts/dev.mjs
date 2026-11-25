@@ -10,6 +10,12 @@ const children = [];
 
 function run(label, cmd, args, opts = {}) {
   const child = spawn(cmd, args, { cwd: root, stdio: 'inherit', ...opts });
+  child.on('error', (err) => {
+    // нет бинарника (php не найден и т. п.): без этого обработчика Node падает с неочевидным стеком
+    console.error(`[${label}] не запустился: ${err.message}`);
+    process.exitCode = 1;
+    stop();
+  });
   child.on('exit', (code) => {
     if (code) console.error(`[${label}] завершился с кодом ${code}`);
   });
@@ -26,9 +32,9 @@ if (existsSync(join(root, 'frontend/css/app.css'))) {
   run('assets', process.execPath, ['scripts/build-assets.mjs', '--watch']);
 }
 
-const stop = () => {
+function stop() {
   for (const c of children) c.kill();
-  process.exit(0);
-};
+  process.exit(process.exitCode ?? 0);
+}
 process.on('SIGINT', stop);
 process.on('SIGTERM', stop);

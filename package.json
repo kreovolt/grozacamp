@@ -10,7 +10,8 @@
     "photos": "node scripts/optimize-photos.mjs",
     "deploy": "node scripts/deploy.mjs",
     "lint:php": "node scripts/php.mjs vendor/bin/phpcs --runtime-set installed_paths vendor/phpcompatibility/php-compatibility,vendor/phpcsstandards/phpcsutils",
-    "lint:syntax": "node scripts/lint-syntax.mjs"
+    "lint:syntax": "node scripts/lint-syntax.mjs",
+    "test:node": "node --test tests/node/scripts.test.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.1",

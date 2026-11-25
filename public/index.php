@@ -1,11 +1,10 @@
 <?php
 declare(strict_types=1);
 
-// Встроенный сервер PHP: существующие файлы из public/ отдаём как есть.
+// Встроенный сервер PHP (разработка): существующие файлы из public/ отдаём как есть, но только лежащие внутри public/.
 if (PHP_SAPI === 'cli-server') {
-    $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
-    $file = __DIR__ . rawurldecode($path);
-    if ($path !== '/' && is_file($file) && !str_ends_with($file, '.php')) {
+    require_once __DIR__ . '/../vendor/autoload.php';
+    if (\Groza\Http\StaticFiles::servable(__DIR__, parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/')) {
         return false;
     }
 }

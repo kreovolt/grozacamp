@@ -19,7 +19,21 @@ export function phpBinary() {
   return 'php';
 }
 
+/** Запускает PHP и возвращает код выхода; если PHP не запустился (нет бинарника, нет прав) — громко и с ненулевым кодом. */
+export function runPhp(args, { bin = phpBinary(), stdio = 'inherit' } = {}) {
+  const r = spawnSync(bin, args, { stdio, cwd: root });
+  if (r.error) {
+    console.error(`PHP не запустился (${bin}): ${r.error.message}`);
+    console.error('Задайте PHP_BIN, положите php.exe в tools/php/ или добавьте php в PATH.');
+    return 127;
+  }
+  if (r.status === null) {
+    console.error(`PHP завершён сигналом ${r.signal ?? 'неизвестно'} (${bin})`);
+    return 1;
+  }
+  return r.status;
+}
+
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const r = spawnSync(phpBinary(), process.argv.slice(2), { stdio: 'inherit', cwd: root });
-  process.exit(r.status ?? 1);
+  process.exit(runPhp(process.argv.slice(2)));
 }
