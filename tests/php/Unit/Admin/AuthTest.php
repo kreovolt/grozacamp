@@ -616,4 +616,17 @@ final class AuthTest extends TestCase
         $this->assertStringContainsString('слишком длинный', $res->body());
         $this->assertTrue(password_verify(AdminHttp::PASSWORD, (new Users($this->app->store()))->find('olga')['hash']));
     }
+
+    public function test_anonymous_login_page_flood_is_limited_per_address_in_production(): void
+    {
+        $app = TestApp::make(['env' => 'prod', 'appSecret' => str_repeat('k', 40), 'fakeNow' => null]);
+        $get = static fn (string $ip) => $app->handle(Request::create('GET', '/admin/login/', [], [], [], [], $ip));
+        for ($i = 0; $i < 20; $i++) {
+            $this->assertSame(200, $get('203.0.113.9')->status());
+        }
+        $blocked = $get('203.0.113.9');
+        $this->assertSame(429, $blocked->status());
+        $this->assertSame('600', $blocked->header('Retry-After'));
+        $this->assertSame(200, $get('203.0.113.10')->status()); // другой адрес не затронут
+    }
 }

@@ -105,6 +105,9 @@ final class App
         return SecurityHeaders::apply($response, ['env' => $this->config['env'], 'metrikaId' => $this->metrikaId()]);
     }
 
+    /** Сколько новых (анонимных) сессий админки за 10 минут с одного адреса. */
+    private const NEW_SESSIONS_MAX = 20;
+
     private static function isAdminPath(string $path): bool
     {
         return $path === '/admin' || str_starts_with($path, '/admin/');
@@ -123,6 +126,9 @@ final class App
             return Response::html($this->view()->render('admin/too-large'), 413);
         }
         $issuesToken = in_array($r->method(), ['GET', 'HEAD'], true) && $r->path() === '/admin/login/';
+        if ($issuesToken && $this->tooManyNewSessions($r)) {
+            return Response::html($this->view()->render('admin/too-many'), 429)->withHeader('Retry-After', '600');
+        }
         if (Session::wanted($r->header('Cookie'), $issuesToken)) {
             Session::start($this->config);
         }
@@ -133,6 +139,21 @@ final class App
         }
 
         return $response;
+    }
+
+    /**
+     * Страница входа выдаёт сессию любому без cookie — каждый такой запрос оставляет файл. На сайте (staging, prod) число
+     * новых сессий с одного адреса ограничено, иначе бот может засыпать storage/sessions.
+     */
+    private function tooManyNewSessions(Request $r): bool
+    {
+        if (!in_array($this->config['env'], ['staging', 'prod'], true) || Session::hasCookie($r->header('Cookie'))) {
+            return false;
+        }
+        $secret = (string) $this->config['appSecret'];
+        $limiter = new RateLimiter($this->config['storageDir'] . '/ratelimit', $this->clock, $secret);
+
+        return !$limiter->hit('admin-new-session', $r->ip(), self::NEW_SESSIONS_MAX, 600);
     }
 
     /**
