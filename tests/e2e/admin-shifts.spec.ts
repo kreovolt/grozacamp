@@ -38,7 +38,8 @@ test('«Мест нет» одной кнопкой в списке смен —
   const row = page.locator('.row', { hasText: 'Спасатель' });
   const closed = row.getByRole('button', { name: 'Мест нет' });
   await expect(row.getByRole('button', { name: 'Идёт набор' })).toHaveAttribute('aria-pressed', 'true');
-  // кнопки крупные: попасть пальцем. Размер ждём, а не снимаем сразу: пока стили не загрузились, кнопка обычного роста
+  // кнопки крупные: попасть пальцем. Размер ждём повторной проверкой, а не снимаем сразу: сразу после перехода вёрстка ещё дорисовывается
+  // (это гонка момента измерения, а не дефект стилей)
   await expect.poll(async () => (await closed.boundingBox())!.height).toBeGreaterThanOrEqual(44);
 
   await closed.click();
@@ -165,12 +166,13 @@ test('новая смена: сохранение ведёт на страниц
 
 test('после ошибки проверки черновик не пропадает (даже через 6 с), текст виден после возврата на страницу', async ({ page }) => {
   await login(page);
+  await page.clock.install(); // время страницы под нашим управлением: «6 секунд» проматываются, а не ждутся
   await page.goto('/admin/shifts/new/');
   await page.getByLabel('Коротко о смене').fill('Полчаса работы, которую нельзя терять');
   await page.getByRole('button', { name: 'Сохранить' }).click(); // нет названия — 422
   await expect(page.locator('#error-summary')).toBeVisible();
   await page.locator('form[data-draft-ready]').waitFor(); // таймер автосохранения заводит скрипт формы
-  await page.waitForTimeout(6500); // дольше периода автосохранения
+  await page.clock.fastForward(6500); // дольше периода автосохранения (5 с)
   expect(await draftKeys(page)).toHaveLength(1);
   await page.goto('/admin/shifts/new/'); // вернулись на страницу (например, после повторного входа)
   await expect(page.getByLabel('Коротко о смене')).toHaveValue('Полчаса работы, которую нельзя терять');
@@ -192,6 +194,7 @@ test('обновление страницы после сохранения не
   expect(await draftKeys(page)).toEqual(['draft:/admin/shifts/new/']);
 
   // продолжили править и обновили страницу: ввод возвращается
+  await page.locator('form[data-draft-ready]').waitFor(); // черновик пишет скрипт формы: до его запуска набранное сохранять некому
   await page.getByLabel('Коротко о смене').fill('Текст после сохранения');
   await page.reload();
   await expect(page.getByLabel('Коротко о смене')).toHaveValue('Текст после сохранения');

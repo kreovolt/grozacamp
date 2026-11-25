@@ -57,8 +57,8 @@
   .btn-light:hover { @apply bg-forest-deep; }
 
   .alert { @apply rounded-btn px-3 py-2 text-sm font-semibold; }
-  .alert-error { @apply bg-[#fbe9e3] text-rust-deep; }
-  .alert-ok { @apply bg-[#e6efdd] text-forest; }
+  .alert-error { @apply bg-tint-bad text-rust-deep; }
+  .alert-ok { @apply bg-tint-ok text-forest; }
   .back { @apply mt-6 text-sm; }
 
   /* ---- Админка: разделы, списки, формы правки ---- */
@@ -73,8 +73,8 @@
   .readiness__summary { @apply mb-6 flex flex-wrap items-baseline gap-x-4 gap-y-1 rounded-card px-5 py-4; }
   .readiness__summary-title { @apply font-display text-2xl font-semibold uppercase tracking-nav; }
   .readiness__summary-note { @apply text-sm font-semibold; }
-  .readiness__summary--ok { @apply bg-[#e6efdd] text-forest; border-left: 8px solid theme('colors.moss'); }
-  .readiness__summary--bad { @apply bg-[#fbe9e3] text-rust-deep; border-left: 8px solid theme('colors.rust.deep'); }
+  .readiness__summary--ok { @apply bg-tint-ok text-forest; border-left: 8px solid theme('colors.moss'); }
+  .readiness__summary--bad { @apply bg-tint-bad text-rust-deep; border-left: 8px solid theme('colors.rust.deep'); }
   .readiness__section { @apply mb-2 mt-6 font-display text-xl font-semibold uppercase tracking-nav text-forest; }
   .readiness__count { @apply ml-1 inline-block rounded-full bg-sand-deep px-2 py-0.5 align-middle font-sans text-xs font-semibold normal-case tracking-normal text-ink-soft; }
   .readiness__list { @apply grid gap-2; }
@@ -209,7 +209,7 @@
   .text-field { scroll-margin-top: 1rem; }
   .text-field:target { @apply rounded-card ring-2 ring-gold; }
   .text-field .legal { @apply mt-0; }
-  .confirm-empty { @apply mt-2 rounded-btn bg-[#fbe9e3] px-3 py-2; }
+  .confirm-empty { @apply mt-2 rounded-btn bg-tint-bad px-3 py-2; }
   .confirm-empty .field-error { @apply mt-0 mb-2; }
   .echo { @apply mb-4 grid gap-4; }
   .echo textarea { @apply bg-sand; }

@@ -22,6 +22,7 @@ export default {
         paper: '#ffffff',
         cream: '#efe9da', // основной текст на forest
         sage: '#b9c4b0', // второстепенный текст на forest (6.9:1)
+        tint: { bad: '#fbe9e3', ok: '#e6efdd' }, // светлые подложки сообщений об ошибке и успехе в админке
       },
       fontFamily: {
         display: ['Oswald', '"Arial Narrow"', '"Roboto Condensed"', 'sans-serif'],
