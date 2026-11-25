@@ -56,8 +56,30 @@ final class VacancyFormTest extends TestCase
 
     public function test_vk_must_be_vk_https_link(): void
     {
-        foreach (['http://vk.com/x', 'https://evil.example/vk.com/x', 'vk.com/x', 'javascript:alert(1)', 'https://vk.com.evil.example/x'] as $vk) {
+        foreach (['http://vk.com/x', 'https://evil.example/vk.com/x', 'evil.example/vk.com/x', 'javascript:alert(1)', 'https://vk.com.evil.example/x', 'vk.com.evil.example/x', 'vk.com/'] as $vk) {
             $this->assertArrayHasKey('vk', VacancyForm::validate($this->valid(['vk' => $vk]), self::POSITIONS)->errors, $vk);
+        }
+    }
+
+    public function test_vk_without_scheme_is_completed_to_https(): void
+    {
+        foreach (['vk.com/petrov' => 'https://vk.com/petrov', 'www.vk.com/id1' => 'https://www.vk.com/id1', 'm.vk.ru/a_b' => 'https://m.vk.ru/a_b', ' VK.com/x ' => 'https://vk.com/x'] as $in => $out) {
+            $r = VacancyForm::validate($this->valid(['vk' => $in]), self::POSITIONS);
+            $this->assertTrue($r->ok(), $in);
+            $this->assertSame($out, $r->data['vk'], $in);
+        }
+    }
+
+    public function test_cyrillic_domain_emails_are_accepted(): void
+    {
+        foreach (['ivan@пример.рф', 'ivan.p@почта.рф', 'a@сайт.москва'] as $email) {
+            $r = VacancyForm::validate($this->valid(['email' => $email]), self::POSITIONS);
+            $this->assertTrue($r->ok(), $email);
+            $this->assertSame($email, $r->data['email']);
+        }
+        foreach (['ivan@пример', 'ivan@.рф', 'иван@пример.рф', 'ivan@пример..рф', 'ivan@пример.р', 'iv an@пример.рф', "a@пример.рф
+Bcc: x@y.ru"] as $bad) {
+            $this->assertArrayHasKey('email', VacancyForm::validate($this->valid(['email' => $bad]), self::POSITIONS)->errors, $bad);
         }
     }
 

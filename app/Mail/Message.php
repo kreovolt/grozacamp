@@ -38,6 +38,13 @@ final class Message
             return null;
         }
 
+        if (preg_match('/[^\x20-\x7E]/', $v) === 1 && function_exists('idn_to_ascii') && str_contains($v, '@')) {
+            // «ivan@пример.рф» → punycode (нужно расширение intl; без него Reply-To просто не ставится, адрес остаётся в тексте письма)
+            [$local, $domain] = explode('@', $v, 2);
+            $ascii = idn_to_ascii($domain, IDNA_DEFAULT, INTL_IDNA_VARIANT_UTS46);
+            $v = $ascii === false ? $v : $local . '@' . $ascii;
+        }
+
         return filter_var($v, FILTER_VALIDATE_EMAIL) === false ? null : $v;
     }
 

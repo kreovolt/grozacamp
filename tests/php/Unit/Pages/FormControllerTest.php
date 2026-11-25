@@ -291,6 +291,33 @@ final class FormControllerTest extends TestCase
         $this->assertNotSame($tokens['_ts'], json_decode($res->body(), true)['guard']['_ts']);
     }
 
+    public function test_token_close_to_expiry_is_replaced_but_a_fresh_one_is_kept(): void
+    {
+        $app = $this->app();
+        $old = $this->tokens($app, 'booking', FormGuard::MAX_SECONDS - 300); // ещё действует, но живёт меньше 10 минут
+        $res = $this->booking($app, ['consent' => ''] + $old, ['Accept' => 'application/json'], FormGuard::MAX_SECONDS - 300);
+        $this->assertSame(422, $res->status());
+        $this->assertNotSame($old['_ts'], json_decode($res->body(), true)['guard']['_ts']);
+
+        $fresh = $this->tokens($app, 'booking', FormGuard::MAX_SECONDS - 700);
+        $res = $this->booking($app, ['consent' => ''] + $fresh, ['Accept' => 'application/json'], FormGuard::MAX_SECONDS - 700);
+        $this->assertSame($fresh, json_decode($res->body(), true)['guard']);
+    }
+
+    public function test_booking_page_and_error_rerender_show_fallback_when_guard_is_not_configured(): void
+    {
+        $app = TestApp::make(['env' => 'prod', 'appSecret' => '', 'fakeNow' => null]);
+        $this->assertNull($app->guardFields('booking'));
+        $page = TestApp::get($app, '/booking/');
+        $this->assertSame(200, $page->status());
+        $this->assertStringNotContainsString('name="_ts"', $page->body());
+        $this->assertStringContainsString('+7 (342) 247-43-47', $page->body());
+
+        $vacancies = TestApp::get($app, '/vacancies/');
+        $this->assertSame(200, $vacancies->status());
+        $this->assertStringNotContainsString('name="_ts"', $vacancies->body());
+    }
+
     #[\PHPUnit\Framework\Attributes\DataProvider('badSecrets')]
     public function test_misconfigured_secret_in_prod_gives_fallback(string $secret): void
     {
@@ -360,6 +387,18 @@ final class FormControllerTest extends TestCase
         $this->assertStringContainsString('Спасибо! Мы перезвоним', $res->body());
         $this->assertStringContainsString('noindex', $res->body());
         $this->assertSame(200, TestApp::get($app, '/spasibo/')->status());
+    }
+
+    public function test_thanks_hours_come_from_settings(): void
+    {
+        $app = $this->app();
+        $app->store()->write('settings', ['hoursWeekdays' => 'Пн–Сб 9:00–20:00', 'hoursWeekend' => ''] + $app->store()->read('settings'), 'test');
+        $body = TestApp::get($app, '/spasibo/', ['f' => 'booking'])->body();
+        $this->assertStringContainsString('Позвоним в рабочее время — Пн–Сб 9:00–20:00.', $body);
+        $this->assertStringNotContainsString('10:00', $body);
+
+        $app->store()->write('settings', ['hoursWeekdays' => '', 'hoursWeekend' => ''] + $app->store()->read('settings'), 'test');
+        $this->assertStringContainsString('Позвоним в рабочее время.', TestApp::get($app, '/spasibo/', ['f' => 'booking'])->body());
     }
 
     public function test_get_on_form_endpoint_is_405(): void

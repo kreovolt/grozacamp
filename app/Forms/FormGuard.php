@@ -51,7 +51,7 @@ final class FormGuard
 
         $ts = $r->post('_ts');
         $sig = $r->post('_sig');
-        if (!is_string($ts) || !is_string($sig) || !preg_match('/^\d{1,12}$/', $ts)
+        if (!is_string($ts) || !is_string($sig) || !preg_match('/^\d{1,12}$/D', $ts)
             || !hash_equals($this->sign($formId, $ts), $sig)) {
             return 'bad_signature';
         }

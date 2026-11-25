@@ -30,7 +30,7 @@ final class VacancyForm
         }
 
         $email = Fields::line($post['email'] ?? '');
-        if ($email !== '' && (mb_strlen($email) > 120 || filter_var($email, FILTER_VALIDATE_EMAIL) === false)) {
+        if ($email !== '' && (mb_strlen($email) > 120 || !self::emailOk($email))) {
             $errors['email'] = 'Проверьте адрес почты';
         }
 
@@ -54,7 +54,7 @@ final class VacancyForm
             $errors['shifts'] = 'Не больше 300 символов';
         }
 
-        $vk = Fields::line($post['vk'] ?? '');
+        $vk = self::vkUrl(Fields::line($post['vk'] ?? ''));
         if ($vk !== '' && preg_match(self::VK, $vk) !== 1) {
             $errors['vk'] = 'Ссылка должна начинаться с https://vk.com/';
         }
@@ -73,5 +73,26 @@ final class VacancyForm
             'shifts' => $shifts,
             'vk' => $vk,
         ], $errors);
+    }
+
+    /** Адрес почты: обычный, либо с кириллическим доменом («ivan@пример.рф»; имя до «@» — латиницей). */
+    private static function emailOk(string $email): bool
+    {
+        if (filter_var($email, FILTER_VALIDATE_EMAIL) !== false) {
+            return true;
+        }
+
+        return preg_match('/^[A-Za-z0-9._%+-]{1,64}@(?:[\p{L}\p{N}](?:[\p{L}\p{N}-]{0,61}[\p{L}\p{N}])?\.)+\p{L}{2,24}$/uD', $email) === 1
+            && !str_contains($email, '..') && !str_starts_with($email, '.');
+    }
+
+    /** «vk.com/petrov» без схемы дополняется до https://; хост приводится к нижнему регистру, остальное проверяется как есть. */
+    private static function vkUrl(string $vk): string
+    {
+        return preg_replace_callback(
+            '#^(?:https://)?((?:www\.|m\.)?vk\.(?:com|ru))/#i',
+            static fn (array $m): string => 'https://' . strtolower($m[1]) . '/',
+            $vk
+        ) ?? $vk;
     }
 }
