@@ -1,0 +1,31 @@
+# Папка загрузок: ничего не выполняется, список файлов не показывается, отдаются только фото и PDF.
+<IfModule mod_php.c>
+  php_flag engine off
+</IfModule>
+<IfModule mod_php7.c>
+  php_flag engine off
+</IfModule>
+<IfModule mod_php8.c>
+  php_flag engine off
+</IfModule>
+RemoveHandler .php .phtml .phar
+RemoveType .php .phtml .phar
+Options -ExecCGI -Indexes
+
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+</IfModule>
+
+<IfModule mod_authz_core.c>
+  Require all denied
+  <FilesMatch "(?i)\.(jpg|jpeg|webp|png|pdf)$">
+    Require all granted
+  </FilesMatch>
+</IfModule>
+<IfModule !mod_authz_core.c>
+  Order allow,deny
+  Deny from all
+  <FilesMatch "(?i)\.(jpg|jpeg|webp|png|pdf)$">
+    Allow from all
+  </FilesMatch>
+</IfModule>

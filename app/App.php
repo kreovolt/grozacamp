@@ -110,6 +110,9 @@ final class App
         if (!self::isAdminPath($r->path())) {
             return $this->router->dispatch($r);
         }
+        if ($this->exceedsPostLimit($r)) {
+            return Response::html($this->view()->render('admin/too-large'), 413);
+        }
         $issuesToken = in_array($r->method(), ['GET', 'HEAD'], true) && $r->path() === '/admin/login/';
         if (Session::wanted($r->header('Cookie'), $issuesToken)) {
             Session::start($this->config);
@@ -121,6 +124,36 @@ final class App
         }
 
         return $response;
+    }
+
+    /**
+     * Запрос больше post_max_size: PHP отбросил тело ($_POST пуст), и ворота CSRF ответили бы «сессия устарела». Говорим правду.
+     * Лимит можно задать в config (postMaxBytes) — для тестов; иначе настоящий post_max_size.
+     */
+    private function exceedsPostLimit(Request $r): bool
+    {
+        if ($r->method() !== 'POST') {
+            return false;
+        }
+        $limit = isset($this->config['postMaxBytes']) ? (int) $this->config['postMaxBytes'] : self::iniBytes((string) ini_get('post_max_size'));
+
+        return $limit > 0 && (int) $r->header('Content-Length') > $limit;
+    }
+
+    /** Значение php.ini с суффиксом (8M, 1G, 512k) в байтах. */
+    public static function iniBytes(string $v): int
+    {
+        $v = trim($v);
+        if ($v === '' || !preg_match('/^(-?\d+)\s*([kmg]?)b?$/i', $v, $m)) {
+            return 0;
+        }
+
+        return (int) $m[1] * match (strtolower($m[2])) {
+            'k' => 1024,
+            'm' => 1048576,
+            'g' => 1073741824,
+            default => 1,
+        };
     }
 
     /**
