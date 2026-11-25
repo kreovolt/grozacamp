@@ -13,18 +13,30 @@ final class ImageProcessor
     private const JPEG_QUALITY = 82;
 
     private const MEMORY_RESERVE = 33554432; // 32 МБ на сам PHP и копии под ширины
-    private const BYTES_PER_PIXEL = 5;
+    private const BYTES_PER_PIXEL = 5;        // раскодированная картинка + копия при масштабировании
+    private const BYTES_PER_PIXEL_ROTATE = 9; // imagerotate держит рядом ещё одну полноразмерную копию
+    private const RAISED_MEMORY = 268435456;  // 256 МБ
     private const REQUIRED = ['imagewebp', 'imagecreatefromjpeg', 'imagecreatefrompng', 'finfo_open'];
 
     /** @var \Closure(string):bool */
     private \Closure $hasFunction;
+    /** @var \Closure(int):int получает текущий лимит, пробует поднять его и возвращает лимит после попытки */
+    private \Closure $raiseMemory;
 
     /**
      * @param int|null $memoryLimit байты (-1 — без лимита); null — читать memory_limit в момент обработки (для тестов — подставить)
      * @param callable|null $hasFunction проверка наличия функций расширений (для тестов)
+     * @param callable|null $raiseMemory попытка поднять memory_limit до 256 МБ; по умолчанию — ini_set (только когда лимит не подставлен)
      */
-    public function __construct(private int $maxPixels = 25000000, private ?int $memoryLimit = null, ?callable $hasFunction = null)
+    public function __construct(private int $maxPixels = 25000000, private ?int $memoryLimit = null, ?callable $hasFunction = null, ?callable $raiseMemory = null)
     {
+        $this->raiseMemory = $raiseMemory !== null ? \Closure::fromCallable($raiseMemory) : ($memoryLimit === null
+            ? static function (int $current): int {
+                @ini_set('memory_limit', '256M');
+
+                return \Groza\App::iniBytes((string) ini_get('memory_limit'));
+            }
+            : static fn (int $current): int => $current);
         $this->hasFunction = $hasFunction !== null ? \Closure::fromCallable($hasFunction) : static fn (string $f): bool => function_exists($f);
     }
 
@@ -38,15 +50,25 @@ final class ImageProcessor
         }
     }
 
-    /** Сколько пикселей можно раскодировать: не больше maxPixels и не больше, чем влезает в память (≈5 байт на пиксель + запас). */
-    public function effectiveMaxPixels(): int
+    /**
+     * Сколько пикселей можно раскодировать: не больше maxPixels и не больше, чем влезает в память.
+     * ≈5 байт на пиксель, а при повороте по EXIF (imagerotate) — ≈9; плюс запас. Если лимит памяти ниже 256 МБ — сначала пробуем его поднять.
+     */
+    public function effectiveMaxPixels(bool $rotates = false): int
     {
         $limit = $this->memoryLimit ?? \Groza\App::iniBytes((string) ini_get('memory_limit'));
         if ($limit <= 0) { // -1 — без лимита
             return $this->maxPixels;
         }
+        if ($limit < self::RAISED_MEMORY) {
+            $limit = max($limit, ($this->raiseMemory)($limit));
+            if ($limit <= 0) {
+                return $this->maxPixels;
+            }
+        }
+        $bpp = $rotates ? self::BYTES_PER_PIXEL_ROTATE : self::BYTES_PER_PIXEL;
 
-        return max(0, min($this->maxPixels, intdiv($limit - self::MEMORY_RESERVE, self::BYTES_PER_PIXEL)));
+        return max(0, min($this->maxPixels, intdiv($limit - self::MEMORY_RESERVE, $bpp)));
     }
 
     /**
@@ -62,7 +84,9 @@ final class ImageProcessor
         [$srcW, $srcH, $type] = $info;
         $this->assertCapable();
         // размер проверяем по заголовку, до декодирования: огромная картинка — это «бомба» для памяти
-        $maxPixels = $this->effectiveMaxPixels();
+        // поворот по EXIF (3, 5–8) требует второй полноразмерной копии — бюджет памяти считаем с учётом этого
+        $orientation = $type === IMAGETYPE_JPEG ? $this->orientation($path) : 1;
+        $maxPixels = $this->effectiveMaxPixels(in_array($orientation, [3, 5, 6, 7, 8], true));
         if ($srcW * $srcH > $maxPixels) {
             throw new UploadException('Фото слишком большое: уменьшите до ' . max(1, intdiv($maxPixels, 1000000)) . ' мегапикселей');
         }
@@ -81,7 +105,7 @@ final class ImageProcessor
         $made = [];
         try {
             if ($type === IMAGETYPE_JPEG) {
-                $img = $this->orient($img, $this->orientation($path));
+                $this->orient($img, $orientation);
             }
             if (!imageistruecolor($img)) {
                 imagepalettetotruecolor($img);
@@ -155,7 +179,8 @@ final class ImageProcessor
         return $o >= 1 && $o <= 8 ? $o : 1;
     }
 
-    private function orient(\GdImage $img, int $o): \GdImage
+    /** Поворачивает на месте: исходная картинка освобождается сразу после успешного поворота. */
+    private function orient(\GdImage &$img, int $o): void
     {
         $ops = match ($o) {
             2 => [['flip', IMG_FLIP_HORIZONTAL]],
@@ -175,11 +200,10 @@ final class ImageProcessor
                 if ($rotated === false) {
                     throw new UploadException('Не удалось обработать фото. Попробуйте сохранить его заново как JPEG');
                 }
-                $img = $rotated;
+                $img = $rotated; // прежнее изображение освобождается здесь
+                unset($rotated);
             }
         }
-
-        return $img;
     }
 
     private function scale(\GdImage $img, int $w, int $h, int $tw, int $th): \GdImage

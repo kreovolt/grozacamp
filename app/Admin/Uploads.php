@@ -69,7 +69,7 @@ final class Uploads
     public function storePdf(array $file): array
     {
         if (!function_exists('finfo_open')) {
-            throw new UploadException('Сервер не умеет обрабатывать фото. Сообщите разработчику.');
+            throw new UploadException('Сервер не умеет проверять файлы. Сообщите разработчику.');
         }
         $tmp = $this->checkUpload($file);
         $size = $this->actualSize($tmp);

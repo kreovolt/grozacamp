@@ -61,3 +61,7 @@ await base(600, 400, { r: 120, g: 60, b: 160 }).webp().toFile(join(out, 'photo.w
     chunk('IHDR', ihdr), chunk('IEND', Buffer.alloc(0)),
   ]));
 }
+
+// 300x200 без поворота (те же пиксели, что у rotated.jpg) и 12000x1500 (18 Мп) с Orientation=6: заголовки для проверки бюджета памяти
+await base(300, 200, { r: 90, g: 90, b: 90 }).jpeg().toFile(join(out, 'upright.jpg'));
+await base(12000, 1500, { r: 250, g: 250, b: 250 }).withMetadata({ orientation: 6 }).jpeg({ quality: 20 }).toFile(join(out, 'wide-rot6.jpg'));

@@ -100,6 +100,44 @@ final class ImageProcessorTest extends TestCase
         $this->assertSame([], $this->files());
     }
 
+    public function test_rotation_needs_bigger_memory_budget_than_upright(): void
+    {
+        $mb128 = 128 * 1048576;
+        $p = new ImageProcessor(memoryLimit: $mb128);
+        $this->assertSame(20132659, $p->effectiveMaxPixels());      // 5 байт/пиксель
+        $this->assertSame(11184810, $p->effectiveMaxPixels(true));  // 9 байт/пиксель (imagerotate)
+        // поднять память не вышло — бюджет прежний; вышло — 25 Мп проходят и с поворотом
+        $this->assertSame(25000000, (new ImageProcessor(memoryLimit: $mb128, raiseMemory: static fn (int $c): int => 256 * 1048576))->effectiveMaxPixels());
+        $this->assertSame(25000000, (new ImageProcessor(memoryLimit: $mb128, raiseMemory: static fn (int $c): int => 256 * 1048576))->effectiveMaxPixels(true));
+        $this->assertSame(25000000, (new ImageProcessor(memoryLimit: -1))->effectiveMaxPixels(true));
+    }
+
+    public function test_rotated_photo_between_the_two_budgets_rejected_with_nine_byte_budget(): void
+    {
+        // 18 Мп, Orientation 6: для 128 МБ без поворота ещё можно (20 Мп), с поворотом — нет (11 Мп)
+        $p = new ImageProcessor(memoryLimit: 128 * 1048576);
+        try {
+            $p->process($this->fx('wide-rot6.jpg'), $this->dir, 'abcd1234abcd1234');
+            $this->fail('нужно исключение');
+        } catch (UploadException $e) {
+            $this->assertSame('Фото слишком большое: уменьшите до 11 мегапикселей', $e->getMessage());
+        }
+        $this->assertSame([], $this->files());
+    }
+
+    public function test_same_pixel_count_upright_passes_the_guard_and_rotated_does_not(): void
+    {
+        // rotated.jpg и upright.jpg — по 60000 пикселей; лимит памяти подобран так, что 5 байт/пиксель хватает (80000), а 9 — нет (44444)
+        $limit = 33954432;
+        $this->assertSame(80000, (new ImageProcessor(memoryLimit: $limit))->effectiveMaxPixels());
+        $this->assertSame(44444, (new ImageProcessor(memoryLimit: $limit))->effectiveMaxPixels(true));
+        $d = (new ImageProcessor(memoryLimit: $limit))->process($this->fx('upright.jpg'), $this->dir, 'abcd1234abcd1234');
+        $this->assertSame(300, $d['w']);
+        $this->expectException(UploadException::class);
+        $this->expectExceptionMessage('Фото слишком большое');
+        (new ImageProcessor(memoryLimit: $limit))->process($this->fx('rotated.jpg'), $this->dir, 'abcd1234abcd1234');
+    }
+
     public function test_unreadable_image_rejected(): void
     {
         $this->expectException(UploadException::class);
