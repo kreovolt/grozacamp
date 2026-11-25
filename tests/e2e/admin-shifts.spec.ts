@@ -37,8 +37,8 @@ test('«Мест нет» одной кнопкой в списке смен —
   const row = page.locator('.row', { hasText: 'Спасатель' });
   const closed = row.getByRole('button', { name: 'Мест нет' });
   await expect(row.getByRole('button', { name: 'Идёт набор' })).toHaveAttribute('aria-pressed', 'true');
-  const box = await closed.boundingBox();
-  expect(box!.height).toBeGreaterThanOrEqual(44); // кнопки крупные: попасть пальцем
+  // кнопки крупные: попасть пальцем. Размер ждём, а не снимаем сразу: пока стили не загрузились, кнопка обычного роста
+  await expect.poll(async () => (await closed.boundingBox())!.height).toBeGreaterThanOrEqual(44);
 
   await closed.click();
   await expect(page.getByRole('status')).toContainText('Статус изменён');
@@ -89,7 +89,9 @@ test('черновик: набранное в «Коротко о смене» �
   await expect(page.getByRole('status').first()).toContainText('Сохранено');
   await expect(page.getByRole('link', { name: 'Посмотреть на сайте' }).first()).toBeVisible();
   await expect(page.getByLabel('Коротко о смене')).toHaveValue(typed);
-  expect(await draftKeys(page)).toEqual([]);
+  // скрипт новой страницы стирает черновик (?saved=1) при запуске формы, а не в момент показа плашки «Сохранено»
+  await page.locator('form[data-draft-ready]').waitFor();
+  await expect.poll(() => draftKeys(page)).toEqual([]);
   await page.reload();
   await expect(page.getByText('Восстановлен черновик')).toBeHidden();
 
@@ -150,7 +152,8 @@ test('новая смена: сохранение ведёт на страниц
   await expect(page.locator('.alert-ok')).toContainText('Сохранено');
   await expect(page).toHaveURL(/\/admin\/shifts\/[a-f0-9]{12}\/$/); // saved/created убраны из адреса
   await expect(page.getByRole('heading', { level: 1, name: 'Проверочная смена' })).toBeVisible();
-  expect(await draftKeys(page)).toEqual([]); // и черновик «новой записи» убран
+  await page.locator('form[data-draft-ready]').waitFor();
+  await expect.poll(() => draftKeys(page)).toEqual([]); // и черновик «новой записи» убран (его стирает скрипт новой страницы)
 
   await page.getByRole('link', { name: 'Удалить' }).click();
   await expect(page.getByRole('heading', { name: 'Удалить запись?' })).toBeVisible();
@@ -165,6 +168,7 @@ test('после ошибки проверки черновик не пропа�
   await page.getByLabel('Коротко о смене').fill('Полчаса работы, которую нельзя терять');
   await page.getByRole('button', { name: 'Сохранить' }).click(); // нет названия — 422
   await expect(page.locator('#error-summary')).toBeVisible();
+  await page.locator('form[data-draft-ready]').waitFor(); // таймер автосохранения заводит скрипт формы
   await page.waitForTimeout(6500); // дольше периода автосохранения
   expect(await draftKeys(page)).toHaveLength(1);
   await page.goto('/admin/shifts/new/'); // вернулись на страницу (например, после повторного входа)
@@ -204,7 +208,8 @@ test('обновление страницы после сохранения не
   await page.getByLabel('Скоро').check();
   await page.getByRole('button', { name: 'Сохранить' }).click();
   await expect(page.locator('.alert-ok')).toContainText('Сохранено');
-  expect(await draftKeys(page)).toEqual([]);
+  await page.locator('form[data-draft-ready]').waitFor();
+  await expect.poll(() => draftKeys(page)).toEqual([]);
 
   await page.getByRole('link', { name: 'Удалить' }).first().click();
   await page.getByRole('button', { name: 'Да, удалить' }).click();
@@ -216,6 +221,8 @@ test('ошибка в выборе (радиокнопки): фокус на к�
   await page.goto('/admin/shifts/new/');
   await page.getByLabel('Название').fill('Без статуса');
   await page.getByRole('button', { name: 'Сохранить' }).click();
+  // дождаться страницы с ошибками (скрипт ставит фокус на первое неверное поле): иначе поля заполнятся на уходящей странице, а второе «Сохранить» потеряется
+  await expect(page.getByLabel('Дата начала')).toBeFocused();
   // первое неверное поле по порядку — дата начала; поменяем: заполним остальное, оставив только статус пустым
   await page.getByLabel('Дата начала').fill('2030-08-01');
   await page.getByLabel('Дата окончания').fill('2030-08-05');
@@ -241,7 +248,7 @@ test('409 → возврат на страницу: плашка о конфли
   await page.getByLabel('Коротко о смене').fill('Моя правка после чужой');
   await page.getByRole('button', { name: 'Сохранить' }).click();
   await expect(page.getByRole('alert').first()).toContainText('кто-то сохранил изменения');
-  await page.waitForTimeout(300);
+  await page.locator('form[data-draft-ready]').waitFor(); // без запущенного скрипта форма не сохранит черновик при уходе
 
   await page.goto(url); // вернулись на страницу позже: баннера сервера уже нет, есть черновик
   await expect(page.getByLabel('Коротко о смене')).toHaveValue('Моя правка после чужой');

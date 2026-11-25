@@ -143,7 +143,10 @@ test('axe has no serious issues', async ({ page }) => {
     await page.goto(path);
     await page.waitForLoadState('networkidle');
     await scrollThrough(page);
-    await page.waitForTimeout(700);
+    // axe считает контраст по цвету «как сейчас»: пока блоки и слова заголовка не доиграли появление (под нагрузкой это затягивается), цвет смешан с фоном
+    await expect
+      .poll(() => page.$$eval('[data-reveal], [data-word]', (els) => els.every((el) => getComputedStyle(el).opacity === '1')), { timeout: 10_000 })
+      .toBe(true);
     const { violations } = await new AxeBuilder({ page }).analyze();
     const bad = violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
     expect(bad.map((v) => `${path} ${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);

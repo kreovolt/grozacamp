@@ -207,9 +207,11 @@ function initFiles(root) {
     const label = root.querySelector('label[for="' + input.id + '"]');
     if (!label) continue;
     const original = label.textContent;
-    input.addEventListener('change', () => {
+    const sync = () => {
       label.textContent = input.files && input.files.length ? 'Выбрано: ' + input.files[0].name : original;
-    });
+    };
+    input.addEventListener('change', sync);
+    sync(); // файл могли выбрать до запуска скрипта (медленная загрузка): подпись должна совпасть с полем
   }
 }
 

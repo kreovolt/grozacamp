@@ -189,7 +189,7 @@ test('черновик: нетронутая форма его не создаё
   await editor.click();
   await page.keyboard.press('Control+End');
   await page.keyboard.type(' ЧЕРНОВИК-e2e');
-  await page.waitForTimeout(1300);
+  await expect.poll(() => page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('draft:')).length)).toBe(1); // черновик пишется через 1 с после ввода
   await page.reload();
   await expect(page.locator('[data-draft-notice]')).toBeVisible();
   await expect(page.locator('#info\\.visits trix-editor')).toContainText('ЧЕРНОВИК-e2e');

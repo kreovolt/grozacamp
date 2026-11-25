@@ -22,6 +22,11 @@ async function login(page: Page) {
   await expect(page).toHaveURL(/\/admin\/$/);
 }
 
+// Скрипт админки (подписи файлов, черновик) оживляет форму не сразу: пока нет метки data-draft-ready, выбранный файл не отражается в подписи
+async function formReady(page: Page) {
+  await page.locator('form[data-draft-ready]').waitFor();
+}
+
 async function removeCurrent(page: Page) {
   await page.getByRole('link', { name: 'Удалить' }).first().click();
   await page.getByRole('button', { name: 'Да, удалить' }).click();
@@ -31,6 +36,7 @@ async function removeCurrent(page: Page) {
 test('PDF в «Документы» с разделом «Учредительные документы» виден в «Сведениях»; замена и удаление чистят файлы', async ({ page }) => {
   await login(page);
   await page.goto('/admin/documents/new/');
+  await formReady(page);
   await page.getByLabel('Название').fill('Устав e2e');
   await page.getByLabel('Раздел').selectOption('uchreditelnye');
   await page.getByLabel('Дата документа').fill('2026-05-01');
@@ -69,6 +75,7 @@ test('PDF в «Документы» с разделом «Учредительн
   // замена: старый файл больше не отдаётся, новый — отдаётся
   await page.goto('/admin/documents/');
   await row.getByRole('link', { name: 'Устав e2e' }).click();
+  await formReady(page);
   await page.locator('#f-file').setInputFiles(PDF);
   await page.getByRole('button', { name: 'Сохранить' }).click();
   await expect(page.locator('.alert-ok')).toContainText('Сохранено');
@@ -86,6 +93,7 @@ test('PDF в «Документы» с разделом «Учредительн
 test('фото сотрудника: без подписи «Что на фото?» сохранить нельзя; ответственный за ОВЗ попадает в «Сведения»', async ({ page }) => {
   await login(page);
   await page.goto('/admin/team/new/');
+  await formReady(page);
   await page.getByLabel('Имя').fill('Проверкина Анна Петровна');
   await page.getByLabel('Должность').fill('Педагог-организатор');
   await page.getByLabel('Педагог', { exact: true }).check();
@@ -99,6 +107,7 @@ test('фото сотрудника: без подписи «Что на фот�
   await expect(page.getByLabel('Имя')).toHaveValue('Проверкина Анна Петровна');
 
   await page.getByLabel('Что на фото?').fill('Анна в зелёной футболке у входа в лагерь');
+  await formReady(page);
   await page.locator('#f-photo').setInputFiles(JPG); // браузер не хранит выбранный файл после ошибки
   await page.getByRole('button', { name: 'Сохранить' }).click();
   await expect(page.locator('.alert-ok')).toContainText('Сохранено');
@@ -121,8 +130,7 @@ test('«Скрыть» в списке вакансий убирает вака�
   await page.goto('/admin/vacancies/');
   const row = page.locator('.row', { hasText: 'Вожатый' }).first();
   const hide = row.getByRole('button', { name: /Скрыть/ });
-  const box = await hide.boundingBox();
-  expect(box!.height).toBeGreaterThanOrEqual(44);
+  await expect.poll(async () => (await hide.boundingBox())!.height).toBeGreaterThanOrEqual(44); // пока стили не загрузились, кнопка обычного роста
   await hide.click();
   await expect(page.getByRole('status')).toContainText('Видимость на сайте изменена');
   await expect(page.locator('.row', { hasText: 'Вожатый' }).first()).toContainText('Скрыто');
@@ -166,9 +174,11 @@ test('редактор базы: два раздела с короткими н�
   expect(await keys()).toEqual(before);
 
   // новое фото: без подписи отказ, с подписью — добавлено, убрано — файлы удалены
+  await formReady(page);
   await page.locator('#f-photos__new_1').setInputFiles(JPG);
   await page.getByRole('button', { name: 'Сохранить' }).click();
   await expect(page.locator('#error-summary')).toContainText('Опишите, что на фото');
+  await formReady(page);
   await page.locator('#f-photos__new_1').setInputFiles(JPG);
   await page.locator('#f-photos__newalt_1').fill('Новый корпус у леса');
   await page.getByRole('button', { name: 'Сохранить' }).click();
