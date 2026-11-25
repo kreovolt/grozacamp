@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace Groza\Data;
 
 use DateTimeImmutable;
+use Groza\Support\Clock;
+use Groza\Support\SystemClock;
 
 final class JsonStore
 {
@@ -19,7 +21,9 @@ final class JsonStore
         private string $versionsDir,
         private int $keepVersions = 20,
         private array $unversioned = self::PRIVATE_NAMES,
+        private ?Clock $clock = null,
     ) {
+        $this->clock ??= new SystemClock(date_default_timezone_get());
     }
 
     /** Имена файлов данных, кроме закрытых (users, auth-meta): их версии бывают, они попадают в копию. @return list<string> */
@@ -28,7 +32,7 @@ final class JsonStore
         $names = [];
         foreach (glob($this->dataDir . '/*.json') ?: [] as $path) {
             $name = basename($path, '.json');
-            if (preg_match('/^[a-z0-9_-]+$/', $name) === 1 && !in_array($name, self::PRIVATE_NAMES, true)) {
+            if (preg_match('/^[a-z0-9_-]+$/D', $name) === 1 && !in_array($name, self::PRIVATE_NAMES, true)) {
                 $names[] = $name;
             }
         }
@@ -108,7 +112,11 @@ final class JsonStore
 
         $this->ensureDir($this->dataDir);
         $lock = fopen($file . '.lock', 'c');
-        if ($lock === false || !flock($lock, LOCK_EX)) {
+        if ($lock === false) {
+            throw new \RuntimeException("Cannot lock $name");
+        }
+        if (!flock($lock, LOCK_EX)) {
+            fclose($lock);
             throw new \RuntimeException("Cannot lock $name");
         }
         try {
@@ -173,20 +181,37 @@ final class JsonStore
         $this->ensureDir($dir);
         $newest = $this->versions($name)[0]['id'] ?? '';
 
-        do {
-            $t = microtime(true);
-            $id = date('YmdHis', (int) $t) . '-' . sprintf('%06d', (int) (($t - floor($t)) * 1_000_000)) . '-' . bin2hex(random_bytes(2));
-        } while ($id <= $newest); // strictly increasing, so ordering never depends on the random suffix
+        $id = $this->nextVersionId($newest);
 
         if (!copy($file, $dir . '/' . $id . '.json')) {
             throw new \RuntimeException("Cannot save version of $name");
         }
-        file_put_contents($dir . '/' . $id . '.meta', json_encode(['actor' => $actor, 'at' => date('c')], self::FLAGS));
+        $meta = json_encode(['actor' => $actor, 'at' => $this->clock->now()->format('c')], self::FLAGS);
+        if (file_put_contents($dir . '/' . $id . '.meta', $meta) === false) {
+            @unlink($dir . '/' . $id . '.json');
+            throw new \RuntimeException("Cannot save version meta of $name");
+        }
 
         foreach (array_slice($this->versions($name), $this->keepVersions) as $old) {
             @unlink($dir . '/' . $old['id'] . '.json');
             @unlink($dir . '/' . $old['id'] . '.meta');
         }
+    }
+
+    /** Идентификатор строго больше предыдущего, даже если часы стоят или ушли назад (без ожидания и бесконечных циклов). */
+    private function nextVersionId(string $newest): string
+    {
+        $now = $this->clock->now();
+        $id = $now->format('YmdHis-u') . '-' . bin2hex(random_bytes(2));
+        if ($id > $newest) {
+            return $id;
+        }
+        $base = DateTimeImmutable::createFromFormat('YmdHis-u', substr($newest, 0, 21), $now->getTimezone());
+        if ($base === false) {
+            throw new \RuntimeException('Bad version id on disk: ' . $newest);
+        }
+
+        return $base->modify('+1 microsecond')->format('YmdHis-u') . '-' . bin2hex(random_bytes(2));
     }
 
     private function file(string $name): string
@@ -201,7 +226,7 @@ final class JsonStore
 
     private function checkName(string $name): string
     {
-        if (preg_match('/^[a-z0-9_-]+$/', $name) !== 1) {
+        if (preg_match('/^[a-z0-9_-]+$/D', $name) !== 1) {
             throw new \InvalidArgumentException("Bad store name '$name'");
         }
 

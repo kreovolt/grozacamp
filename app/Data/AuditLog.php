@@ -3,10 +3,14 @@ declare(strict_types=1);
 
 namespace Groza\Data;
 
+use Groza\Support\Clock;
+use Groza\Support\SystemClock;
+
 final class AuditLog
 {
-    public function __construct(private string $file)
+    public function __construct(private string $file, private ?Clock $clock = null)
     {
+        $this->clock ??= new SystemClock(date_default_timezone_get());
     }
 
     public function record(string $actor, string $action, string $target): void
@@ -16,10 +20,12 @@ final class AuditLog
             throw new \RuntimeException("Cannot create $dir");
         }
         $line = json_encode(
-            ['actor' => $actor, 'action' => $action, 'target' => $target, 'at' => date('c')],
+            ['actor' => $actor, 'action' => $action, 'target' => $target, 'at' => $this->clock->now()->format('c')],
             JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
         );
-        file_put_contents($this->file, $line . "\n", FILE_APPEND | LOCK_EX);
+        if (file_put_contents($this->file, $line . "\n", FILE_APPEND | LOCK_EX) === false) {
+            throw new \RuntimeException('Cannot write audit log');
+        }
     }
 
     /** @return list<array{actor:string, action:string, target:string, at:string}> newest first */

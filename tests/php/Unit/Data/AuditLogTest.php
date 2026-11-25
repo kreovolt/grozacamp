@@ -33,6 +33,24 @@ final class AuditLogTest extends TestCase
         $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/', $first['at']);
     }
 
+    public function test_timestamp_comes_from_the_injected_clock(): void
+    {
+        $log = new AuditLog($this->file, new \Groza\Support\FixedClock('2027-01-15T12:00:00+05:00'));
+        $log->record('anna', 'a', 'b');
+        $this->assertSame('2027-01-15T12:00:00+05:00', $log->recent()[0]['at']);
+    }
+
+    public function test_unwritable_log_is_reported_not_swallowed(): void
+    {
+        mkdir($this->file, 0777, true); // вместо файла — каталог: запись невозможна
+        try {
+            $this->expectException(\RuntimeException::class);
+            @(new AuditLog($this->file))->record('anna', 'a', 'b');
+        } finally {
+            rmdir($this->file);
+        }
+    }
+
     public function test_recent_is_newest_first_and_limited(): void
     {
         $log = new AuditLog($this->file);

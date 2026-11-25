@@ -5,6 +5,7 @@ namespace Groza\Tests\Unit\Data;
 
 use Groza\Data\ConflictException;
 use Groza\Data\JsonStore;
+use Groza\Support\FixedClock;
 use PHPUnit\Framework\TestCase;
 
 final class JsonStoreTest extends TestCase
@@ -55,7 +56,7 @@ final class JsonStoreTest extends TestCase
 
     public function test_rejects_bad_names(): void
     {
-        foreach (['../x', 'Shifts'] as $bad) {
+        foreach (['../x', 'Shifts', "shifts\n"] as $bad) {
             try {
                 $this->store()->write($bad, ['a' => 1], 'anna');
                 $this->fail("accepted $bad");
@@ -63,6 +64,33 @@ final class JsonStoreTest extends TestCase
                 $this->addToAssertionCount(1);
             }
         }
+    }
+
+    public function test_version_timestamps_come_from_the_injected_clock(): void
+    {
+        $s = new JsonStore($this->data, $this->versions, 20, JsonStore::PRIVATE_NAMES, new FixedClock('2027-01-15T12:00:00+05:00'));
+        $s->write('shifts', ['v' => 1], 'anna');
+        $s->write('shifts', ['v' => 2], 'boris');
+        $v = $s->versions('shifts');
+        $this->assertSame('2027-01-15T12:00:00+05:00', $v[0]['at']);
+        $this->assertStringStartsWith('20270115120000-', $v[0]['id']);
+    }
+
+    public function test_versions_stay_strictly_ordered_when_the_clock_stands_still_or_goes_back(): void
+    {
+        $clock = new FixedClock('2027-01-15T12:00:00+05:00');
+        $s = new JsonStore($this->data, $this->versions, 20, JsonStore::PRIVATE_NAMES, $clock);
+        for ($i = 1; $i <= 4; $i++) {
+            $s->write('shifts', ['v' => $i], 'anna');
+        }
+        $clock->advance('-1 day'); // часы ушли назад: цикл не должен зависнуть
+        $s->write('shifts', ['v' => 5], 'anna');
+        $ids = array_column($s->versions('shifts'), 'id');
+        $this->assertCount(4, $ids);
+        $sorted = $ids;
+        rsort($sorted, SORT_STRING);
+        $this->assertSame($sorted, $ids);
+        $this->assertSame($ids, array_values(array_unique($ids)));
     }
 
     public function test_each_write_saves_previous_version(): void

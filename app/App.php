@@ -264,12 +264,12 @@ final class App
     {
         $dir = $this->config['storageDir'];
 
-        return $this->store ??= new JsonStore($dir . '/data', $dir . '/versions');
+        return $this->store ??= new JsonStore($dir . '/data', $dir . '/versions', clock: $this->clock);
     }
 
     public function audit(): AuditLog
     {
-        return $this->audit ??= new AuditLog($this->config['storageDir'] . '/logs/audit.jsonl');
+        return $this->audit ??= new AuditLog($this->config['storageDir'] . '/logs/audit.jsonl', $this->clock);
     }
 
     public function auth(): Auth
