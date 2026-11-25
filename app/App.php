@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Groza;
 
+use Groza\Data\AuditLog;
+use Groza\Data\JsonStore;
 use Groza\Http\Request;
 use Groza\Http\Response;
 use Groza\Http\Router;
@@ -13,6 +15,8 @@ use Groza\Support\SystemClock;
 final class App
 {
     private Router $router;
+    private ?JsonStore $store = null;
+    private ?AuditLog $audit = null;
 
     /** @param array<string,mixed> $config */
     private function __construct(private array $config, private Clock $clock)
@@ -47,5 +51,17 @@ final class App
     public function clock(): Clock
     {
         return $this->clock;
+    }
+
+    public function store(): JsonStore
+    {
+        $dir = $this->config['storageDir'];
+
+        return $this->store ??= new JsonStore($dir . '/data', $dir . '/versions');
+    }
+
+    public function audit(): AuditLog
+    {
+        return $this->audit ??= new AuditLog($this->config['storageDir'] . '/logs/audit.jsonl');
     }
 }
