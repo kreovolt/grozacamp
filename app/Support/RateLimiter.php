@@ -22,7 +22,7 @@ final class RateLimiter
     public function hit(string $bucket, string $key, int $max, int $windowSec): bool
     {
         if (!is_dir($this->dir) && !@mkdir($this->dir, 0775, true) && !is_dir($this->dir)) {
-            return true; // нет места для счётчиков — лучше пропустить, чем закрыть форму для всех
+            return $this->failOpen('нет каталога для счётчиков');
         }
         $now = $this->clock->now()->getTimestamp();
         $this->prune($now);
@@ -30,10 +30,12 @@ final class RateLimiter
         $file = $this->file($bucket, $key);
         $fh = @fopen($file, 'c+');
         if ($fh === false) {
-            return true;
+            return $this->failOpen('не открыть файл счётчика');
         }
         try {
-            flock($fh, LOCK_EX);
+            if (!flock($fh, LOCK_EX)) {
+                return $this->failOpen('не получить блокировку счётчика');
+            }
             $data = json_decode((string) stream_get_contents($fh), true);
             $hits = is_array($data['hits'] ?? null) ? $data['hits'] : [];
             $hits = array_values(array_filter($hits, static fn ($t): bool => is_int($t) && $t > $now - $windowSec));
@@ -52,6 +54,14 @@ final class RateLimiter
             flock($fh, LOCK_UN);
             fclose($fh);
         }
+    }
+
+    /** Лучше пропустить обращение, чем закрыть форму для всех; но сбой хранилища попадает в журнал ошибок (без адресов и ключей). */
+    private function failOpen(string $why): bool
+    {
+        error_log('Groza rate limiter: ' . $why . ' — лимит не действует');
+
+        return true;
     }
 
     /** Сколько обращений учтено за последние $windowSec секунд (без учёта нового). */
@@ -91,8 +101,19 @@ final class RateLimiter
             return;
         }
         foreach (glob($this->dir . '/*.json') ?: [] as $file) {
-            $data = json_decode((string) @file_get_contents($file), true);
-            if (!is_array($data) || (int) ($data['expires'] ?? 0) < $now) {
+            // Файл, который сейчас пишет hit(), не трогаем: читать его посреди записи значит принять живой счётчик за пустой
+            $fh = @fopen($file, 'r');
+            if ($fh === false) {
+                continue;
+            }
+            $expired = false;
+            if (flock($fh, LOCK_SH | LOCK_NB)) {
+                $data = json_decode((string) stream_get_contents($fh), true);
+                $expired = !is_array($data) || (int) ($data['expires'] ?? 0) < $now;
+                flock($fh, LOCK_UN);
+            }
+            fclose($fh);
+            if ($expired) {
                 @unlink($file);
             }
         }

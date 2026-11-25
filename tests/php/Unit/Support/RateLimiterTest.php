@@ -72,4 +72,40 @@ final class RateLimiterTest extends TestCase
         $new->hit('b', 'fresh', 3, 600);
         $this->assertCount(1, glob($this->dir . '/*'));
     }
+
+    public function test_storage_failure_fails_open_but_is_logged_without_keys(): void
+    {
+        $blocker = tempnam(sys_get_temp_dir(), 'groza-rl-');
+        $log = tempnam(sys_get_temp_dir(), 'groza-log-');
+        $old = ini_set('error_log', $log);
+        try {
+            $rl = new RateLimiter($blocker . '/sub', new FixedClock('2027-01-15T12:00:00+05:00'), 'k');
+            $this->assertTrue(@$rl->hit('booking', '203.0.113.5', 1, 600));
+            $this->assertTrue(@$rl->hit('booking', '203.0.113.5', 1, 600)); // лимит не действует
+            $logged = (string) file_get_contents($log);
+            $this->assertStringContainsString('Groza rate limiter', $logged);
+            $this->assertStringNotContainsString('203.0.113.5', $logged);
+        } finally {
+            ini_set('error_log', (string) $old);
+            unlink($blocker);
+            unlink($log);
+        }
+    }
+
+    public function test_prune_leaves_a_counter_that_is_being_written(): void
+    {
+        $old = new RateLimiter($this->dir, new FixedClock('2027-01-15T12:00:00+05:00'), 'k');
+        $old->hit('b', 'busy', 3, 600);
+        $file = (glob($this->dir . '/*.json') ?: [])[0];
+        $busy = fopen($file, 'c+');
+        flock($busy, LOCK_EX); // как будто hit() другого запроса сейчас пишет этот файл
+        try {
+            $new = new RateLimiter($this->dir, new FixedClock('2027-01-15T14:00:00+05:00'), 'k', 1);
+            $new->hit('b', 'fresh', 3, 600);
+            $this->assertFileExists($file);
+        } finally {
+            flock($busy, LOCK_UN);
+            fclose($busy);
+        }
+    }
 }
