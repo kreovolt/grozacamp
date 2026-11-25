@@ -1,11 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
+import { PORT_ADMIN, url } from './ports';
 import { resolve } from 'node:path';
 
 // Тот же сервер и те же данные, что у admin-shifts.spec.ts (порт 8097, storage/test-admin), свой пользователь.
 // Заменённые и удалённые файлы остаются в public/uploads, пока их версия в истории: после прогонов их убирает `php scripts/uploads-gc.php`.
 
 const PASSWORD = 'e2e-password-123';
-const ADMIN = 'http://127.0.0.1:8097';
+const ADMIN = url(PORT_ADMIN);
 const PDF = resolve('tests/fixtures/uploads/real.pdf');
 const JPG = resolve('tests/fixtures/uploads/small.jpg');
 
@@ -149,6 +150,7 @@ test('редактор базы: два раздела с короткими н�
   await login(page);
   await page.goto('/admin/venues/');
   await page.locator('.row').first().getByRole('link', { name: 'Изменить' }).click();
+  await formReady(page); // порядок фото и «убрать» оживляет скрипт админки: без него клики уходят в пустоту
 
   await expect(page.getByRole('heading', { name: 'Материально-техническое обеспечение (п. 9)' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Доступная среда (п. 11)' })).toBeVisible();
@@ -163,7 +165,7 @@ test('редактор базы: два раздела с короткими н�
   const before = await keys();
   expect(before.length).toBeGreaterThan(2);
   await page.locator('[data-gallery-item]').first().locator('[data-gallery-down]').click();
-  expect(await keys()).toEqual([before[1], before[0], ...before.slice(2)]);
+  await expect.poll(keys).toEqual([before[1], before[0], ...before.slice(2)]);
   await page.getByRole('button', { name: 'Сохранить' }).click();
   await expect(page.locator('.alert-ok')).toContainText('Сохранено');
   expect(await keys()).toEqual([before[1], before[0], ...before.slice(2)]);
@@ -208,4 +210,23 @@ test('вопросы: счётчик «На главной: N из 5»; отзы
   await expect(page.locator('.row').first()).toContainText('Скрыто');
   await page.locator('.row').first().getByRole('button', { name: /Показать/ }).click();
   await expect(page.locator('.row').first()).not.toContainText('Скрыто');
+});
+
+test('подпись файла совпадает с полем, даже если файл выбран раньше, чем запустился скрипт админки', async ({ page }) => {
+  await login(page);
+  let release!: () => void;
+  const scriptGate = new Promise<void>((resolveGate) => {
+    release = resolveGate;
+  });
+  // скрипт админки «грузится медленно»: событие change от выбора файла проходит раньше, чем он подписался
+  await page.route(/\/assets\/js\/admin\.js/, async (route) => {
+    await scriptGate;
+    await route.continue();
+  });
+  await page.goto('/admin/documents/new/', { waitUntil: 'commit' });
+  await page.locator('#f-file').waitFor({ state: 'attached' });
+  await page.locator('#f-file').setInputFiles(PDF);
+  await expect(page.locator('label[for="f-file"]')).not.toContainText('Выбрано'); // скрипта ещё нет
+  release();
+  await expect(page.locator('label[for="f-file"]')).toContainText('Выбрано: real.pdf');
 });

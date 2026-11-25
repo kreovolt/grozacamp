@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
+import { PORT, url } from './ports';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
@@ -226,7 +227,7 @@ test.describe('оглавление /info/', () => {
 
     const ctx = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 375, height: 800 } });
     const nojs = await ctx.newPage();
-    await nojs.goto('http://127.0.0.1:8099/info/');
+    await nojs.goto(url(PORT) + '/info/');
     await expect(nojs.locator('nav details').first()).toHaveAttribute('open', '');
     await ctx.close();
   });

@@ -1,9 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
+import { PORT_ADMIN, url } from './ports';
 
 // Свой сервер и свои данные (storage/test-admin, порт 8097): смены здесь меняются свободно, другие спеки не страдают.
 // Пользователь e2e-shifts создаётся в globalSetup. Всё — в размере телефона: офис правит смены с телефона.
 const PASSWORD = 'e2e-password-123';
-const ADMIN = 'http://127.0.0.1:8097';
+const ADMIN = url(PORT_ADMIN);
 
 // Все тесты файла делят одни данные смен (общий файл shifts.json): идут по очереди, иначе настоящий «кто-то сохранил» ломает соседей
 test.describe.configure({ mode: 'serial' });

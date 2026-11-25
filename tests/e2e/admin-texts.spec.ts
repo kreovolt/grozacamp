@@ -1,9 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
+import { PORT_TEXTS, url } from './ports';
 
 // Свой сервер и данные (порт 8096, storage/test-texts): тексты и настройки меняются, редактор грузит много статики.
 // Всё, что тест меняет, он возвращает на место.
 const PASSWORD = 'e2e-password-123';
-const ADMIN = 'http://127.0.0.1:8096';
+const ADMIN = url(PORT_TEXTS);
 
 test.describe.configure({ mode: 'serial' });
 test.use({ baseURL: ADMIN, viewport: { width: 1100, height: 900 } });

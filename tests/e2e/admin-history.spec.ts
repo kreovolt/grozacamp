@@ -1,8 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
+import { PORT_HISTORY, url } from './ports';
 
 // Свой сервер и данные (порт 8095, storage/test-history): здесь скрываются записи и возвращаются версии.
 const PASSWORD = 'e2e-password-123';
-const HOME = 'http://127.0.0.1:8095';
+const HOME = url(PORT_HISTORY);
 
 test.use({ baseURL: HOME });
 test.describe.configure({ mode: 'serial' });

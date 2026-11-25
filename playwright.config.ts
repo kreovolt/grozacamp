@@ -1,11 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 import { resolve } from 'node:path';
 
-const PORT = 8099;
-const PORT_METRIKA = 8098;
-const PORT_TEXTS = 8096; // свои данные для admin-texts.spec.ts: тексты и настройки меняются, редактор грузит много статики
-const PORT_HISTORY = 8095; // свои данные для admin-history.spec.ts: откат и скрытие записей не мешают другим спекам
-const PORT_ADMIN = 8097; // отдельный сервер и данные для admin-shifts.spec.ts: правки смен не мешают другим спекам
+// Порты серверов — в tests/e2e/ports.ts (их же берут спеки)
+import { PORT, PORT_ADMIN, PORT_HISTORY, PORT_METRIKA, PORT_TEXTS } from './tests/e2e/ports';
 
 // Сквозные тесты: встроенный сервер PHP в окружении test со своим каталогом данных storage/test;
 // перед прогоном globalSetup кладёт туда примерные данные seed/demo.

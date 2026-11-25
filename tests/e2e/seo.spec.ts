@@ -1,7 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
+import { PORT_METRIKA, url } from './ports';
 
 const PAGES = ['/', '/booking/', '/info/', '/vacancies/', '/team/', '/contacts/', '/pravila/', '/policy/', '/svedeniya/', '/svedeniya/mto/', '/program/spasatel-2027/', '/net-takoy-stranicy/'];
-const METRIKA = 'http://127.0.0.1:8098';
+const METRIKA = url(PORT_METRIKA);
 
 /** Собирает нарушения CSP и ошибки консоли за время загрузки страницы. */
 async function watch(page: Page): Promise<string[]> {
