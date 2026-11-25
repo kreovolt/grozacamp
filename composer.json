@@ -8,7 +8,7 @@
   },
   "autoload": {
     "psr-4": { "Groza\\": "app/" },
-    "files": ["app/View/helpers.php"]
+    "files": ["app/View/helpers.php", "app/View/Picture.php"]
   },
   "autoload-dev": {
     "psr-4": { "Groza\\Tests\\": "tests/php/" }

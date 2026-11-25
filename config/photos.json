@@ -1,0 +1,103 @@
+{
+  "hero-river": {
+    "file": "shoot-group-splash",
+    "widths": [
+      480,
+      960,
+      1440,
+      1920
+    ],
+    "avifQuality": 38,
+    "position": "center 40%"
+  },
+  "kids-evening": {
+    "file": "kids-friends-hug-evening"
+  },
+  "kids-girls": {
+    "file": "kids-girls-friends"
+  },
+  "kids-boy": {
+    "file": "kids-smiling-boy-v"
+  },
+  "kids-bubbles": {
+    "file": "kids-girl-bubbles-v"
+  },
+  "kids-teens": {
+    "file": "kids-teens-group"
+  },
+  "kids-gazebo": {
+    "file": "kids-group-gazebo"
+  },
+  "kids-tent": {
+    "file": "kids-sunny-tent"
+  },
+  "counselors": {
+    "file": "shoot-counselors"
+  },
+  "counselors-kids": {
+    "file": "shoot-counselors-kids"
+  },
+  "squad-river": {
+    "file": "shoot-squad-river"
+  },
+  "toss": {
+    "file": "shoot-toss-hero"
+  },
+  "spas-mchs": {
+    "file": "spas-group-mchs"
+  },
+  "spas-demo": {
+    "file": "spas-rescuer-demo"
+  },
+  "spas-fire": {
+    "file": "spas-firefighter-kid"
+  },
+  "spas-laugh": {
+    "file": "spas-facepaint-laugh"
+  },
+  "sturm-smile": {
+    "file": "sturm-kids-group-smile"
+  },
+  "sturm-relay": {
+    "file": "sturm-relay-race"
+  },
+  "sturm-theatre": {
+    "file": "sturm-theatre-costumes"
+  },
+  "sturm-cheer": {
+    "file": "sturm-group-cheer"
+  },
+  "base-cabins": {
+    "file": "living-aframe-cabins"
+  },
+  "base-cabins-row": {
+    "file": "living-cabins-row"
+  },
+  "base-room": {
+    "file": "living-room-beds"
+  },
+  "base-bunk": {
+    "file": "living-room-bunk"
+  },
+  "base-wash": {
+    "file": "living-washbasin"
+  },
+  "base-building": {
+    "file": "living-building-wide"
+  },
+  "base-stage": {
+    "file": "living-stage-hall"
+  },
+  "base-gazebo": {
+    "file": "living-gazebo"
+  },
+  "base-rafts": {
+    "file": "living-rafts"
+  },
+  "base-sports": {
+    "file": "living-sports-bars"
+  },
+  "base-playground": {
+    "file": "living-playground-v"
+  }
+}

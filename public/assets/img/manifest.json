@@ -1,0 +1,469 @@
+{
+  "hero-river": {
+    "src": "/assets/img/hero-river",
+    "widths": [
+      480,
+      960,
+      1440,
+      1920
+    ],
+    "formats": [
+      "avif",
+      "webp",
+      "jpg"
+    ],
+    "w": 1920,
+    "h": 1133,
+    "position": "center 40%"
+  },
+  "kids-evening": {
+    "src": "/assets/img/kids-evening",
+    "widths": [
+      480,
+      960,
+      1440
+    ],
+    "formats": [
+      "avif",
+      "webp",
+      "jpg"
+    ],
+    "w": 1440,
+    "h": 960
+  },
+  "kids-girls": {
+    "src": "/assets/img/kids-girls",
+    "widths": [
+      480,
+      960,
+      1440
+    ],
+    "formats": [
+      "avif",
+      "webp",
+      "jpg"
+    ],
+    "w": 1440,
+    "h": 960
+  },
+  "kids-boy": {
+    "src": "/assets/img/kids-boy",
+    "widths": [
+      480,
+      960,
+      1440
+    ],
+    "formats": [
+      "avif",
+      "webp",
+      "jpg"
+    ],
+    "w": 1440,
+    "h": 2160
+  },
+  "kids-bubbles": {
+    "src": "/assets/img/kids-bubbles",
+    "widths": [
+      480,
+      960,
+      1440
+    ],
+    "formats": [
+      "avif",
+      "webp",
+      "jpg"
+    ],
+    "w": 1440,
+    "h": 1659
+  },
+  "kids-teens": {
+    "src": "/assets/img/kids-teens",
+    "widths": [
+      480,
+      960,
+      1440
+    ],
+    "formats": [
+      "avif",
+      "webp",
+      "jpg"
+    ],
+    "w": 1440,
+    "h": 960
+  },
+  "kids-gazebo": {
+    "src": "/assets/img/kids-gazebo",
+    "widths": [
+      480,
+      960,
+      1440
+    ],
+    "formats": [
+      "avif",
+      "webp",
+      "jpg"
+    ],
+    "w": 1440,
+    "h": 960
+  },
+  "kids-tent": {
+    "src": "/assets/img/kids-tent",
+    "widths": [
+      480,
+      960,
+      1440
+    ],
+    "formats": [
+      "avif",
+      "webp",
+      "jpg"
+    ],
+    "w": 1440,
+    "h": 960
+  },
+  "counselors": {
+    "src": "/assets/img/counselors",
+    "widths": [
+      480,
+      960,
+      1440
+    ],
+    "formats": [
+      "avif",
+      "webp",
+      "jpg"
+    ],
+    "w": 1440,
+    "h": 960
+  },
+  "counselors-kids": {
+    "src": "/assets/img/counselors-kids",
+    "widths": [
+      480,
+      960,
+      1440
+    ],
+    "formats": [
+      "avif",
+      "webp",
+      "jpg"
+    ],
+    "w": 1440,
+    "h": 960
+  },
+  "squad-river": {
+    "src": "/assets/img/squad-river",
+    "widths": [
+      480,
+      960,
+      1440
+    ],
+    "formats": [
+      "avif",
+      "webp",
+      "jpg"
+    ],
+    "w": 1440,
+    "h": 960
+  },
+  "toss": {
+    "src": "/assets/img/toss",
+    "widths": [
+      480,
+      960,
+      1440
+    ],
+    "formats": [
+      "avif",
+      "webp",
+      "jpg"
+    ],
+    "w": 1440,
+    "h": 960
+  },
+  "spas-mchs": {
+    "src": "/assets/img/spas-mchs",
+    "widths": [
+      480,
+      960,
+      1440
+    ],
+    "formats": [
+      "avif",
+      "webp",
+      "jpg"
+    ],
+    "w": 1440,
+    "h": 960
+  },
+  "spas-demo": {
+    "src": "/assets/img/spas-demo",
+    "widths": [
+      480,
+      960,
+      1440
+    ],
+    "formats": [
+      "avif",
+      "webp",
+      "jpg"
+    ],
+    "w": 1440,
+    "h": 960
+  },
+  "spas-fire": {
+    "src": "/assets/img/spas-fire",
+    "widths": [
+      480,
+      960,
+      1440
+    ],
+    "formats": [
+      "avif",
+      "webp",
+      "jpg"
+    ],
+    "w": 1440,
+    "h": 960
+  },
+  "spas-laugh": {
+    "src": "/assets/img/spas-laugh",
+    "widths": [
+      480,
+      960,
+      1440
+    ],
+    "formats": [
+      "avif",
+      "webp",
+      "jpg"
+    ],
+    "w": 1440,
+    "h": 960
+  },
+  "sturm-smile": {
+    "src": "/assets/img/sturm-smile",
+    "widths": [
+      480,
+      960,
+      1440
+    ],
+    "formats": [
+      "avif",
+      "webp",
+      "jpg"
+    ],
+    "w": 1440,
+    "h": 960
+  },
+  "sturm-relay": {
+    "src": "/assets/img/sturm-relay",
+    "widths": [
+      480,
+      960,
+      1440
+    ],
+    "formats": [
+      "avif",
+      "webp",
+      "jpg"
+    ],
+    "w": 1440,
+    "h": 960
+  },
+  "sturm-theatre": {
+    "src": "/assets/img/sturm-theatre",
+    "widths": [
+      480,
+      960,
+      1440
+    ],
+    "formats": [
+      "avif",
+      "webp",
+      "jpg"
+    ],
+    "w": 1440,
+    "h": 960
+  },
+  "sturm-cheer": {
+    "src": "/assets/img/sturm-cheer",
+    "widths": [
+      480,
+      960,
+      1440
+    ],
+    "formats": [
+      "avif",
+      "webp",
+      "jpg"
+    ],
+    "w": 1440,
+    "h": 960
+  },
+  "base-cabins": {
+    "src": "/assets/img/base-cabins",
+    "widths": [
+      480,
+      960,
+      1440
+    ],
+    "formats": [
+      "avif",
+      "webp",
+      "jpg"
+    ],
+    "w": 1440,
+    "h": 960
+  },
+  "base-cabins-row": {
+    "src": "/assets/img/base-cabins-row",
+    "widths": [
+      480,
+      960,
+      1440
+    ],
+    "formats": [
+      "avif",
+      "webp",
+      "jpg"
+    ],
+    "w": 1440,
+    "h": 960
+  },
+  "base-room": {
+    "src": "/assets/img/base-room",
+    "widths": [
+      480,
+      960,
+      1440
+    ],
+    "formats": [
+      "avif",
+      "webp",
+      "jpg"
+    ],
+    "w": 1440,
+    "h": 993
+  },
+  "base-bunk": {
+    "src": "/assets/img/base-bunk",
+    "widths": [
+      480,
+      960,
+      1440
+    ],
+    "formats": [
+      "avif",
+      "webp",
+      "jpg"
+    ],
+    "w": 1440,
+    "h": 960
+  },
+  "base-wash": {
+    "src": "/assets/img/base-wash",
+    "widths": [
+      480,
+      960,
+      1440
+    ],
+    "formats": [
+      "avif",
+      "webp",
+      "jpg"
+    ],
+    "w": 1440,
+    "h": 960
+  },
+  "base-building": {
+    "src": "/assets/img/base-building",
+    "widths": [
+      480,
+      960,
+      1440
+    ],
+    "formats": [
+      "avif",
+      "webp",
+      "jpg"
+    ],
+    "w": 1440,
+    "h": 960
+  },
+  "base-stage": {
+    "src": "/assets/img/base-stage",
+    "widths": [
+      480,
+      960,
+      1440
+    ],
+    "formats": [
+      "avif",
+      "webp",
+      "jpg"
+    ],
+    "w": 1440,
+    "h": 960
+  },
+  "base-gazebo": {
+    "src": "/assets/img/base-gazebo",
+    "widths": [
+      480,
+      960,
+      1440
+    ],
+    "formats": [
+      "avif",
+      "webp",
+      "jpg"
+    ],
+    "w": 1440,
+    "h": 960
+  },
+  "base-rafts": {
+    "src": "/assets/img/base-rafts",
+    "widths": [
+      480,
+      960,
+      1440
+    ],
+    "formats": [
+      "avif",
+      "webp",
+      "jpg"
+    ],
+    "w": 1440,
+    "h": 960
+  },
+  "base-sports": {
+    "src": "/assets/img/base-sports",
+    "widths": [
+      480,
+      960,
+      1440
+    ],
+    "formats": [
+      "avif",
+      "webp",
+      "jpg"
+    ],
+    "w": 1440,
+    "h": 960
+  },
+  "base-playground": {
+    "src": "/assets/img/base-playground",
+    "widths": [
+      480,
+      960,
+      1440
+    ],
+    "formats": [
+      "avif",
+      "webp",
+      "jpg"
+    ],
+    "w": 1440,
+    "h": 2160
+  }
+}
