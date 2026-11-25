@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Groza\Domain;
 
 use DateTimeImmutable;
-use Groza\Admin\Sanitizer;
+use Groza\Support\Sanitizer;
 use Groza\Support\Slug;
 
 final class Validator

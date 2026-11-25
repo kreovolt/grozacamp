@@ -73,7 +73,7 @@ function richtext(?string $html): string
         if (count($cache) > 200) {
             $cache = [];
         }
-        $cache[$key] = \Groza\Admin\Sanitizer::clean($html);
+        $cache[$key] = \Groza\Support\Sanitizer::clean($html);
     }
 
     return $cache[$key];

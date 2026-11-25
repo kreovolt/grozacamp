@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Groza\Admin\Controllers;
 
-use Groza\Admin\Sanitizer;
+use Groza\Support\Sanitizer;
 use Groza\App;
 use Groza\Data\ConflictException;
 use Groza\Http\Request;

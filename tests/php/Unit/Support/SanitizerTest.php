@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Groza\Tests\Unit\Admin;
+namespace Groza\Tests\Unit\Support;
 
-use Groza\Admin\Sanitizer;
+use Groza\Support\Sanitizer;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -134,6 +134,16 @@ final class SanitizerTest extends TestCase
             $this->assertNotSame('', Sanitizer::clean($html), $html);
         }
         $this->assertStringContainsString('ячейка', Sanitizer::clean('<table><tr><td>ячейка</td></tr></table>'));
+    }
+
+    public function test_unlisted_block_tags_do_not_glue_neighbouring_text(): void
+    {
+        $text = static fn (string $html): string => trim(strip_tags(Sanitizer::clean($html)));
+        $this->assertSame('a b', $text('<table><tr><td>a</td><td>b</td></tr></table>'));
+        $this->assertSame('a b', $text('<dl><dt>a</dt><dd>b</dd></dl>'));
+        $this->assertSame('a b', $text('<section>a</section><section>b</section>'));
+        $this->assertSame('a b', $text('<article>a</article><aside>b</aside>'));
+        $this->assertSame('abc', $text('<p>a<span>b</span>c</p>')); // строчные теги слова не разрывают
     }
 
     public function test_dangerous_elements_still_dropped_with_content(): void

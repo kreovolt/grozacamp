@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Groza\Pages;
 
-use Groza\Admin\Sanitizer;
+use Groza\Support\Sanitizer;
 use Groza\App;
 use Groza\Content\PageData;
 use Groza\Http\Request;

@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Groza\Admin;
+namespace Groza\Support;
 
 use Symfony\Component\HtmlSanitizer\HtmlSanitizer;
 use Symfony\Component\HtmlSanitizer\HtmlSanitizerConfig;
@@ -32,7 +32,7 @@ final class Sanitizer
         if (preg_match('/<[a-zA-Z!\/?]/', $html) !== 1) {
             $html = self::paragraphs($html);
         }
-        $out = self::links(self::sanitizer()->sanitize(self::rename($html)));
+        $out = trim(self::links(self::sanitizer()->sanitize(self::rename($html))));
 
         return self::isBlank($out) ? '' : $out;
     }
@@ -50,9 +50,16 @@ final class Sanitizer
     {
         $map = ['b' => 'strong', 'i' => 'em', 'div' => 'p', 'pre' => 'p', 'h1' => 'h3', 'h2' => 'h3', 'h4' => 'h3', 'h5' => 'h3', 'h6' => 'h3'];
 
-        return preg_replace_callback(
+        $html = preg_replace_callback(
             '#<(/?)(b|i|div|pre|h[1-6])(?=[\s/>])#i',
             static fn (array $m): string => '<' . $m[1] . ($map[strtolower($m[2])] ?? strtolower($m[2])),
+            $html
+        ) ?? $html;
+
+        // Снимаемые блочные теги (ячейки, секции, dd) — границы слов: пробел после закрывающего, чтобы соседний текст не склеился
+        return preg_replace(
+            '#(</(?:td|th|tr|caption|dt|dd|section|article|header|footer|main|aside|figure|figcaption|address|center)\s*>)#i',
+            '$1 ',
             $html
         ) ?? $html;
     }
