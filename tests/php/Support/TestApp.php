@@ -28,6 +28,9 @@ final class TestApp
             'storageDir' => $storage,
             'appSecret' => 'test-secret',
             'fakeNow' => '2027-01-15T12:00:00+05:00',
+            // Тесты никогда не берут настоящие доступы из config/local.php или переменных окружения
+            'mail' => ['host' => '', 'user' => '', 'pass' => ''],
+            'staging' => ['user' => '', 'pass' => ''],
         ], $overrides);
 
         return App::boot($config);

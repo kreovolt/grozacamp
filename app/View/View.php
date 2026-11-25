@@ -11,7 +11,7 @@ namespace Groza\View;
  */
 final class View
 {
-    private const NAME = '#^[a-z0-9][a-z0-9_-]*(/[a-z0-9][a-z0-9_-]*)*$#';
+    private const NAME = '#^[a-z0-9_][a-z0-9_-]*(/[a-z0-9_][a-z0-9_-]*)*$#'; // «_имя» — внутренние куски форм
 
     /** @var array{0:string,1:array<string,mixed>}|null макет, запрошенный текущим шаблоном */
     private ?array $pendingLayout = null;

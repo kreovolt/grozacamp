@@ -9,7 +9,14 @@ use Groza\Data\JsonStore;
 use Groza\Data\Seeder;
 use Groza\Http\Request;
 use Groza\Http\Response;
+use Groza\Forms\FormGuard;
 use Groza\Http\Router;
+use Groza\Mail\ArrayTransport;
+use Groza\Mail\FileTransport;
+use Groza\Mail\Mailer;
+use Groza\Mail\MailTransport;
+use Groza\Mail\SmtpTransport;
+use Groza\Support\RateLimiter;
 use Groza\Support\Clock;
 use Groza\Support\FixedClock;
 use Groza\Support\SystemClock;
@@ -21,6 +28,7 @@ final class App
     private ?JsonStore $store = null;
     private ?AuditLog $audit = null;
     private ?View $view = null;
+    private ?MailTransport $mailTransport = null;
     private string $currentPath = '/';
 
     /** @param array<string,mixed> $config */
@@ -97,6 +105,58 @@ final class App
         $defaults = require $this->config['rootDir'] . '/config/settings.defaults.php';
 
         return array_replace($defaults, $this->store()->read('settings'));
+    }
+
+    /** Защита публичных форм. Без секрета приложения форма не работает вовсе (на проде это ошибка настройки). */
+    public function guard(): FormGuard
+    {
+        $secret = (string) $this->config['appSecret'];
+        if ($secret === '') {
+            if (in_array($this->config['env'], ['staging', 'prod'], true)) {
+                throw new RuntimeException('Не задан appSecret в config/local.php.');
+            }
+            $secret = 'dev-only-secret'; // локальная разработка без config/local.php
+        }
+
+        return new FormGuard(
+            $secret,
+            new RateLimiter($this->config['storageDir'] . '/ratelimit', $this->clock, $secret),
+            $this->clock,
+            (string) $this->config['baseUrl']
+        );
+    }
+
+    /** Транспорт писем: test — в памяти, dev — файлы .eml в storage/mail, иначе SMTP. */
+    public function mailTransport(): MailTransport
+    {
+        return $this->mailTransport ??= match ($this->config['env']) {
+            'test' => new ArrayTransport(),
+            'dev' => new FileTransport($this->config['storageDir'] . '/mail'),
+            default => new SmtpTransport($this->config['mail']),
+        };
+    }
+
+    /** Для тестов: подменить транспорт (например, на падающий). */
+    public function setMailTransport(MailTransport $transport): void
+    {
+        $this->mailTransport = $transport;
+    }
+
+    public function mailer(): Mailer
+    {
+        $mail = $this->config['mail'];
+        $from = trim((string) ($mail['from'] ?? ''));
+        if ($from === '') {
+            $from = 'noreply@' . (string) parse_url((string) $this->config['baseUrl'], PHP_URL_HOST);
+        }
+
+        return new Mailer(
+            $this->mailTransport(),
+            trim((string) ($this->settings()['mailTo'] ?? '')),
+            $from,
+            (string) ($mail['fromName'] ?? ''),
+            $this->clock
+        );
     }
 
     public function view(): View
