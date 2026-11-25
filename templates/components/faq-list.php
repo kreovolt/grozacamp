@@ -8,6 +8,7 @@ declare(strict_types=1);
  * @var string|null $class
  */
 use function Groza\View\e;
+use function Groza\View\richtext;
 use function Groza\View\icon;
 
 if ($items === []) {
@@ -22,7 +23,7 @@ if ($items === []) {
         <?= icon('chevron-down', 'mt-0.5 size-6 text-rust-dark transition-transform duration-200 group-open:rotate-180') ?>
       </summary>
       <div class="richtext max-w-[62ch] pb-6 pr-8 leading-relaxed text-ink-soft">
-        <?= (string) $item['answer'] ?>
+        <?= richtext((string) $item['answer']) ?>
       </div>
     </details>
   <?php endforeach ?>

@@ -52,4 +52,23 @@ export default function globalSetup(): void {
       throw new Error(`scripts/user.php add ${login} завершился с кодом ${u.status ?? u.signal}`);
     }
   }
+
+  // Отдельные данные для admin-texts.spec.ts (сервер на порту 8096)
+  rmSync('storage/test-texts', { recursive: true, force: true });
+  const seedTexts = spawnSync(
+    process.execPath,
+    ['scripts/php.mjs', 'scripts/seed.php', '--demo', '--target=storage/test-texts', '--force'],
+    { stdio: 'inherit', env: { ...process.env, GROZA_ENV: 'test' } },
+  );
+  if (seedTexts.status !== 0) {
+    throw new Error(`scripts/seed.php (storage/test-texts) завершился с кодом ${seedTexts.status ?? seedTexts.signal}`);
+  }
+  const textsUser = spawnSync(process.execPath, ['scripts/php.mjs', 'scripts/user.php', 'add', 'e2e-texts', 'Тест Тексты', '--password-stdin'], {
+    input: E2E_PASSWORD,
+    stdio: ['pipe', 'inherit', 'inherit'],
+    env: { ...process.env, GROZA_ENV: 'test', GROZA_STORAGE_DIR: 'storage/test-texts' },
+  });
+  if (textsUser.status !== 0) {
+    throw new Error(`scripts/user.php add e2e-texts завершился с кодом ${textsUser.status ?? textsUser.signal}`);
+  }
 }

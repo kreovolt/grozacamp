@@ -12,6 +12,7 @@ use Groza\Support\Phone;
 
 use function Groza\View\e;
 use function Groza\View\icon;
+use function Groza\View\safe_url;
 use function Groza\View\tel;
 
 $current = static fn (string $href): string => $href === $currentPath ? ' aria-current="page"' : '';
@@ -97,10 +98,10 @@ $hours = array_values(array_filter([$settings['hoursWeekdays'] ?? '', $settings[
               'attrs' => ['target' => '_blank', 'rel' => 'noopener'],
           ]) ?>
         <?php endif ?>
-        <?php if (!empty($settings['vk'])): ?>
+        <?php if (safe_url($settings['vk'] ?? '') !== ''): ?>
           <?= $this->partial('components/button', [
               'label' => 'ВКонтакте',
-              'href' => (string) $settings['vk'],
+              'href' => safe_url($settings['vk']),
               'variant' => 'outline-light',
               'icon' => 'vk',
               'attrs' => ['target' => '_blank', 'rel' => 'noopener'],

@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 
 const PORT = 8099;
 const PORT_METRIKA = 8098;
+const PORT_TEXTS = 8096; // свои данные для admin-texts.spec.ts: тексты и настройки меняются, редактор грузит много статики
 const PORT_ADMIN = 8097; // отдельный сервер и данные для admin-shifts.spec.ts: правки смен не мешают другим спекам
 
 // Сквозные тесты: встроенный сервер PHP в окружении test со своим каталогом данных storage/test;
@@ -44,6 +45,18 @@ export default defineConfig({
         GROZA_ENV: 'test',
         GROZA_STORAGE_DIR: resolve('storage/test'),
         GROZA_METRIKA_ID: '12345678',
+      },
+    },
+    // Четвёртый сервер — для admin-texts.spec.ts (storage/test-texts)
+    {
+      command: `node scripts/php.mjs -S 127.0.0.1:${PORT_TEXTS} -t public public/index.php`,
+      url: `http://127.0.0.1:${PORT_TEXTS}/`,
+      reuseExistingServer: false,
+      timeout: 30_000,
+      stderr: 'ignore',
+      env: {
+        GROZA_ENV: 'test',
+        GROZA_STORAGE_DIR: resolve('storage/test-texts'),
       },
     },
     // Третий сервер — со своими данными (storage/test-admin): спек админки меняет и создаёт смены

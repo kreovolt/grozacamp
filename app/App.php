@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Groza;
 
 use Groza\Admin\Auth;
+use Groza\Admin\ExpiredEcho;
 use Groza\Admin\ImageProcessor;
 use Groza\Admin\Uploads;
 use Groza\Content\Nav;
@@ -171,7 +172,7 @@ final class App
                 $token = $r->header('X-CSRF-Token');
             }
             if (!Csrf::verify($token)) {
-                return Response::html($this->view()->render('admin/expired'), 419);
+                return Response::html($this->view()->render('admin/expired', ['echo' => ExpiredEcho::from($r)]), 419);
             }
         }
         if ($r->path() === '/admin/login/') {

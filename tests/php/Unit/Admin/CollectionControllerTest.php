@@ -719,4 +719,40 @@ final class CollectionControllerTest extends TestCase
         $this->assertMatchesRegularExpression('#^/uploads/docs/[0-9a-f]{16}\.pdf$#', $file['url']);
         $this->assertSame('Устав.pdf', $file['originalName']);
     }
+
+    public function test_collection_richtext_sanitized_on_save(): void
+    {
+        $evil = '<p onclick="a()">текст</p><script>alert(1)</script><a href="javascript:alert(2)">х</a><b>жирный</b>';
+        $shift = $this->items()[0];
+        $this->assertSame(303, $this->save($shift['id'], $this->valid(['body' => $evil]))->status());
+        $body = $this->items()[0]['body'];
+        foreach (['<script', 'onclick', 'javascript:', '<b>'] as $bad) {
+            $this->assertStringNotContainsString($bad, $body);
+        }
+        $this->assertStringContainsString('<p>текст</p>', $body);
+        $this->assertStringContainsString('<strong>жирный</strong>', $body);
+    }
+
+    public function test_vacancy_and_faq_richtext_sanitized_on_save(): void
+    {
+        $evil = '<p>ok</p><img src=x onerror=alert(1)><script>1</script>';
+        $v = $this->items('vacancies')[0];
+        $this->save($v['id'], ['_hash' => $this->hash('vacancies'), 'title' => $v['title'], 'conditions' => $evil], [], 'vacancies');
+        $this->assertSame('<p>ok</p>', $this->items('vacancies')[0]['conditions']);
+
+        $q = $this->items('faq')[0];
+        $this->save($q['id'], ['_hash' => $this->hash('faq'), 'question' => $q['question'], 'answer' => $evil], [], 'faq');
+        $this->assertSame('<p>ok</p>', $this->items('faq')[0]['answer']);
+    }
+
+    public function test_required_richtext_blank_after_tags_is_rejected(): void
+    {
+        $q = $this->items('faq')[0];
+        foreach (['<p> </p>', '<br>', '<p>&nbsp;</p>', '<script>1</script>', '   '] as $blank) {
+            $res = $this->save($q['id'], ['_hash' => $this->hash('faq'), 'question' => $q['question'], 'answer' => $blank], [], 'faq');
+            $this->assertSame(422, $res->status(), $blank);
+            $this->assertStringContainsString('Заполните поле', $res->body());
+        }
+        $this->assertSame($q['answer'], $this->items('faq')[0]['answer']);
+    }
 }

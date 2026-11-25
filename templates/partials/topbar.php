@@ -9,6 +9,7 @@ use Groza\Support\Phone;
 
 use function Groza\View\e;
 use function Groza\View\icon;
+use function Groza\View\safe_url;
 use function Groza\View\tel;
 
 $hours = array_values(array_filter([$settings['hoursWeekdays'] ?? '', $settings['hoursWeekend'] ?? '']));
@@ -36,9 +37,9 @@ $hours = array_values(array_filter([$settings['hoursWeekdays'] ?? '', $settings[
           </a>
         </li>
       <?php endif ?>
-      <?php if (!empty($settings['vk'])): ?>
+      <?php if (safe_url($settings['vk'] ?? '') !== ''): ?>
         <li>
-          <a class="link-quiet flex items-center gap-2" href="<?= e($settings['vk']) ?>" rel="noopener" target="_blank">
+          <a class="link-quiet flex items-center gap-2" href="<?= e(safe_url($settings['vk'])) ?>" rel="noopener" target="_blank">
             <?= icon('vk', 'size-4 text-gold') ?>ВКонтакте
           </a>
         </li>

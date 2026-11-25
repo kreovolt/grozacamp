@@ -9,6 +9,8 @@ use Groza\Domain\Shifts;
 use Groza\Http\Request;
 use Groza\Http\Response;
 
+use function Groza\View\safe_url;
+
 /**
  * Главная (спека §7.1): собирает данные двенадцати блоков из storage/data и отдаёт templates/pages/home.php.
  * Тексты героя, полоса цифр, «что входит» и распорядок — из texts (правятся в админке);
@@ -62,7 +64,7 @@ final class HomePage
                 $this->items('reviews'),
                 static fn (array $item): bool => !empty($item['visible']) && trim((string) ($item['text'] ?? '')) !== ''
             )), 0, self::REVIEWS_LIMIT),
-            'reviewsUrl' => (string) (($settings['vkReviewsUrl'] ?? '') ?: ($settings['vk'] ?? '')),
+            'reviewsUrl' => safe_url((string) (($settings['vkReviewsUrl'] ?? '') ?: ($settings['vk'] ?? ''))) ?: safe_url((string) ($settings['vk'] ?? '')),
         ]));
     }
 

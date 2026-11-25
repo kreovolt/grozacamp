@@ -1,8 +1,10 @@
 {
-  "/assets/css/admin.css": "8ac497771c",
-  "/assets/css/app.css": "482bfc1c39",
+  "/assets/css/admin-editor.css": "6863da2cfd",
+  "/assets/css/admin.css": "c738fc14ad",
+  "/assets/css/app.css": "a0b8079c7b",
   "/assets/icons.svg": "80b312a1cf",
-  "/assets/js/admin.js": "78721628f0",
+  "/assets/js/admin-editor.js": "99517cb3a5",
+  "/assets/js/admin.js": "17b99c94b5",
   "/assets/js/main.js": "4c8785b1e9",
   "/assets/js/metrika.js": "1e36932f9a",
   "/assets/js/motion.js": "37473fae52"

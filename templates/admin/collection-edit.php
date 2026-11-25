@@ -12,6 +12,7 @@
  * @var string|null $banner
  * @var bool $saved
  * @var bool $hasFiles
+ * @var bool $hasRichtext
  * @var bool $unsaved
  * @var string $basedOn
  * @var string $conflictText
@@ -22,7 +23,7 @@
  */
 use function Groza\View\e;
 
-$this->layout('admin/layout', ['title' => $isNew ? 'Новая запись — ' . $def['label'] : $heading, 'user' => $user, 'csrf' => $csrf]);
+$this->layout('admin/layout', ['title' => $isNew ? 'Новая запись — ' . $def['label'] : $heading, 'user' => $user, 'csrf' => $csrf, 'editor' => $hasRichtext]);
 $action = '/admin/' . $collection . '/' . $id . '/';
 ?>
 <p class="back back-top"><a href="/admin/<?= e($collection) ?>/">← <?= e($def['label']) ?></a></p>

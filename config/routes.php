@@ -4,6 +4,8 @@ declare(strict_types=1);
 use Groza\Admin\Controllers\AuthController;
 use Groza\Admin\Controllers\CollectionController;
 use Groza\Admin\Controllers\DashboardController;
+use Groza\Admin\Controllers\SettingsController;
+use Groza\Admin\Controllers\TextsController;
 use Groza\App;
 use Groza\Http\Request;
 use Groza\Http\Response;
@@ -57,6 +59,14 @@ return static function (Router $router, App $app): void {
     $router->get('/admin/logout/', static fn (Request $r, array $params): Response => Response::html('Method Not Allowed', 405)->withHeader('Allow', 'POST'));
     $router->get('/admin/password/', [$auth, 'showPassword']);
     $router->post('/admin/password/', [$auth, 'changePassword']);
+
+    // Тексты и настройки: точные адреса — выше общего /admin/{collection}/{id}/
+    $texts = new TextsController($app);
+    $router->get('/admin/texts/{group}/', [$texts, 'show']);
+    $router->post('/admin/texts/{group}/', [$texts, 'save']);
+    $settings = new SettingsController($app);
+    $router->get('/admin/settings/', [$settings, 'show']);
+    $router->post('/admin/settings/', [$settings, 'save']);
 
     // Редактор списков. Порядок важен: сначала точные адреса (статус смены, «new», действия над записью),
     // потом общий /admin/{collection}/{id}/. ВСЕ маршруты админки с фиксированным первым сегментом

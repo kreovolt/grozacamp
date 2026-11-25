@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Groza\Pages;
 
+use Groza\Admin\Sanitizer;
 use Groza\App;
 use Groza\Content\PageData;
 use Groza\Http\Request;
@@ -54,7 +55,7 @@ final class TextPage
     public function __invoke(Request $r, array $params): Response
     {
         $store = $this->app->store();
-        [$html, $toc] = self::withAnchors(PageData::text($store->read('texts'), $this->textKey), $this->anchors);
+        [$html, $toc] = self::withAnchors(Sanitizer::clean(PageData::text($store->read('texts'), $this->textKey)), $this->anchors);
 
         $files = [];
         if ($this->documentSection !== '') {

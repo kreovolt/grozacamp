@@ -5,12 +5,14 @@
  * @var string|null $title
  * @var array{login:string,name:string}|null $user
  * @var string|null $csrf
+ * @var bool|null $editor страница с редактором текста (Trix): подключаются его стили и скрипт
  */
 use function Groza\View\asset;
 use function Groza\View\e;
 
 $title = ($title ?? '') !== '' ? $title . ' — Админка «Гроза»' : 'Админка «Гроза»';
 $user ??= null;
+$editor ??= false;
 ?>
 <!doctype html>
 <html lang="ru">
@@ -22,6 +24,9 @@ $user ??= null;
 <title><?= e($title) ?></title>
 <meta name="theme-color" content="#22392c">
 <link rel="stylesheet" href="<?= e(asset('/assets/css/admin.css')) ?>">
+<?php if ($editor): ?>
+<link rel="stylesheet" href="<?= e(asset('/assets/css/admin-editor.css')) ?>">
+<?php endif ?>
 </head>
 <body class="admin-body">
 <a class="skip-link" href="#main">Перейти к содержанию</a>
@@ -43,6 +48,9 @@ $user ??= null;
 <main id="main" tabindex="-1" class="admin-main">
 <?= $content ?>
 </main>
+<?php if ($editor): ?>
+<script src="<?= e(asset('/assets/js/admin-editor.js')) ?>" defer></script>
+<?php endif ?>
 <script src="<?= e(asset('/assets/js/admin.js')) ?>" defer></script>
 </body>
 </html>

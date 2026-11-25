@@ -369,7 +369,7 @@ final class SeedTest extends TestCase
             foreach ($tags as [, $closing, $tag, $attrs]) {
                 $this->assertContains($tag, self::RICH_TAGS, "$set $where: <$tag>");
                 if ($closing === '' && $tag === 'a') {
-                    $this->assertMatchesRegularExpression('#^\s+href="(https://|/|mailto:|tel:)[^"]+"\s*$#', $attrs, "$set $where");
+                    $this->assertMatchesRegularExpression('#^\s+href="(https://|/|mailto:|tel:)[^"]+"( rel="noopener noreferrer")?\s*$#', $attrs, "$set $where");
                 } else {
                     $this->assertSame('', trim($attrs), "$set $where: атрибуты у <$tag>");
                 }

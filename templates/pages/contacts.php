@@ -10,6 +10,7 @@ use Groza\Support\Phone;
 
 use function Groza\View\e;
 use function Groza\View\icon;
+use function Groza\View\safe_url;
 use function Groza\View\tel;
 
 $this->layout('layout', ['page' => 'contacts']);
@@ -17,7 +18,7 @@ $this->layout('layout', ['page' => 'contacts']);
 $phone = trim((string) ($settings['phone'] ?? ''));
 $wa = preg_replace('/\D+/', '', (string) ($settings['whatsapp'] ?? '')) ?? '';
 $email = trim((string) ($settings['email'] ?? ''));
-$vk = trim((string) ($settings['vk'] ?? ''));
+$vk = safe_url($settings['vk'] ?? '');
 $address = trim((string) ($settings['officeAddress'] ?? ''));
 $hours = array_values(array_filter([$settings['hoursWeekdays'] ?? '', $settings['hoursWeekend'] ?? '']));
 $row = 'flex items-start gap-4 border-b border-dashed border-moss/45 py-5';

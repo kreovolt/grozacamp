@@ -32,6 +32,7 @@ final class DashboardController
             'user' => $this->app->auth()->user(),
             'csrf' => Csrf::token(),
             'sections' => $sections,
+            'textGroups' => TextsController::GROUPS,
         ]));
     }
 }

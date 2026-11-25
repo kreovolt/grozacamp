@@ -56,43 +56,45 @@ test('«Мест нет» одной кнопкой в списке смен —
   await expect(page.locator('.row', { hasText: 'Спасатель' }).getByRole('button', { name: 'Идёт набор' })).toHaveAttribute('aria-pressed', 'true');
 });
 
-test('черновик: набранное в «Описание» возвращается после перезагрузки, после сохранения черновика нет', async ({ page }) => {
+test('черновик: набранное в «Коротко о смене» возвращается после перезагрузки, после сохранения черновика нет', async ({ page }) => {
   await login(page);
   await openShift(page, 'Спасатель');
-  const body = page.getByLabel('Описание');
+  await page.locator('form[data-draft-ready]').waitFor();
+  const body = page.getByLabel('Коротко о смене');
   const original = await body.inputValue();
   const typed = original + '\n<p>Черновик: длинный текст, который нельзя потерять</p>';
 
   await body.fill(typed);
   // уход со страницы сам сохраняет черновик (без ожидания таймера)
   await page.reload();
-  await expect(page.getByLabel('Описание')).toHaveValue(typed);
+  await expect(page.getByLabel('Коротко о смене')).toHaveValue(typed);
   await expect(page.getByText('Восстановлен черновик')).toBeVisible();
 
   // «Отменить» возвращает то, что на сервере
   await page.getByRole('button', { name: 'Отменить' }).click();
-  await expect(page.getByLabel('Описание')).toHaveValue(original);
+  await expect(page.getByLabel('Коротко о смене')).toHaveValue(original);
   await expect(page.getByText('Восстановлен черновик')).toBeHidden();
   expect(await draftKeys(page)).toEqual([]);
 
   // снова набрать, дождаться таймера (5 с), уйти и вернуться
-  await page.getByLabel('Описание').fill(typed);
+  await page.locator('form[data-draft-ready]').waitFor(); // редактор текста запускается чуть позже загрузки страницы
+  await page.getByLabel('Коротко о смене').fill(typed);
   await expect.poll(() => draftKeys(page), { timeout: 8000 }).toHaveLength(1);
   await openShift(page, 'Спасатель');
-  await expect(page.getByLabel('Описание')).toHaveValue(typed);
+  await expect(page.getByLabel('Коротко о смене')).toHaveValue(typed);
   await expect(page.getByText('Восстановлен черновик')).toBeVisible();
 
   await page.getByRole('button', { name: 'Сохранить' }).click();
   await expect(page.locator('.alert-ok')).toContainText('Сохранено');
   await expect(page.getByRole('status').first()).toContainText('Сохранено');
   await expect(page.getByRole('link', { name: 'Посмотреть на сайте' }).first()).toBeVisible();
-  await expect(page.getByLabel('Описание')).toHaveValue(typed);
+  await expect(page.getByLabel('Коротко о смене')).toHaveValue(typed);
   expect(await draftKeys(page)).toEqual([]);
   await page.reload();
   await expect(page.getByText('Восстановлен черновик')).toBeHidden();
 
-  // вернуть описание
-  await page.getByLabel('Описание').fill(original);
+  // вернуть как было
+  await page.getByLabel('Коротко о смене').fill(original);
   await page.getByRole('button', { name: 'Сохранить' }).click();
   await expect(page.locator('.alert-ok')).toContainText('Сохранено');
 });
@@ -100,14 +102,14 @@ test('черновик: набранное в «Описание» возвра�
 test('ошибка проверки: сводка со ссылками, фокус на первом неверном поле, введённое не пропадает', async ({ page }) => {
   await login(page);
   await page.goto('/admin/shifts/new/');
-  await page.getByLabel('Описание').fill('Текст, который не должен пропасть');
+  await page.getByLabel('Коротко о смене').fill('Текст, который не должен пропасть');
   await page.getByRole('button', { name: 'Сохранить' }).click();
 
   const summary = page.locator('#error-summary');
   await expect(summary).toBeVisible();
   await expect(summary.getByRole('link', { name: 'Название' })).toBeVisible();
   await expect(page.getByLabel('Название')).toBeFocused();
-  await expect(page.getByLabel('Описание')).toHaveValue('Текст, который не должен пропасть');
+  await expect(page.getByLabel('Коротко о смене')).toHaveValue('Текст, который не должен пропасть');
   await expect(page.locator('#f-title-error')).toHaveText('Заполните поле');
 });
 
@@ -160,13 +162,13 @@ test('новая смена: сохранение ведёт на страниц
 test('после ошибки проверки черновик не пропадает (даже через 6 с), текст виден после возврата на страницу', async ({ page }) => {
   await login(page);
   await page.goto('/admin/shifts/new/');
-  await page.getByLabel('Описание').fill('Полчаса работы, которую нельзя терять');
+  await page.getByLabel('Коротко о смене').fill('Полчаса работы, которую нельзя терять');
   await page.getByRole('button', { name: 'Сохранить' }).click(); // нет названия — 422
   await expect(page.locator('#error-summary')).toBeVisible();
   await page.waitForTimeout(6500); // дольше периода автосохранения
   expect(await draftKeys(page)).toHaveLength(1);
   await page.goto('/admin/shifts/new/'); // вернулись на страницу (например, после повторного входа)
-  await expect(page.getByLabel('Описание')).toHaveValue('Полчаса работы, которую нельзя терять');
+  await expect(page.getByLabel('Коротко о смене')).toHaveValue('Полчаса работы, которую нельзя терять');
   await expect(page.getByText('Восстановлен черновик')).toBeVisible();
 });
 

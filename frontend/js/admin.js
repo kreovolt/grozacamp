@@ -289,11 +289,17 @@ function focusProblem() {
 document.addEventListener('DOMContentLoaded', () => {
   pruneOld();
   const form = document.querySelector('form[data-draft]');
-  if (form) {
+  if (!form) return;
+  const start = () => {
     initCounters(form);
     initFiles(form);
     initGallery(form);
     initDraft(form);
     focusProblem();
-  }
+    form.setAttribute('data-draft-ready', '');
+  };
+  // На страницах с редактором текста (admin-editor.js) ждём, пока он запустится: он переписывает значения своих полей
+  const editors = window.grozaEditorsReady;
+  if (editors && typeof editors.then === 'function') editors.then(start, start);
+  else start();
 });

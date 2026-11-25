@@ -170,6 +170,19 @@
   .choice--check { @apply w-fit; }
   .gallery__slot .file-pick { @apply justify-self-start; }
 
+  /* ---- Тексты и настройки ---- */
+  .tabs { @apply mb-4 flex flex-wrap gap-2; }
+  .tab { @apply rounded-btn border border-ink-soft bg-paper px-4 py-2 font-semibold text-forest no-underline; min-height: 44px; }
+  .tab:hover { @apply bg-sand; }
+  .tab[aria-current='page'] { @apply border-forest bg-forest text-cream; }
+  .text-field { scroll-margin-top: 1rem; }
+  .text-field:target { @apply rounded-card ring-2 ring-gold; }
+  .text-field .legal { @apply mt-0; }
+  .confirm-empty { @apply mt-2 rounded-btn bg-[#fbe9e3] px-3 py-2; }
+  .confirm-empty .field-error { @apply mt-0 mb-2; }
+  .echo { @apply mb-4 grid gap-4; }
+  .echo textarea { @apply bg-sand; }
+
   .actions { @apply mt-2 flex flex-wrap items-center gap-3; }
   .actions--sticky { @apply sticky bottom-0 -mx-4 mt-4 border-t border-sand-deep bg-paper/95 px-4 py-3 sm:-mx-6 sm:px-6; }
 }

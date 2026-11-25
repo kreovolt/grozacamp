@@ -18,6 +18,7 @@ use Groza\Support\Dates;
 use Groza\Support\Phone;
 
 use function Groza\View\e;
+use function Groza\View\richtext;
 use function Groza\View\icon;
 use function Groza\View\image;
 use function Groza\View\picture;
@@ -166,7 +167,7 @@ $fact = static fn (string $name, string $value): string => '<div class="border-t
           <h2 class="sr-only" id="program-title">О смене</h2>
         <?php endif ?>
         <?php if ($body !== ''): ?>
-          <div class="richtext max-w-[62ch] leading-relaxed text-ink-soft"><?= $body ?></div>
+          <div class="richtext max-w-[62ch] leading-relaxed text-ink-soft"><?= richtext($body) ?></div>
         <?php endif ?>
         <?php if ($groups !== []): ?>
           <div class="<?= $body !== '' ? 'mt-10' : '' ?>">

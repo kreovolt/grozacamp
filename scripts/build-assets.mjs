@@ -3,6 +3,7 @@
 //   иконки lucide-static + свои глифы → public/assets/icons.svg (спрайт)
 //   frontend/css/app.css (Tailwind) → public/assets/css/app.css
 //   frontend/js/main.js (esbuild) → public/assets/js/main.js
+//   редактор текста: trix.css + frontend/css/admin-editor.css → css/admin-editor.css; frontend/js/admin-editor.js (Trix внутри, без <style>) → js/admin-editor.js
 //   хеши содержимого → public/assets/manifest.json (asset() добавляет ?v=…)
 // node scripts/build-assets.mjs            — разовая сборка (минифицированная)
 // node scripts/build-assets.mjs --watch    — пересборка при изменениях (npm run dev)
@@ -21,7 +22,31 @@ const watchMode = process.argv.includes('--watch');
 const CSS = [['frontend/css/app.css', 'css/app.css'], ['frontend/css/admin.css', 'css/admin.css']]
   .filter(([input]) => existsSync(join(root, input)));
 // Точки входа JS: main (все страницы), motion (GSAP — только страницы с [data-reveal]), metrika, admin; остальные модули подключаются через import
-const JS = ['main', 'motion', 'metrika', 'admin'].map((n) => `frontend/js/${n}.js`).filter((f) => existsSync(join(root, f)));
+const JS = ['main', 'motion', 'metrika', 'admin', 'admin-editor'].map((n) => `frontend/js/${n}.js`).filter((f) => existsSync(join(root, f)));
+
+// Trix при загрузке добавляет в страницу теги <style> — строгая CSP админки (style-src 'self') их заблокирует.
+// Убираем эту функцию из Trix при сборке; те же правила лежат в frontend/css/admin-editor.css.
+const TRIX_INLINE_CSS = 'const installDefaultCSSForTagName = function (tagName, defaultCSS) {';
+const trixNoInlineStyle = {
+  name: 'trix-no-inline-style',
+  setup(build) {
+    build.onLoad({ filter: /trix[\\/]dist[\\/]trix\.esm\.js$/ }, (args) => {
+      const source = readFileSync(args.path, 'utf8');
+      if (!source.includes(TRIX_INLINE_CSS)) {
+        throw new Error('Trix изменился: не найдено место, где он добавляет <style>. Обновите trixNoInlineStyle в scripts/build-assets.mjs');
+      }
+      return { contents: source.replace(TRIX_INLINE_CSS, TRIX_INLINE_CSS + ' return;'), loader: 'js' };
+    });
+  },
+};
+
+async function buildEditorCss() {
+  const css = readFileSync(join(root, 'node_modules', 'trix', 'dist', 'trix.css'), 'utf8')
+    + '\n' + readFileSync(join(root, 'frontend', 'css', 'admin-editor.css'), 'utf8');
+  const out2 = await esbuild.transform(css, { loader: 'css', minify: !watchMode });
+  mkdirSync(join(out, 'css'), { recursive: true });
+  writeFileSync(join(out, 'css', 'admin-editor.css'), out2.code);
+}
 
 const FONTS = [
   ['oswald', [500, 600, 700]],
@@ -81,8 +106,10 @@ function tailwind(input, output, extra = []) {
   }
 }
 
+// Редактор — отдельной сборкой: Trix 2 написан для современных браузеров (классы, формы-элементы), а админкой пользуются сотрудники.
+const EDITOR = 'frontend/js/admin-editor.js';
 const esbuildOptions = {
-  entryPoints: JS.map((f) => join(root, f)),
+  entryPoints: JS.filter((f) => f !== EDITOR).map((f) => join(root, f)),
   outdir: join(out, 'js'),
   bundle: true,
   format: 'iife',
@@ -92,6 +119,12 @@ const esbuildOptions = {
   legalComments: 'none',
   logLevel: 'warning',
 };
+const editorOptions = {
+  ...esbuildOptions,
+  entryPoints: [join(root, EDITOR)],
+  target: ['es2020', 'chrome90', 'firefox90', 'safari15'],
+  plugins: [trixNoInlineStyle],
+};
 
 function writeManifest() {
   const file = join(out, 'manifest.json');
@@ -99,7 +132,7 @@ function writeManifest() {
   if (existsSync(file)) {
     try { manifest = JSON.parse(readFileSync(file, 'utf8')); } catch { manifest = {}; }
   }
-  const files = ['icons.svg', ...CSS.map(([, o]) => o), ...JS.map((f) => `js/${f.split('/').pop()}`)];
+  const files = ['icons.svg', 'css/admin-editor.css', ...CSS.map(([, o]) => o), ...JS.map((f) => `js/${f.split('/').pop()}`)];
   for (const rel of files) {
     const path = join(out, rel);
     if (existsSync(path)) {
@@ -116,12 +149,15 @@ buildSprite();
 if (!watchMode) {
   for (const [input, output] of CSS) tailwind(input, output, ['--minify']);
   if (JS.length) await esbuild.build(esbuildOptions);
+  if (JS.includes(EDITOR)) await esbuild.build(editorOptions);
+  await buildEditorCss();
   writeManifest();
   console.log('Статика собрана: public/assets (css, js, fonts, icons.svg, manifest.json)');
 } else {
   // Хеши обновляются после каждой пересборки, чтобы браузер не держал старую версию
   let timer;
   const rehash = () => { clearTimeout(timer); timer = setTimeout(writeManifest, 150); };
+  await buildEditorCss();
   const children = CSS.map(([input, output]) => tailwind(input, output, ['--watch']));
   const stop = () => { for (const c of children) c.kill(); process.exit(0); };
   process.on('SIGINT', stop);
@@ -134,5 +170,9 @@ if (!watchMode) {
       plugins: [{ name: 'manifest', setup: (b) => b.onEnd(rehash) }],
     });
     await ctx.watch();
+    if (JS.includes(EDITOR)) {
+      const editorCtx = await esbuild.context({ ...editorOptions, plugins: [...editorOptions.plugins, { name: 'manifest', setup: (b) => b.onEnd(rehash) }] });
+      await editorCtx.watch();
+    }
   }
 }

@@ -9,6 +9,7 @@ declare(strict_types=1);
  * @var array<string,mixed> $settings
  */
 use function Groza\View\e;
+use function Groza\View\richtext;
 use function Groza\View\icon;
 use function Groza\View\pending;
 use function Groza\View\photo;
@@ -65,7 +66,7 @@ $h2 = 'font-display text-[clamp(1.5rem,1.2rem+1.1vw,2.125rem)] font-bold upperca
           <?php if ($s['html'] === ''): ?>
             <p class="mt-5 leading-relaxed"><?= pending('') ?></p>
           <?php else: ?>
-            <div class="richtext mt-5 leading-relaxed text-ink-soft"><?= $s['html'] ?></div>
+            <div class="richtext mt-5 leading-relaxed text-ink-soft"><?= richtext((string) $s['html']) ?></div>
           <?php endif ?>
           <?php if ($s['kind'] === 'rules' && $s['html'] !== ''): ?>
             <p class="mt-5"><a class="group/more inline-block font-display text-[0.9375rem] font-semibold uppercase leading-snug tracking-btn text-rust-deep no-underline hover:text-rust-dark" href="/pravila/">Все правила пребывания&nbsp;<?= icon('arrow-right', 'inline-block size-4 align-[-0.2em] transition-transform group-hover/more:translate-x-0.5') ?></a></p>

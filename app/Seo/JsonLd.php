@@ -5,6 +5,8 @@ namespace Groza\Seo;
 
 use Groza\Support\Phone;
 
+use function Groza\View\safe_url;
+
 /** Структурированные данные schema.org (JSON-LD): организация и смены. */
 final class JsonLd
 {
@@ -47,7 +49,7 @@ final class JsonLd
             ];
         }
         $same = array_values(array_filter(
-            [trim((string) ($settings['vk'] ?? '')), trim((string) ($settings['youtube'] ?? ''))],
+            [safe_url((string) ($settings['vk'] ?? '')), safe_url((string) ($settings['youtube'] ?? ''))],
             static fn (string $u): bool => $u !== ''
         ));
         if ($same !== []) {

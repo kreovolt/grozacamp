@@ -12,6 +12,7 @@ use Groza\Support\Phone;
 
 use function Groza\View\e;
 use function Groza\View\icon;
+use function Groza\View\safe_url;
 use function Groza\View\tel;
 
 $svedeniya = null;
@@ -96,13 +97,13 @@ $heading = 'mb-5 font-display text-[0.875rem] font-semibold uppercase tracking-[
             <span><?= implode('<br>', array_map(static fn (string $h): string => e($h), $hours)) ?></span>
           </li>
         <?php endif ?>
-        <?php if (!empty($settings['vk']) || !empty($settings['youtube'])): ?>
+        <?php if (safe_url($settings['vk'] ?? '') !== '' || safe_url($settings['youtube'] ?? '') !== ''): ?>
           <li class="flex flex-wrap gap-x-6 gap-y-3 pt-1">
-            <?php if (!empty($settings['vk'])): ?>
-              <a class="link-quiet inline-flex items-center gap-2.5" href="<?= e($settings['vk']) ?>" rel="noopener" target="_blank"><?= icon('vk', 'size-[1.125rem] text-gold') ?>ВКонтакте</a>
+            <?php if (safe_url($settings['vk'] ?? '') !== ''): ?>
+              <a class="link-quiet inline-flex items-center gap-2.5" href="<?= e(safe_url($settings['vk'])) ?>" rel="noopener" target="_blank"><?= icon('vk', 'size-[1.125rem] text-gold') ?>ВКонтакте</a>
             <?php endif ?>
-            <?php if (!empty($settings['youtube'])): ?>
-              <a class="link-quiet inline-flex items-center gap-2.5" href="<?= e($settings['youtube']) ?>" rel="noopener" target="_blank"><?= icon('youtube', 'size-[1.125rem] text-gold') ?>YouTube</a>
+            <?php if (safe_url($settings['youtube'] ?? '') !== ''): ?>
+              <a class="link-quiet inline-flex items-center gap-2.5" href="<?= e(safe_url($settings['youtube'])) ?>" rel="noopener" target="_blank"><?= icon('youtube', 'size-[1.125rem] text-gold') ?>YouTube</a>
             <?php endif ?>
           </li>
         <?php endif ?>

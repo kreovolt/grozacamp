@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Groza\Domain;
 
 use DateTimeImmutable;
+use Groza\Admin\Sanitizer;
 use Groza\Support\Slug;
 
 final class Validator
@@ -99,7 +100,7 @@ final class Validator
         return match ($field['type']) {
             'text' => self::text($raw, $field, false),
             'textarea' => self::text($raw, $field, true),
-            'richtext' => is_string($raw) ? $raw : '',
+            'richtext' => is_string($raw) ? Sanitizer::clean($raw) : '',
             'int' => self::int($raw),
             'date' => self::date($raw),
             'enum' => self::enum($raw, $field),

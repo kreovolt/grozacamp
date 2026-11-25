@@ -26,6 +26,7 @@ use function Groza\View\icon;
 use function Groza\View\image;
 use function Groza\View\photo;
 use function Groza\View\picture;
+use function Groza\View\safe_url;
 use function Groza\View\tel;
 
 $this->layout('layout', ['page' => 'home']);
@@ -57,7 +58,7 @@ $kids = [
 ];
 
 // Блок 5 — для родителей. Факты из FAQ и спеки §7.1 п. 5.
-$vk = (string) ($settings['vk'] ?? '');
+$vk = safe_url($settings['vk'] ?? '');
 $care = [
     ['До 24 детей в отряде', e('С отрядом работают двое вожатых, а у младших отрядов есть ещё помощники.')],
     ['Медик на смене', e('На смене работает дежурный медик, это входит в стоимость путёвки.')],

@@ -342,7 +342,7 @@ final class Readiness
     }
 
     /** @return array<string,array<string,mixed>> */
-    private static function registry(): array
+    public static function registry(): array
     {
         return self::$registry ??= require dirname(__DIR__, 2) . '/config/texts.php';
     }

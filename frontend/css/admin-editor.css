@@ -1,0 +1,43 @@
+/*
+ * Редактор текста (Trix) в админке. Собирается вместе с node_modules/trix/dist/trix.css в /assets/css/admin-editor.css.
+ * Первые правила — то, что Trix обычно добавляет в страницу тегом <style>; при строгой CSP (style-src 'self') так нельзя,
+ * поэтому они лежат здесь (взяты из trix.esm.js: installDefaultCSSForTagName).
+ */
+trix-toolbar { display: block; white-space: nowrap; }
+trix-toolbar [data-trix-dialog] { display: none; }
+trix-toolbar [data-trix-dialog][data-trix-active] { display: block; }
+trix-toolbar [data-trix-dialog] [data-trix-validate]:invalid { background-color: #fdd; }
+trix-editor { display: block; }
+trix-editor:empty::before { content: attr(placeholder); color: graytext; cursor: text; pointer-events: none; white-space: pre-line; }
+trix-editor a[contenteditable=false] { cursor: text; }
+trix-editor img { max-width: 100%; height: auto; }
+trix-editor [data-trix-cursor-target] { display: inline-block !important; width: 1px !important; padding: 0 !important; margin: 0 !important; border: none !important; }
+trix-editor [data-trix-cursor-target=left] { vertical-align: top !important; margin-left: -1px !important; }
+trix-editor [data-trix-cursor-target=right] { vertical-align: bottom !important; margin-right: -1px !important; }
+
+/* Оформление под админку «Гроза» */
+trix-toolbar { margin-top: 0.25rem; }
+trix-toolbar .trix-button-row { flex-wrap: wrap; row-gap: 0.25rem; }
+trix-toolbar .trix-button { min-height: 2.75rem; min-width: 2.75rem; border-color: #4a5a4c; }
+trix-toolbar .trix-button.trix-active { background: #e7dec9; }
+trix-toolbar .trix-button--dialog { min-height: 2.5rem; }
+trix-toolbar .trix-input--dialog { min-height: 2.5rem; font-size: 1rem; }
+trix-toolbar .trix-dialog { box-shadow: none; border: 1px solid #4a5a4c; }
+trix-editor.richtext-editor {
+  min-height: 12rem;
+  max-height: 32rem;
+  overflow-y: auto;
+  border: 1px solid #4a5a4c;
+  border-radius: 0.5rem;
+  background: #fff;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #1f2a22;
+}
+trix-editor.richtext-editor:focus-visible { outline: 2px solid #b54a26; outline-offset: 3px; }
+trix-editor.richtext-editor[aria-invalid='true'] { border: 2px solid #9e3f1f; }
+trix-editor.richtext-editor h3 { margin: 1em 0 0.4em; font-size: 1.2em; font-weight: 700; line-height: 1.25; }
+trix-editor.richtext-editor ul, trix-editor.richtext-editor ol { padding-left: 1.5rem; }
+trix-editor.richtext-editor a { color: #9e3f1f; text-decoration: underline; }
+trix-editor.richtext-editor blockquote { margin: 0.5em 0; padding-left: 1em; border-left: 3px solid #d9a93a; }

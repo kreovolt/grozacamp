@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Groza\Pages;
 
 use DateTimeImmutable;
+use Groza\Admin\Sanitizer;
 use Groza\App;
 use Groza\Content\Nav;
 use Groza\Content\PageData;
@@ -483,7 +484,7 @@ final class SvedeniyaPage
     /** Richtext из админки (очищен при сохранении) как есть; пустая разметка → ''. */
     private static function rich(mixed $v): string
     {
-        return is_string($v) && Readiness::filled($v) ? trim($v) : '';
+        return is_string($v) && Readiness::filled($v) ? Sanitizer::clean($v) : '';
     }
 
     /** Текст многострочного поля: абзацы по пустой строке, переносы внутри абзаца. */

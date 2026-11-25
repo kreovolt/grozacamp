@@ -406,6 +406,7 @@ final class CollectionController
             'summary' => $summary,
             'banner' => $banner,
             'saved' => $saved,
+            'hasRichtext' => (bool) array_filter($def['fields'], static fn (array $f): bool => $f['type'] === 'richtext'),
             'hasFiles' => (bool) array_filter($def['fields'], static fn (array $f): bool => in_array($f['type'], ['image', 'file'], true)),
             'siteUrl' => $pattern !== null ? $this->siteUrl($pattern, $item) : null,
             'sitePattern' => $pattern !== null ? str_replace('{slug}', 'адрес-страницы', $pattern) : null,

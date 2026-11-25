@@ -15,6 +15,7 @@ declare(strict_types=1);
 use Groza\Forms\Fields;
 
 use function Groza\View\e;
+use function Groza\View\richtext;
 use function Groza\View\photo;
 use function Groza\View\picture;
 
@@ -64,7 +65,7 @@ $shot = static function (string $key, string $sizes): string {
   <div class="wrap">
     <?= $this->partial('components/section-head', ['title' => 'Открытые вакансии', 'id' => 'vakansii-title']) ?>
     <?php if ($intro !== ''): ?>
-      <div class="richtext mt-4 max-w-[62ch] text-[1.0625rem] leading-relaxed text-ink-soft sm:text-lg"><?= $intro ?></div>
+      <div class="richtext mt-4 max-w-[62ch] text-[1.0625rem] leading-relaxed text-ink-soft sm:text-lg"><?= richtext($intro) ?></div>
     <?php endif ?>
 
     <?php if ($vacancies !== []): ?>
@@ -82,7 +83,7 @@ $shot = static function (string $key, string $sizes): string {
             <?php endif ?>
             <?php if ($conditions !== ''): ?>
               <p class="mt-5 font-display text-[0.875rem] font-medium uppercase leading-snug tracking-[0.08em] text-rust-deep">Условия и требования</p>
-              <div class="richtext mt-2 leading-relaxed text-ink-soft"><?= $conditions ?></div>
+              <div class="richtext mt-2 leading-relaxed text-ink-soft"><?= richtext($conditions) ?></div>
             <?php endif ?>
             <div class="mt-auto pt-6">
               <?= $this->partial('components/button', [
@@ -110,13 +111,13 @@ $shot = static function (string $key, string $sizes): string {
       <?php if ($benefits !== ''): ?>
         <div>
           <?= $this->partial('components/section-head', ['title' => 'Что даём', 'id' => 'benefits-title']) ?>
-          <div class="richtext mt-6 max-w-[56ch] leading-relaxed text-ink"><?= $benefits ?></div>
+          <div class="richtext mt-6 max-w-[56ch] leading-relaxed text-ink"><?= richtext($benefits) ?></div>
         </div>
       <?php endif ?>
       <?php if ($selection !== ''): ?>
         <div>
           <?= $this->partial('components/section-head', ['title' => 'Как проходит отбор', 'id' => 'selection-title']) ?>
-          <div class="richtext mt-6 max-w-[56ch] leading-relaxed text-ink"><?= $selection ?></div>
+          <div class="richtext mt-6 max-w-[56ch] leading-relaxed text-ink"><?= richtext($selection) ?></div>
         </div>
       <?php endif ?>
     </div>

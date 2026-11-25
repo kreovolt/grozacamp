@@ -56,3 +56,37 @@ function tel(string $e164): string
 {
     return 'tel:' . preg_replace('/[^\d+]/', '', $e164);
 }
+
+/**
+ * Текст с оформлением для вывода на публичной странице: ещё раз через Sanitizer (в JSON могло оказаться что угодно).
+ * Результат безопасен для вставки в HTML без экранирования. Повтор того же текста за запрос — из кэша.
+ */
+function richtext(?string $html): string
+{
+    static $cache = [];
+    $html = (string) $html;
+    if ($html === '') {
+        return '';
+    }
+    $key = md5($html);
+    if (!isset($cache[$key])) {
+        if (count($cache) > 200) {
+            $cache = [];
+        }
+        $cache[$key] = \Groza\Admin\Sanitizer::clean($html);
+    }
+
+    return $cache[$key];
+}
+
+/** Адрес для href из настроек: только http/https с адресом сайта, иначе пустая строка (дальше e()). */
+function safe_url(?string $url): string
+{
+    $url = trim((string) $url);
+    if ($url === '' || preg_match('#^https?://[^\s"\'<>\\\\]+$#i', $url) !== 1) {
+        return '';
+    }
+    $host = parse_url($url, PHP_URL_HOST);
+
+    return is_string($host) && $host !== '' ? $url : '';
+}
