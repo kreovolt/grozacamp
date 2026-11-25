@@ -49,11 +49,12 @@ final class Meta
         }
         $cut = mb_substr($text, 0, $max - 1);
         $space = mb_strrpos($cut, ' ');
-        if ($space !== false && $space > $max / 2) {
+        // режем по слову, если граница обрезки не пришлась ровно на пробел
+        if (mb_substr($text, $max - 1, 1) !== ' ' && $space !== false && $space > $max / 2) {
             $cut = mb_substr($cut, 0, $space);
         }
 
-        return rtrim($cut, " ,;:—-.") . '…';
+        return preg_replace('/[\s,;:—\-.]+$/u', '', $cut) . '…';
     }
 
     /** @return array<string,mixed> */

@@ -50,6 +50,31 @@ final class MetaTest extends TestCase
         $this->assertStringNotContainsString('  ', $m['description']);
     }
 
+    /** @return array<string,array{string}> */
+    public static function cutEndings(): array
+    {
+        return ['р (D1 80)' => ['вечер'], 'Д (D0 94)' => ['Д']];
+    }
+
+    /** @dataProvider cutEndings */
+    public function test_truncation_never_breaks_utf8(string $ending): void
+    {
+        // слово заканчивается ровно на границе обрезки: «…<ending>» стоит на 159-й позиции, дальше ещё слово
+        $head = str_repeat('а', 158 - mb_strlen($ending));
+        $desc = $head . ' ' . $ending . ' продолжение текста';
+        $m = Meta::for('text', ['baseUrl' => self::BASE, 'path' => '/x/', 'title' => 'Х', 'description' => $desc]);
+
+        $this->assertTrue(mb_check_encoding($m['description'], 'UTF-8'));
+        $this->assertLessThanOrEqual(160, mb_strlen($m['description']));
+        $this->assertStringEndsWith($ending . '…', $m['description']);
+
+        $app = TestApp::make(['baseUrl' => self::BASE]);
+        $app->store()->write('texts', ['rules.description' => $desc], 'test');
+        $html = (new GrozaViewView(dirname(__DIR__, 4) . '/templates', ['settings' => [], 'nav' => [], 'currentPath' => '/x/', 'env' => 'test', 'baseUrl' => self::BASE, 'metrikaId' => '', 'year' => '2027']))
+            ->render('layout', ['content' => '', 'page' => 'text', 'title' => 'Х', 'description' => $desc]);
+        $this->assertMatchesRegularExpression('#<meta name="description" content="[^"]+' . preg_quote($ending, '#') . '…">#u', $html);
+    }
+
     public function test_every_public_page_has_unique_title_and_good_description(): void
     {
         $app = TestApp::make(['baseUrl' => self::BASE]);
