@@ -234,6 +234,12 @@
   [data-menu-panel]:not([hidden]) {
     @apply motion-safe:animate-drop-in;
   }
+  /* Мобильное меню без JS: бургер — ссылка на #mobile-menu, панель открывает :target; с JS работает кнопка */
+  html:not(.js) [data-menu-open],
+  html:not(.js) [data-menu-close],
+  html.js .nojs-menu { display: none !important; }
+  html:not(.js) #mobile-menu:target { display: flex !important; }
+  html:not(.js) #mobile-menu [data-accordion] + [hidden] { display: block !important; }
   .tabular { font-variant-numeric: tabular-nums lining-nums; }
 }
 

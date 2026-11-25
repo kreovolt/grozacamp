@@ -86,7 +86,7 @@ $steps = [
     <?= $this->partial('components/topo', ['class' => 'hero-topo pointer-events-none absolute inset-0 -z-10 h-full w-full text-sand opacity-[0.16]']) ?>
     <div class="max-w-[34rem]">
       <p class="kicker !leading-[1.5] text-gold"><?= e($hero['kicker']) ?></p>
-      <h1 class="mt-4 font-display text-[clamp(2.5rem,1.3rem+4.8vw,4rem)] font-bold uppercase leading-[1.08] tracking-[0.01em] text-[#f4efe3] lg:text-[clamp(3rem,0.25rem+4.4vw,4.25rem)]" id="hero-title"><?= e($hero['title']) ?></h1>
+      <h1 class="mt-4 font-display text-[clamp(2.5rem,1.3rem+4.8vw,4rem)] font-bold uppercase leading-[1.08] tracking-[0.01em] text-[#f4efe3] lg:text-[clamp(3rem,0.25rem+4.4vw,4.25rem)]" id="hero-title" data-hero-title><?= e($hero['title']) ?></h1>
       <?php if ($hero['lead'] !== ''): ?>
         <p class="mt-5 max-w-[32rem] text-[1.0625rem] leading-relaxed text-cream/90 sm:text-lg"><?= e($hero['lead']) ?></p>
       <?php endif ?>
@@ -118,7 +118,7 @@ $steps = [
     </div>
 
     <?php if ($shifts !== []): ?>
-      <div class="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3 desk:gap-8">
+      <div class="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3 desk:gap-8" data-reveal>
         <?php foreach ($shifts as $shift): ?>
           <?= $this->partial('components/shift-card', [
               'shift' => $shift,
@@ -145,7 +145,7 @@ $steps = [
           'lead' => 'Днём — занятия на природе, вечером — сцена, дискотеки и костёр. И отряд, который к концу смены станет твоей командой.',
           'id' => 'kids-title',
       ]) ?>
-      <ul class="mt-10 grid gap-x-10 sm:grid-cols-2" role="list">
+      <ul class="mt-10 grid gap-x-10 sm:grid-cols-2" role="list" data-reveal>
         <?php foreach ($kids as [$title, $text]): ?>
           <li class="border-t border-dashed border-moss/50 py-5">
             <h3 class="font-display text-[1.1875rem] font-semibold uppercase leading-tight tracking-[0.04em] text-ink"><?= e($title) ?></h3>
@@ -155,7 +155,7 @@ $steps = [
       </ul>
     </div>
 
-    <div class="relative mx-auto flex w-full max-w-xl items-start lg:order-1 lg:block lg:h-[38rem] lg:max-w-none">
+    <div data-reveal class="relative mx-auto flex w-full max-w-xl items-start lg:order-1 lg:block lg:h-[38rem] lg:max-w-none">
       <?= $this->partial('components/polaroid', [
           'media' => $shot('team-poster', '(min-width: 1024px) 28rem, 60vw'),
           'ratio' => '4/3',
@@ -193,7 +193,7 @@ $steps = [
           'id' => 'care-title',
       ]) ?>
       <?php /* Вожатый рядом с ребятами — главный снимок блока; поверх второго, чтобы подпись не перекрывалась */ ?>
-      <div class="mt-10 flex max-w-[30rem] items-start lg:mt-12">
+      <div class="mt-10 flex max-w-[30rem] items-start lg:mt-12" data-reveal>
         <?= $this->partial('components/polaroid', [
             'media' => $shot('morning-exercise', '(min-width: 1024px) 18rem, 60vw'),
             'ratio' => '4/3',
@@ -212,7 +212,7 @@ $steps = [
     </div>
 
     <div class="lg:pt-2">
-      <ul class="grid gap-x-10 sm:grid-cols-2" role="list">
+      <ul class="grid gap-x-10 sm:grid-cols-2" role="list" data-reveal>
         <?php foreach ($care as [$title, $html]): ?>
           <li class="border-t border-dashed border-sage/35 py-6">
             <h3 class="font-display text-xl font-semibold uppercase leading-tight tracking-[0.03em] text-gold"><?= e($title) ?></h3>
@@ -233,7 +233,7 @@ $steps = [
         <?= $this->partial('components/section-head', ['title' => 'Как проходит смена', 'id' => 'steps-title']) ?>
         <?= $this->partial('components/steps', ['steps' => $steps, 'class' => 'mt-10']) ?>
       </div>
-      <div class="grid grid-cols-3 items-start gap-3 sm:gap-5">
+      <div class="grid grid-cols-3 items-start gap-3 sm:gap-5" data-reveal>
         <?= $this->partial('components/polaroid', [
             'media' => $shot('evening-circle', '(min-width: 1024px) 14rem, 31vw'),
             'tilt' => 'left',
@@ -324,7 +324,7 @@ $steps = [
             <a class="<?= $moreLink ?> mt-6" href="/svedeniya/mto/">Условия проживания<?= $moreArrow ?></a>
           </div>
           <?php if ($photos !== []): ?>
-            <ul class="grid auto-rows-[8.5rem] grid-cols-2 gap-3 sm:auto-rows-[11rem] sm:grid-cols-4 sm:gap-4" role="list">
+            <ul data-reveal class="grid auto-rows-[8.5rem] grid-cols-2 gap-3 sm:auto-rows-[11rem] sm:grid-cols-4 sm:gap-4" role="list">
               <?php foreach ($photos as $i => $img): ?>
                 <li class="<?= $i === 0 ? 'col-span-2 row-span-2 ' : '' ?>overflow-hidden rounded-card bg-sand-deep">
                   <?= picture($img, (string) ($img['alt'] ?? $venue['name'] . ': фото ' . ($i + 1) . ' из ' . count($photos)), $i === 0 ? '(min-width: 1024px) 32rem, 100vw' : '(min-width: 1024px) 16rem, 50vw', false, 'h-full w-full object-cover') ?>
@@ -361,7 +361,7 @@ $steps = [
     <div class="wrap">
       <?= $this->partial('components/section-head', ['title' => 'Что говорят родители', 'id' => 'reviews-title']) ?>
       <?php if ($reviews !== []): ?>
-        <div class="mt-10 grid items-start gap-x-14 gap-y-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
+        <div data-reveal class="mt-10 grid items-start gap-x-14 gap-y-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
           <?= $this->partial('components/review', ['review' => $reviews[0], 'featured' => true]) ?>
           <?php if (count($reviews) > 1): ?>
             <div class="divide-y divide-dashed divide-moss/45 border-y border-dashed border-moss/45">

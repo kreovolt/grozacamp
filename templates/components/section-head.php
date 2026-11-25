@@ -19,7 +19,7 @@ $dark = ($tone ?? 'light') === 'dark';
 $center = ($align ?? 'left') === 'center';
 $tag = 'h' . max(1, min(4, (int) ($level ?? 2)));
 ?>
-<div class="<?= e(trim(($center ? 'mx-auto text-center ' : '') . 'max-w-3xl ' . ($class ?? ''))) ?>">
+<div data-reveal class="<?= e(trim(($center ? 'mx-auto text-center ' : '') . 'max-w-3xl ' . ($class ?? ''))) ?>">
   <?php if (!empty($kicker)): ?>
     <p class="kicker mb-4 <?= $dark ? 'text-gold' : 'text-rust-deep' ?>"><?= e($kicker) ?></p>
   <?php endif ?>

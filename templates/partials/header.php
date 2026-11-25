@@ -19,6 +19,10 @@ use function Groza\View\tel;
           <?= icon('phone', 'size-5') ?>
         </a>
       <?php endif ?>
+      <?php /* Без JS бургер — ссылка-якорь на панель (:target в app.css); с JS её скрывает html.js */ ?>
+      <a class="nojs-menu grid size-11 place-items-center rounded-btn border border-cream/35 text-cream no-underline transition-colors hover:border-cream hover:bg-cream/10" href="#mobile-menu" aria-label="Меню">
+        <?= icon('menu', 'size-6') ?>
+      </a>
       <button class="grid size-11 place-items-center rounded-btn border border-cream/35 text-cream transition-colors hover:border-cream hover:bg-cream/10" type="button" aria-label="Меню" aria-expanded="false" aria-controls="mobile-menu" data-menu-open>
         <?= icon('menu', 'size-6') ?>
       </button>

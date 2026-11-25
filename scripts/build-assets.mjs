@@ -20,8 +20,8 @@ const watchMode = process.argv.includes('--watch');
 // Пары «вход Tailwind → выход»; admin.css появится в задачах админки
 const CSS = [['frontend/css/app.css', 'css/app.css'], ['frontend/css/admin.css', 'css/admin.css']]
   .filter(([input]) => existsSync(join(root, input)));
-// Точки входа JS: остальные модули (nav.js, forms.js, motion.js…) подключаются через import
-const JS = ['main', 'metrika', 'admin'].map((n) => `frontend/js/${n}.js`).filter((f) => existsSync(join(root, f)));
+// Точки входа JS: main (все страницы), motion (GSAP — только страницы с [data-reveal]), metrika, admin; остальные модули подключаются через import
+const JS = ['main', 'motion', 'metrika', 'admin'].map((n) => `frontend/js/${n}.js`).filter((f) => existsSync(join(root, f)));
 
 const FONTS = [
   ['oswald', [500, 600, 700]],

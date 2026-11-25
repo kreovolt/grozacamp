@@ -47,6 +47,9 @@ if ($page === 'home') {
 <link rel="preload" href="/assets/fonts/oswald-cyrillic-700.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="<?= e(asset('/assets/css/app.css')) ?>">
 <script src="<?= e(asset('/assets/js/main.js')) ?>" defer></script>
+<?php if (str_contains($content, 'data-reveal')): /* GSAP — только на страницах с анимацией появления */ ?>
+<script src="<?= e(asset('/assets/js/motion.js')) ?>" defer></script>
+<?php endif ?>
 <?php if ($metrikaId !== ''): ?>
 <script src="<?= e(asset('/assets/js/metrika.js')) ?>" data-id="<?= e($metrikaId) ?>" defer></script>
 <?php endif ?>

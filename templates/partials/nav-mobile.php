@@ -24,6 +24,9 @@ $hours = array_values(array_filter([$settings['hoursWeekdays'] ?? '', $settings[
     <button class="grid size-11 place-items-center rounded-btn border border-cream/35 text-cream transition-colors hover:border-cream hover:bg-cream/10" type="button" aria-label="Закрыть меню" data-menu-close>
       <?= icon('x', 'size-6') ?>
     </button>
+    <a class="nojs-menu grid size-11 place-items-center rounded-btn border border-cream/35 text-cream no-underline transition-colors hover:border-cream hover:bg-cream/10" href="#main" aria-label="Закрыть меню">
+      <?= icon('x', 'size-6') ?>
+    </a>
   </div>
 
   <nav class="wrap relative flex flex-1 flex-col pb-10 pt-5" aria-label="Основное меню">

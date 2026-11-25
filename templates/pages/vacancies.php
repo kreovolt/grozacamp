@@ -68,7 +68,7 @@ $shot = static function (string $key, string $sizes): string {
     <?php endif ?>
 
     <?php if ($vacancies !== []): ?>
-      <ul class="mt-10 grid gap-6 md:grid-cols-2 desk:gap-8" role="list">
+      <ul class="mt-10 grid gap-6 md:grid-cols-2 desk:gap-8" role="list" data-reveal>
         <?php foreach ($vacancies as $v): ?>
           <?php
           $title = Fields::line($v['title'] ?? '');

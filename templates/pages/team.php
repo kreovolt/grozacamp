@@ -35,7 +35,7 @@ $initials = static function (string $name): string {
   <?php foreach ($groups as $gi => $group): ?>
     <section class="<?= $gi > 0 ? 'mt-14 sm:mt-16' : '' ?>" aria-labelledby="team-group-<?= $gi ?>">
       <h2 class="border-b border-dashed border-moss/45 pb-4 font-display text-[clamp(1.5rem,1.2rem+1.1vw,2.125rem)] font-bold uppercase leading-[1.1] tracking-[0.015em] text-ink" id="team-group-<?= $gi ?>"><?= e($group['title']) ?></h2>
-      <ul class="mt-8 grid grid-cols-2 gap-x-4 gap-y-9 sm:grid-cols-3 sm:gap-x-6 lg:grid-cols-4 desk:grid-cols-5" role="list">
+      <ul data-reveal class="mt-8 grid grid-cols-2 gap-x-4 gap-y-9 sm:grid-cols-3 sm:gap-x-6 lg:grid-cols-4 desk:grid-cols-5" role="list">
         <?php foreach ($group['members'] as $m): ?>
           <?php
           $name = (string) $m['name'];

@@ -55,7 +55,7 @@ $h2 = 'font-display text-[clamp(1.5rem,1.2rem+1.1vw,2.125rem)] font-bold upperca
 
   <div class="min-w-0 max-w-[48rem]">
     <?php foreach ($sections as $i => $s): ?>
-      <section class="scroll-mt-6 border-t border-dashed border-moss/45 py-9 first:border-t-0 first:pt-0 last:pb-0" id="<?= e($s['id']) ?>" aria-labelledby="<?= e($s['id']) ?>-title">
+      <section data-reveal class="scroll-mt-6 border-t border-dashed border-moss/45 py-9 first:border-t-0 first:pt-0 last:pb-0" id="<?= e($s['id']) ?>" aria-labelledby="<?= e($s['id']) ?>-title">
         <h2 class="<?= $h2 ?>" id="<?= e($s['id']) ?>-title"><?= e($s['label']) ?></h2>
         <?php if (!empty($s['subtitle'])): ?>
           <p class="mt-2 text-ink-soft"><?= e($s['subtitle']) ?></p>
