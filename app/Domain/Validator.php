@@ -1,0 +1,263 @@
+<?php
+declare(strict_types=1);
+
+namespace Groza\Domain;
+
+use DateTimeImmutable;
+use Groza\Support\Slug;
+
+final class Validator
+{
+    private const REQUIRED = 'Заполните поле';
+    private const KEY = '/^[a-z0-9-]+$/';
+
+    /**
+     * Нормализует запись по схеме; поля вне схемы отбрасываются.
+     *
+     * @param array{fields:list<array<string,mixed>>} $collectionDef
+     * @param array<string,list<string>> $refSlugs допустимые slug по коллекциям (если ключ есть — проверяем наличие)
+     * @return array<string,mixed>
+     * @throws ValidationException
+     */
+    public static function validate(array $collectionDef, array $input, array $refSlugs = []): array
+    {
+        $out = [];
+        $errors = [];
+
+        foreach ($collectionDef['fields'] as $field) {
+            $name = $field['name'];
+            if (!empty($field['computed'])) {
+                $out[$name] = null;
+                continue;
+            }
+            $raw = $input[$name] ?? null;
+            if ($name === 'slug') {
+                $raw = self::slugSource($raw, $input);
+            }
+            try {
+                $value = self::normalize($field, $raw, $refSlugs);
+            } catch (FieldError $e) {
+                $errors[$name] = $e->getMessage();
+                $out[$name] = null;
+                continue;
+            }
+            if (!empty($field['required']) && self::isEmpty($value)) {
+                $errors[$name] = self::REQUIRED;
+            }
+            $out[$name] = $value;
+        }
+
+        self::crossChecks($collectionDef, $out, $errors);
+
+        if ($errors) {
+            throw new ValidationException($errors);
+        }
+        return $out;
+    }
+
+    private static function slugSource(mixed $raw, array $input): string
+    {
+        $s = is_string($raw) ? Slug::fromRu($raw) : '';
+        if ($s === '') {
+            foreach (['title', 'name'] as $k) {
+                if (isset($input[$k]) && is_string($input[$k])) {
+                    return Slug::fromRu($input[$k]);
+                }
+            }
+        }
+        return $s;
+    }
+
+    private static function isEmpty(mixed $v): bool
+    {
+        return $v === null || $v === '' || $v === [];
+    }
+
+    private static function crossChecks(array $def, array &$out, array &$errors): void
+    {
+        $names = array_column($def['fields'], 'name');
+        if (!in_array('dateStart', $names, true) || !in_array('days', $names, true)) {
+            return;
+        }
+        $s = $out['dateStart'] ?? null;
+        $e = $out['dateEnd'] ?? null;
+        if ($s !== null && $e !== null) {
+            if ($e < $s) {
+                $errors['dateEnd'] = 'Дата окончания раньше даты начала';
+            } else {
+                $out['days'] = Shifts::days($s, $e);
+            }
+        }
+        if (isset($out['ageMin'], $out['ageMax']) && $out['ageMax'] < $out['ageMin'] && !isset($errors['ageMax'])) {
+            $errors['ageMax'] = 'Максимальный возраст меньше минимального';
+        }
+    }
+
+    /** @throws FieldError */
+    private static function normalize(array $field, mixed $raw, array $refSlugs): mixed
+    {
+        return match ($field['type']) {
+            'text' => self::text($raw, $field, false),
+            'textarea' => self::text($raw, $field, true),
+            'richtext' => is_string($raw) ? $raw : '',
+            'int' => self::int($raw),
+            'date' => self::date($raw),
+            'enum' => self::enum($raw, $field),
+            'bool' => $raw === true || $raw === 1 || (is_string($raw) && in_array(strtolower($raw), ['1', 'on', 'true', 'yes'], true)),
+            'image' => self::image($raw),
+            'gallery' => self::gallery($raw),
+            'file' => self::file($raw),
+            'list' => self::list($raw),
+            'ref' => self::ref($raw, $field, $refSlugs),
+        };
+    }
+
+    private static function text(mixed $raw, array $field, bool $multiline): string
+    {
+        $s = is_scalar($raw) ? (string) $raw : '';
+        $s = str_replace("\r\n", "\n", $s);
+        $s = str_replace("\r", "\n", $s);
+        $s = preg_replace($multiline ? '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/' : '/[\x00-\x1F\x7F]/', $multiline ? '' : ' ', $s) ?? '';
+        $s = trim($s);
+        if (isset($field['max'])) {
+            $s = trim(mb_substr($s, 0, (int) $field['max']));
+        }
+        return $s;
+    }
+
+    /** @throws FieldError */
+    private static function int(mixed $raw): ?int
+    {
+        if (is_int($raw)) {
+            return $raw >= 0 ? $raw : throw new FieldError('Введите целое число');
+        }
+        $s = is_string($raw) ? preg_replace('/[\s\x{00A0}]+/u', '', $raw) : '';
+        if ($s === '' || $s === null) {
+            return null;
+        }
+        if (!ctype_digit($s) || strlen($s) > 9) {
+            throw new FieldError('Введите целое число');
+        }
+        return (int) $s;
+    }
+
+    /** @throws FieldError */
+    private static function date(mixed $raw): ?string
+    {
+        $s = is_string($raw) ? trim($raw) : '';
+        if ($s === '') {
+            return null;
+        }
+        $d = DateTimeImmutable::createFromFormat('!Y-m-d', $s);
+        if (!$d || $d->format('Y-m-d') !== $s) {
+            throw new FieldError('Укажите дату в формате ГГГГ-ММ-ДД');
+        }
+        return $s;
+    }
+
+    /** @throws FieldError */
+    private static function enum(mixed $raw, array $field): ?string
+    {
+        $s = is_string($raw) ? trim($raw) : '';
+        if ($s === '') {
+            return null;
+        }
+        if (!array_key_exists($s, $field['options'])) {
+            throw new FieldError('Выберите значение из списка');
+        }
+        return $s;
+    }
+
+    /** @throws FieldError */
+    private static function image(mixed $raw): string|array|null
+    {
+        if ($raw === null || $raw === '') {
+            return null;
+        }
+        if (is_string($raw) && preg_match(self::KEY, $raw)) {
+            return $raw;
+        }
+        if (is_array($raw) && self::isDescriptor($raw)) {
+            return [
+                'src' => $raw['src'], 'widths' => array_values($raw['widths']),
+                'formats' => array_values($raw['formats']), 'w' => $raw['w'], 'h' => $raw['h'],
+            ];
+        }
+        throw new FieldError('Некорректное изображение');
+    }
+
+    private static function isDescriptor(array $a): bool
+    {
+        return isset($a['src'], $a['widths'], $a['formats'], $a['w'], $a['h'])
+            && is_string($a['src']) && $a['src'] !== ''
+            && is_int($a['w']) && is_int($a['h'])
+            && is_array($a['widths']) && $a['widths'] === array_filter($a['widths'], 'is_int')
+            && is_array($a['formats']) && $a['formats'] === array_filter($a['formats'], 'is_string');
+    }
+
+    /** @throws FieldError */
+    private static function gallery(mixed $raw): array
+    {
+        if ($raw === null || $raw === '') {
+            return [];
+        }
+        if (!is_array($raw)) {
+            throw new FieldError('Некорректный список изображений');
+        }
+        $out = [];
+        foreach ($raw as $item) {
+            $img = self::image($item);
+            if ($img !== null) {
+                $out[] = $img;
+            }
+        }
+        return $out;
+    }
+
+    /** @throws FieldError */
+    private static function file(mixed $raw): ?array
+    {
+        if ($raw === null || $raw === '') {
+            return null;
+        }
+        if (is_array($raw) && isset($raw['url'], $raw['bytes'], $raw['originalName'])
+            && is_string($raw['url']) && $raw['url'] !== '' && is_int($raw['bytes']) && is_string($raw['originalName'])) {
+            return ['url' => $raw['url'], 'bytes' => $raw['bytes'], 'originalName' => $raw['originalName']];
+        }
+        throw new FieldError('Некорректный файл');
+    }
+
+    private static function list(mixed $raw): array
+    {
+        if (!is_array($raw)) {
+            return [];
+        }
+        $out = [];
+        foreach ($raw as $item) {
+            if (is_scalar($item)) {
+                $s = self::text($item, ['max' => 300], false);
+                if ($s !== '') {
+                    $out[] = $s;
+                }
+            }
+        }
+        return $out;
+    }
+
+    /** @throws FieldError */
+    private static function ref(mixed $raw, array $field, array $refSlugs): ?string
+    {
+        $s = is_string($raw) ? trim($raw) : '';
+        if ($s === '') {
+            return null;
+        }
+        if (!preg_match(self::KEY, $s)) {
+            throw new FieldError('Некорректная ссылка');
+        }
+        $known = $refSlugs[$field['ref'] ?? ''] ?? null;
+        if ($known !== null && !in_array($s, $known, true)) {
+            throw new FieldError('Такой записи нет');
+        }
+        return $s;
+    }
+}
