@@ -123,9 +123,9 @@ $detailsHref = '/program/' . rawurlencode($slug) . '/';
       <div class="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3">
         <?php if (!$closed): ?>
           <?= $this->partial('components/button', [
-              'label' => 'Забронировать',
+              'label' => $status === 'soon' ? 'Оставить заявку' : 'Забронировать',
               'href' => $bookingHref,
-              'attrs' => ['aria-label' => 'Забронировать смену «' . $title . '»'],
+              'attrs' => ['aria-label' => ($status === 'soon' ? 'Оставить заявку на смену «' : 'Забронировать смену «') . $title . '»'],
           ]) ?>
           <a class="group/more inline-flex min-h-11 items-center gap-1.5 font-display text-[0.9375rem] font-semibold uppercase tracking-btn text-rust-deep no-underline hover:text-rust-dark" href="<?= e($detailsHref) ?>" aria-label="<?= e('Подробнее о смене «' . $title . '»') ?>">
             Подробнее <?= icon('arrow-right', 'size-4 transition-transform group-hover/more:translate-x-0.5') ?>

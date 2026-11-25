@@ -66,6 +66,9 @@ try {
 }
 $bookingHref = HomePage::bookingHref($shift);
 $canBook = !$past && !$closed;
+// Смена «скоро» ещё не в списке формы: заявка без выбора смены
+$soon = $status === 'soon';
+$bookLabel = $soon ? 'Оставить заявку' : 'Забронировать';
 
 $desc = trim((string) ($shift['lead'] ?? ''));
 $this->layout('layout', [
@@ -115,7 +118,7 @@ $fact = static fn (string $name, string $value): string => '<div class="border-t
 
       <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <?php if ($canBook): ?>
-          <?= $this->partial('components/button', ['label' => 'Забронировать', 'href' => $bookingHref, 'size' => 'lg', 'attrs' => ['aria-label' => 'Забронировать смену «' . $title . '»']]) ?>
+          <?= $this->partial('components/button', ['label' => $bookLabel, 'href' => $bookingHref, 'size' => 'lg', 'attrs' => ['aria-label' => ($soon ? 'Оставить заявку на смену «' : 'Забронировать смену «') . $title . '»']]) ?>
         <?php else: ?>
           <?= $this->partial('components/button', ['label' => $past ? 'Смотреть текущие смены' : 'Выбрать другую смену', 'href' => '/booking/', 'size' => 'lg']) ?>
         <?php endif ?>
@@ -237,10 +240,10 @@ $fact = static fn (string $name, string $value): string => '<div class="border-t
 
 <section data-block="cta">
   <?= $this->partial('components/cta-final', [
-      'title' => $canBook ? 'Забронируйте место' : 'Выберите смену',
+      'title' => $canBook ? ($soon ? 'Оставьте заявку' : 'Забронируйте место') : 'Выберите смену',
       'lead' => $canBook ? 'Оставьте заявку, и офис перезвонит. Или позвоните сами.' : 'Посмотрите смены, на которые идёт набор.',
       'href' => $canBook ? $bookingHref : '/booking/#smeny',
-      'label' => $canBook ? 'Забронировать' : 'Смотреть смены',
+      'label' => $canBook ? $bookLabel : 'Смотреть смены',
       'settings' => $settings,
   ]) ?>
 </section>

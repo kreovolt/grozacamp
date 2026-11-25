@@ -82,4 +82,22 @@ final class ShiftPageTest extends TestCase
         $this->assertStringContainsString('Мест нет', $body);
         $this->assertStringNotContainsString('?smena=pogranichnik-2027', $body);
     }
+
+    public function test_soon_shift_links_to_booking_without_preselect(): void
+    {
+        $app = TestApp::make();
+        $items = $app->store()->read('shifts')['items'];
+        foreach ($items as &$s) {
+            if (($s['slug'] ?? '') === 'vperyod-i-vverh-2027') {
+                $s['hidden'] = false;
+            }
+        }
+        unset($s);
+        $app->store()->write('shifts', ['items' => $items], 'test');
+        $body = TestApp::get($app, '/program/vperyod-i-vverh-2027/')->body();
+        $this->assertStringContainsString('href="/booking/#zayavka"', $body);
+        $this->assertStringContainsString('>Оставить заявку</span>', $body);
+        $this->assertStringNotContainsString('?smena=vperyod-i-vverh-2027', $body);
+        $this->assertStringNotContainsString('>Забронировать</span>', $body);
+    }
 }
