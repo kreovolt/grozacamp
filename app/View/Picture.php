@@ -3,7 +3,10 @@ declare(strict_types=1);
 
 /**
  * Адаптивные фото: дескриптор из public/assets/img/manifest.json → <picture> с avif/webp/jpg.
- * Дескриптор: {src, widths, formats, w, h[, position]}; файлы лежат как {src}-{width}.{format}.
+ * Дескриптор: {src, widths, formats, w, h[, position][, alt]}; файлы лежат как {src}-{width}.{format}.
+ * position — точка кадра для object-position, alt — описание снимка по-русски (подпись по умолчанию);
+ * оба приходят из config/photos.json через манифест. Поле og из photos.json в манифест не попадает —
+ * это кроп OG-картинки героя, его читает только scripts/optimize-photos.mjs.
  */
 
 namespace Groza\View;
@@ -13,7 +16,7 @@ use InvalidArgumentException;
 /**
  * Дескриптор фото по ключу из манифеста (создаётся `npm run photos`).
  *
- * @return array{src:string,widths:list<int>,formats:list<string>,w:int,h:int,position?:string}
+ * @return array{src:string,widths:list<int>,formats:list<string>,w:int,h:int,position?:string,alt?:string}
  */
 function photo(string $key): array
 {

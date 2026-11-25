@@ -22,6 +22,7 @@ final class HomePageTest extends TestCase
         'hero-river', 'kids-evening', 'kids-girls', 'kids-boy', 'kids-bubbles', 'kids-teens', 'kids-gazebo', 'kids-tent',
         'counselors', 'counselors-kids', 'squad-river', 'toss', 'spas-mchs', 'spas-demo', 'spas-fire', 'spas-laugh',
         'sturm-smile', 'sturm-relay', 'sturm-theatre', 'sturm-cheer',
+        'press-camera', // папка заказчика, idx 57: лазертаг-бластер, а не фотоаппарат (исправление выборки)
     ];
 
     public function test_home_renders_all_blocks_in_spec_order(): void
@@ -300,7 +301,7 @@ final class HomePageTest extends TestCase
         $html = TestApp::get(TestApp::make(), '/')->body();
         $expected = [
             'kids' => ['team-poster', 'stage-cheer', 'games-meadow'],
-            'care' => ['ropes-instructor', 'first-aid-field'],
+            'care' => ['morning-exercise', 'first-aid-field'],
             'steps' => ['evening-circle', 'games-chairs', 'awards-group'],
             'cta' => ['campfire'],
         ];
@@ -310,6 +311,8 @@ final class HomePageTest extends TestCase
                 $this->assertStringContainsString('/assets/img/' . $key . '-', $part, "{$block}: {$key}");
             }
         }
+        // Анти-цель «мама пугается»: инструктор в баллистическом шлеме и камуфляже — не в блоке для родителей
+        $this->assertStringNotContainsString('/assets/img/ropes-instructor-', $this->block($html, 'care'));
         $shifts = $this->block($html, 'shifts');
         $this->assertStringContainsString('/assets/img/spas-mchs-suit-', $this->card($shifts, 'spasatel-2027'));
         $this->assertStringContainsString('/assets/img/ropes-zipline-', $this->card($shifts, 'shturmovik-2027'));
@@ -330,6 +333,19 @@ final class HomePageTest extends TestCase
             $this->assertNotSame('', $alt, $img);
             $this->assertDoesNotMatchRegularExpression('#^фото$|(?:^|\s)фото\s+\d#iu', $alt, $img);
             $this->assertGreaterThanOrEqual(3, count(preg_split('#\s+#u', $alt)), "в описании хотя бы три слова: {$alt}");
+        }
+    }
+
+    public function test_retired_photos_are_not_in_manifest(): void
+    {
+        foreach (self::RETIRED_PHOTOS as $key) {
+            try {
+                photo($key);
+                $this->fail("выведенное фото {$key} осталось в манифесте");
+            } catch (\InvalidArgumentException) {
+                $this->addToAssertionCount(1);
+            }
+            $this->assertSame([], glob(dirname(__DIR__, 4) . "/public/assets/img/{$key}-[0-9]*.*") ?: [], "файлы {$key}");
         }
     }
 

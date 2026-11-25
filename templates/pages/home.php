@@ -195,20 +195,21 @@ $steps = [
           'tone' => 'dark',
           'id' => 'care-title',
       ]) ?>
+      <?php /* Вожатый рядом с ребятами — главный снимок блока; поверх второго, чтобы подпись не перекрывалась */ ?>
       <div class="mt-10 flex max-w-[30rem] items-start lg:mt-12">
         <?= $this->partial('components/polaroid', [
-            'media' => $shot('ropes-instructor', '(min-width: 1024px) 14rem, 48vw'),
-            'ratio' => '3/4',
+            'media' => $shot('morning-exercise', '(min-width: 1024px) 18rem, 60vw'),
+            'ratio' => '4/3',
             'tilt' => 'left',
-            'caption' => 'Со страховкой',
-            'class' => 'relative z-10 w-[47%] shrink-0',
+            'caption' => 'Зарядка с вожатым',
+            'class' => 'relative z-20 w-[60%] shrink-0',
         ]) ?>
         <?= $this->partial('components/polaroid', [
-            'media' => $shot('first-aid-field', '(min-width: 1024px) 18rem, 60vw'),
+            'media' => $shot('first-aid-field', '(min-width: 1024px) 14rem, 46vw'),
             'ratio' => '4/3',
             'tilt' => 'right',
             'caption' => 'Учимся первой помощи',
-            'class' => 'relative z-20 -ml-[7%] mt-[22%] w-[60%] shrink-0',
+            'class' => 'relative z-10 -ml-[6%] mt-[26%] w-[46%] shrink-0',
         ]) ?>
       </div>
     </div>
