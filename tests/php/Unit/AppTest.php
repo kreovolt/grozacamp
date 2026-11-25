@@ -8,12 +8,13 @@ use PHPUnit\Framework\TestCase;
 
 final class AppTest extends TestCase
 {
-    public function test_home_returns_ok(): void
+    public function test_home_renders_site_layout(): void
     {
         $res = TestApp::get(TestApp::make(), '/');
 
         $this->assertSame(200, $res->status());
-        $this->assertSame('ok', $res->body());
+        $this->assertSame('text/html; charset=utf-8', $res->header('Content-Type'));
+        $this->assertStringStartsWith('<!doctype html>', ltrim($res->body()));
     }
 
     public function test_test_app_uses_fixed_clock_in_camp_timezone(): void
