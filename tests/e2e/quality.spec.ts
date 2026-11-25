@@ -71,7 +71,27 @@ test.describe('анимации: всё видно без движения', () 
     await expect.poll(async () => (await revealOpacities(page)).every((o) => o === '1'), { timeout: 10_000 }).toBe(true);
   });
 
-  test('заголовок героя виден сразу и анимация укладывается в 0,8 с', async ({ page }) => {
+  test('сбой анимации не оставляет блоки скрытыми', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    // Ломаем движок на втором измерении блока: первый проход (какие блоки ниже экрана) проходит, скрытие уже поставлено,
+    // а создание триггеров падает. Без аварийного показа такие блоки остались бы прозрачными навсегда.
+    await page.addInitScript(() => {
+      const original = Element.prototype.getBoundingClientRect;
+      const seen = new WeakSet<Element>();
+      Element.prototype.getBoundingClientRect = function (this: Element) {
+        if (this.hasAttribute('data-reveal')) {
+          if (seen.has(this)) throw new Error('анимация сломана для проверки');
+          seen.add(this);
+        }
+        return original.call(this);
+      };
+    });
+    page.on('pageerror', () => {}); // ошибка скрипта здесь — часть сценария
+    await page.goto('/');
+    await expect.poll(async () => (await revealOpacities(page)).every((o) => o === '1'), { timeout: 10_000 }).toBe(true);
+  });
+
+  test('заголовок героя виден сразу, анимация слов завершается', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     const h1 = page.locator('h1#hero-title');
@@ -80,8 +100,9 @@ test.describe('анимации: всё видно без движения', () 
     await page.waitForFunction(() => document.querySelectorAll('#hero-title [data-word]').length > 0);
     const minStart = await h1.evaluate((el) => Math.min(...Array.from(el.querySelectorAll<HTMLElement>('[data-word]')).map((w) => Number(getComputedStyle(w).opacity))));
     expect(minStart).toBeGreaterThanOrEqual(0.3);
-    await page.waitForTimeout(1000);
-    expect(await h1.evaluate((el) => Array.from(el.querySelectorAll<HTMLElement>('[data-word]')).every((w) => getComputedStyle(w).opacity === '1'))).toBe(true);
+    await expect
+      .poll(() => h1.evaluate((el) => Array.from(el.querySelectorAll<HTMLElement>('[data-word]')).every((w) => getComputedStyle(w).opacity === '1')), { timeout: 3000 })
+      .toBe(true);
   });
 
   test('GSAP грузится только там, где есть [data-reveal]', async ({ page, request }) => {
@@ -104,13 +125,19 @@ test.describe('бюджеты скорости', () => {
 
   test('home weight budget', async ({ page }) => {
     const sizes: { url: string; size: number }[] = [];
-    page.on('response', async (res) => {
-      const body = await res.body().catch(() => null);
-      const len = Number(res.headers()['content-length'] ?? body?.length ?? 0);
-      sizes.push({ url: res.url(), size: len || (body?.length ?? 0) });
+    const captures: Promise<void>[] = []; // размер тела читается асинхронно: ждём все чтения, а не только «сеть затихла»
+    page.on('response', (res) => {
+      captures.push(
+        (async () => {
+          const body = await res.body().catch(() => null);
+          const len = Number(res.headers()['content-length'] ?? body?.length ?? 0);
+          sizes.push({ url: res.url(), size: len || (body?.length ?? 0) });
+        })(),
+      );
     });
     await page.goto('/');
     await page.waitForLoadState('networkidle');
+    await Promise.all(captures);
     const total = sizes.reduce((s, r) => s + r.size, 0);
     const hero = sizes.filter((r) => r.url.includes('friends-selfie'));
     expect(hero.length).toBeGreaterThan(0);
@@ -212,10 +239,27 @@ test.describe('мобильное меню без JavaScript', () => {
 });
 
 test.describe('оглавление /info/', () => {
-  test('на телефоне при >8 пунктах свёрнуто, на десктопе открыто, без JS открыто', async ({ page, browser }) => {
+  test('сворачивание длинного оглавления на телефоне не сдвигает вёрстку (CLS)', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    await page.addInitScript(() => {
+      const w = window as unknown as { __cls: number };
+      w.__cls = 0;
+      new PerformanceObserver((list) => {
+        for (const e of list.getEntries() as unknown as { value: number; hadRecentInput: boolean }[]) if (!e.hadRecentInput) w.__cls += e.value;
+      }).observe({ type: 'layout-shift', buffered: true });
+    });
+    await page.goto('/info/');
+    await expect(page.locator('nav details').first()).not.toHaveAttribute('open', /.*/); // скрипт уже свернул список
+    await page.waitForLoadState('load');
+    await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
+    const cls = await page.evaluate(() => (window as unknown as { __cls: number }).__cls);
+    expect(cls, `CLS ${cls}`).toBeLessThan(0.02);
+  });
+
+  test('на телефоне при >8 пунктах свёрнуто, на десктопе список виден, без JS то же самое', async ({ page, browser }) => {
     await page.setViewportSize({ width: 375, height: 800 });
     await page.goto('/info/');
-    const toc = page.locator('nav details').first();
+    const toc = page.locator('nav[data-toc] details').first();
     expect(await toc.locator('li').count()).toBeGreaterThan(8);
     await expect(toc).not.toHaveAttribute('open', /.*/);
     await toc.locator('summary').click();
@@ -223,12 +267,18 @@ test.describe('оглавление /info/', () => {
 
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto('/info/');
-    await expect(page.locator('nav details').first()).toHaveAttribute('open', '');
+    await expect(page.locator('nav[data-toc] details').first()).toBeHidden();
+    await expect(page.locator('nav[data-toc] ol:visible a').first()).toBeVisible();
+    expect(await page.locator('nav[data-toc] ol:visible a').count()).toBeGreaterThan(8);
 
+    // без JS тот же результат — оглавление не зависит от скрипта: на телефоне свёрнуто и раскрывается по нажатию
     const ctx = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 375, height: 800 } });
     const nojs = await ctx.newPage();
     await nojs.goto(url(PORT) + '/info/');
-    await expect(nojs.locator('nav details').first()).toHaveAttribute('open', '');
+    const nojsToc = nojs.locator('nav[data-toc] details').first();
+    await expect(nojsToc).not.toHaveAttribute('open', /.*/);
+    await nojsToc.locator('summary').click();
+    await expect(nojsToc).toHaveAttribute('open', '');
     await ctx.close();
   });
 });

@@ -6,6 +6,33 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
 
+/**
+ * Аварийный выход: если анимация упала посреди работы, блоки не должны остаться прозрачными или сдвинутыми.
+ * Чистим инлайновые свойства обычным DOM (движок как раз мог быть причиной сбоя).
+ */
+function showAll() {
+  document.querySelectorAll('[data-reveal], [data-word]').forEach((el) => {
+    el.style.opacity = '';
+    el.style.transform = '';
+    el.style.translate = '';
+  });
+  try {
+    ScrollTrigger.getAll().forEach((t) => t.kill());
+    gsap.killTweensOf('[data-reveal], [data-word]');
+  } catch {
+    // движок уже недоступен — всё видимое важнее
+  }
+}
+
+/** Запуск этапа анимации: любая ошибка внутри — показать всё как есть. */
+function guarded(step) {
+  try {
+    step();
+  } catch {
+    showAll();
+  }
+}
+
 function splitWords(el) {
   const words = el.textContent.trim().split(/\s+/);
   el.textContent = '';
@@ -54,7 +81,7 @@ function reveal() {
     start: 'top 90%',
     once: true,
     interval: 0.08,
-    onEnter: (batch) => {
+    onEnter: (batch) => guarded(() => {
       gsap.to(batch, {
         opacity: 1,
         y: 0,
@@ -64,7 +91,7 @@ function reveal() {
         overwrite: true,
         clearProps: 'transform,opacity',
       });
-    },
+    }),
   });
 }
 
@@ -99,13 +126,13 @@ function keepHashTarget() {
 
 if (!reduce.matches) {
   gsap.registerPlugin(ScrollTrigger);
-  heroTitle();
-  reveal();
+  guarded(heroTitle);
+  guarded(reveal);
   try {
     keepHashTarget();
   } catch {
     // якорь — улучшение; сбой не должен ломать остальную инициализацию
   }
   // Картинки и шрифты сдвигают положение блоков — пересчитать точки срабатывания
-  window.addEventListener('load', () => ScrollTrigger.refresh());
+  window.addEventListener('load', () => guarded(() => ScrollTrigger.refresh()));
 }
