@@ -21,8 +21,8 @@ final class HomePage
 
     private const DEFAULT_TITLE = 'Лагерь настоящих приключений';
     private const REGION = 'Пермский край';
-    /** Фото героя (Global Constraints: shoot-group-splash → ключ hero-river в манифесте). */
-    private const HERO_PHOTO = 'hero-river';
+    /** Фото героя: селфи вожатого с ребятами из папки заказчика (решение пользователя, photo-selection.md). */
+    private const HERO_PHOTO = 'friends-selfie';
 
     public function __construct(private App $app)
     {

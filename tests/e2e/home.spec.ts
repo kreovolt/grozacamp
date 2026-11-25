@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 
 // Блоки главной по спеке §7.1, в порядке 1–12
 const BLOCKS = ['hero', 'stats', 'shifts', 'kids', 'care', 'steps', 'included', 'base', 'team', 'reviews', 'faq', 'cta'];
@@ -23,6 +23,22 @@ test.describe('главная, десктоп 1440×900', () => {
     await expect(hero.getByRole('link', { name: 'Информация для родителей' })).toHaveAttribute('href', '/info/');
     await expect(hero.locator('img')).toHaveAttribute('loading', 'eager');
     await expect(hero.locator('img')).toHaveAttribute('fetchpriority', 'high');
+  });
+
+  test('герой на две колонки: текст слева, селфи справа на всю высоту, не пересекаются', async ({ page }) => {
+    const hero = page.locator('[data-block="hero"]');
+    const photo = await box(hero.locator('img'));
+    const title = await box(page.getByRole('heading', { level: 1 }));
+    const block = await box(hero);
+    const width = page.viewportSize()!.width;
+
+    expect(await hero.locator('img').getAttribute('src')).toMatch(/\/friends-selfie-\d+\.jpg$/);
+    expect(photo.x + photo.width / 2).toBeGreaterThan(width / 2);
+    expect(photo.x).toBeGreaterThanOrEqual(width * 0.4);
+    expect(photo.x + photo.width).toBeGreaterThanOrEqual(width - 1);
+    expect(photo.height).toBeGreaterThanOrEqual(block.height - 1);
+    expect(title.x + title.width).toBeLessThanOrEqual(width / 2);
+    expect(title.x + title.width).toBeLessThanOrEqual(photo.x);
   });
 
   test('полоса цифр: четыре пункта, без «24/7»', async ({ page }) => {
@@ -74,8 +90,39 @@ test.describe('главная, телефон 375×812', () => {
     await expect(page.locator('[data-block="hero"]').getByRole('link', { name: 'Выбрать смену' })).toBeInViewport();
   });
 
+  test('герой: сначала селфи, под ним заголовок', async ({ page }) => {
+    await page.goto('/');
+    const photo = await box(page.locator('[data-block="hero"] img'));
+    const title = await box(page.getByRole('heading', { level: 1 }));
+
+    expect(photo.y + photo.height).toBeLessThanOrEqual(title.y);
+    expect(photo.width).toBeGreaterThanOrEqual(375 - 1);
+  });
+
+  test('вес первой загрузки ≤ 1,5 МБ, фото героя ≤ 200 КБ (спека: бюджеты)', async ({ page }) => {
+    const sizes = new Map<string, number>();
+    const pending: Promise<void>[] = [];
+    page.on('response', (res) => {
+      pending.push(res.body().then((b) => void sizes.set(res.url(), b.length), () => undefined));
+    });
+    await page.goto('/', { waitUntil: 'networkidle' });
+    await Promise.all(pending);
+
+    const total = [...sizes.values()].reduce((sum, n) => sum + n, 0);
+    const hero = [...sizes].filter(([url]) => /\/friends-selfie-\d+\.(avif|webp|jpg)$/.test(url));
+    expect(total).toBeLessThanOrEqual(1.5 * 1024 * 1024);
+    expect(hero).toHaveLength(1);
+    expect(hero[0][1]).toBeLessThanOrEqual(200 * 1024);
+  });
+
   test('нет нарушений доступности (axe)', async ({ page }) => {
     await page.goto('/');
     await axe(page);
   });
 });
+
+async function box(locator: Locator) {
+  const b = await locator.boundingBox();
+  expect(b, 'элемент виден').not.toBeNull();
+  return b!;
+}

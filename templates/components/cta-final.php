@@ -2,7 +2,8 @@
 declare(strict_types=1);
 
 /**
- * Финальный призыв: заголовок, кнопка к сменам, телефон и WhatsApp офиса. Фон — фото под зелёным затемнением с топо-линиями.
+ * Финальный призыв: заголовок, кнопка к сменам, телефон и WhatsApp офиса. Фон — фото под зелёным затемнением с топо-линиями;
+ * подпись фото — alt из дескриптора (описание снимка из config/photos.json), без него фото считается украшением.
  * @var array<string,mixed> $settings
  * @var string $title
  * @var string|null $lead
@@ -23,7 +24,7 @@ $hours = array_values(array_filter([$settings['hoursWeekdays'] ?? '', $settings[
 <div class="on-dark relative isolate overflow-hidden bg-forest text-cream">
   <?php if (!empty($image)): ?>
     <div class="absolute inset-0 -z-10">
-      <?= picture($image, '', '100vw', false, 'h-full w-full object-cover') ?>
+      <?= picture($image, (string) ($image['alt'] ?? ''), '100vw', false, 'h-full w-full object-cover') ?>
       <div class="absolute inset-0 bg-forest/[0.86]"></div>
     </div>
   <?php endif ?>

@@ -34,14 +34,19 @@ $this->layout('layout', [
 ]);
 
 $section = 'py-16 sm:py-20 desk:py-24';
-$shot = static fn (string $key, string $alt, string $sizes): string => picture(photo($key), $alt, $sizes, false, 'h-full w-full object-cover');
+// Фото из библиотеки: подпись alt — описание снимка из config/photos.json (один источник для всех страниц)
+$shot = static function (string $key, string $sizes): string {
+    $img = photo($key);
+
+    return picture($img, (string) ($img['alt'] ?? ''), $sizes, false, 'h-full w-full object-cover');
+};
 // Ссылка «ещё»: стрелка не отрывается от последнего слова при переносе
 $moreLink = 'group/more inline-block font-display text-[0.9375rem] font-semibold uppercase leading-snug tracking-btn text-rust-deep no-underline hover:text-rust-dark';
 $moreArrow = "\u{00A0}" . icon('arrow-right', 'inline-block size-4 align-[-0.2em] transition-transform group-hover/more:translate-x-0.5');
 
 $heroImg = image($hero['photo']);
 // Положение кадра из манифеста фото → класс (без inline-style: CSP)
-$heroPosition = ['center 40%' => 'object-[center_40%]', 'center top' => 'object-top'][$heroImg['position'] ?? ''] ?? 'object-center';
+$heroPosition = ['60% 30%' => 'object-[60%_30%]', 'center 40%' => 'object-[center_40%]', 'center top' => 'object-top'][$heroImg['position'] ?? ''] ?? 'object-center';
 
 // Блок 4 — для ребят, на «ты». Только то, что есть в программах смен на старом сайте (content/old-site-content.md),
 // распорядке и FAQ; обобщения — в content/drafts-for-client.md, «Главная — подтвердить».
@@ -74,20 +79,19 @@ $steps = [
     ['title' => 'Большой финал', 'text' => 'В завершающей части программы ребята вместе с инструкторами отправляются на итоговую миссию. После смены — трансфер обратно в Пермь.'],
 ];
 ?>
-<?php /* 1. Герой */ ?>
-<section class="on-dark relative isolate flex min-h-[calc(100svh-4rem)] flex-col justify-end overflow-hidden bg-forest text-cream lg:min-h-[clamp(36rem,calc(100svh-16rem),46rem)]" data-block="hero" aria-labelledby="hero-title">
-  <div class="absolute inset-x-0 top-0 -z-10 h-[48%] lg:inset-0 lg:h-full">
-    <?= picture($heroImg, 'Ребята на берегу реки брызгаются водой и смеются', '100vw', true, 'h-full w-full object-cover ' . $heroPosition) ?>
-    <div class="hero-shade absolute inset-0"></div>
+<?php /* 1. Герой: лесная панель с текстом и селфи в естественных цветах (с 1024 px — две колонки, на телефоне фото сверху) */ ?>
+<section class="hero on-dark relative isolate overflow-hidden bg-forest text-cream" data-block="hero" aria-labelledby="hero-title">
+  <div class="hero-photo relative overflow-hidden bg-forest-deep">
+    <?= picture($heroImg, (string) ($heroImg['alt'] ?? ''), '(min-width: 1200px) 55vw, (min-width: 1024px) 60vw, 100vw', true, 'absolute inset-0 h-full w-full object-cover ' . $heroPosition) ?>
   </div>
-  <?= $this->partial('components/topo', ['class' => 'hero-topo pointer-events-none absolute bottom-0 left-0 -z-10 hidden h-20 w-[58%] text-sand opacity-[0.22] lg:block']) ?>
 
-  <div class="wrap pb-10 pt-48 sm:pb-14 lg:pb-20 lg:pt-28">
-    <div class="hero-text max-w-[44rem]">
+  <div class="hero-copy relative">
+    <?= $this->partial('components/topo', ['class' => 'hero-topo pointer-events-none absolute inset-0 -z-10 h-full w-full text-sand opacity-[0.16]']) ?>
+    <div class="max-w-[34rem]">
       <p class="kicker !leading-[1.5] text-gold"><?= e($hero['kicker']) ?></p>
-      <h1 class="mt-4 font-display text-[clamp(2.5rem,1.3rem+4.8vw,4.75rem)] font-bold uppercase leading-[1.1] tracking-[0.01em] text-[#f4efe3]" id="hero-title"><?= e($hero['title']) ?></h1>
+      <h1 class="mt-4 font-display text-[clamp(2.5rem,1.3rem+4.8vw,4rem)] font-bold uppercase leading-[1.08] tracking-[0.01em] text-[#f4efe3] lg:text-[clamp(3rem,0.25rem+4.4vw,4.25rem)]" id="hero-title"><?= e($hero['title']) ?></h1>
       <?php if ($hero['lead'] !== ''): ?>
-        <p class="mt-5 max-w-[34rem] text-[1.0625rem] leading-relaxed text-cream/90 sm:text-lg"><?= e($hero['lead']) ?></p>
+        <p class="mt-5 max-w-[32rem] text-[1.0625rem] leading-relaxed text-cream/90 sm:text-lg"><?= e($hero['lead']) ?></p>
       <?php endif ?>
       <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <?= $this->partial('components/button', ['label' => 'Выбрать смену', 'href' => '/booking/', 'size' => 'lg']) ?>
@@ -156,24 +160,24 @@ $steps = [
 
     <div class="relative mx-auto flex w-full max-w-xl items-start lg:order-1 lg:block lg:h-[38rem] lg:max-w-none">
       <?= $this->partial('components/polaroid', [
-          'media' => $shot('kids-girls', 'Девочки из отряда обнимаются и смеются на вечерней дискотеке', '(min-width: 1024px) 28rem, 60vw'),
+          'media' => $shot('team-poster', '(min-width: 1024px) 28rem, 60vw'),
           'ratio' => '4/3',
           'tilt' => 'left',
-          'caption' => 'Своя компания',
+          'caption' => 'Болеем за своих',
           'class' => 'relative z-10 w-[62%] shrink-0 lg:absolute lg:left-0 lg:top-0 lg:w-[64%]',
       ]) ?>
       <?= $this->partial('components/polaroid', [
-          'media' => $shot('spas-laugh', 'Ребята с аквагримом смеются, сидя рядом', '(min-width: 1024px) 24rem, 55vw'),
+          'media' => $shot('stage-cheer', '(min-width: 1024px) 24rem, 55vw'),
           'ratio' => '4/3',
           'tilt' => 'right',
-          'caption' => 'Смеёмся всем отрядом',
+          'caption' => 'Номер удался!',
           'class' => 'relative z-20 -ml-[14%] mt-16 w-[52%] shrink-0 lg:absolute lg:right-0 lg:top-[27%] lg:ml-0 lg:mt-0 lg:w-[54%]',
       ]) ?>
       <?= $this->partial('components/polaroid', [
-          'media' => $shot('kids-bubbles', 'Девочка пускает мыльные пузыри на солнечной поляне', '14rem'),
+          'media' => $shot('games-meadow', '14rem'),
           'ratio' => '3/4',
           'tilt' => 'slight',
-          'caption' => 'Лето за городом',
+          'caption' => 'Кто быстрее?',
           'class' => 'hidden lg:absolute lg:bottom-0 lg:left-[12%] lg:z-30 lg:block lg:w-[29%]',
       ]) ?>
     </div>
@@ -191,13 +195,22 @@ $steps = [
           'tone' => 'dark',
           'id' => 'care-title',
       ]) ?>
-      <?= $this->partial('components/polaroid', [
-          'media' => $shot('counselors-kids', 'Трое вожатых в форме лагеря улыбаются на берегу реки', '(min-width: 1024px) 26rem, 80vw'),
-          'ratio' => '4/3',
-          'tilt' => 'left',
-          'caption' => 'Вожатые — старшие товарищи для ребят',
-          'class' => 'mt-10 max-w-[26rem] lg:mt-12',
-      ]) ?>
+      <div class="mt-10 flex max-w-[30rem] items-start lg:mt-12">
+        <?= $this->partial('components/polaroid', [
+            'media' => $shot('ropes-instructor', '(min-width: 1024px) 14rem, 48vw'),
+            'ratio' => '3/4',
+            'tilt' => 'left',
+            'caption' => 'Со страховкой',
+            'class' => 'relative z-10 w-[47%] shrink-0',
+        ]) ?>
+        <?= $this->partial('components/polaroid', [
+            'media' => $shot('first-aid-field', '(min-width: 1024px) 18rem, 60vw'),
+            'ratio' => '4/3',
+            'tilt' => 'right',
+            'caption' => 'Учимся первой помощи',
+            'class' => 'relative z-20 -ml-[7%] mt-[22%] w-[60%] shrink-0',
+        ]) ?>
+      </div>
     </div>
 
     <div class="lg:pt-2">
@@ -224,20 +237,20 @@ $steps = [
       </div>
       <div class="grid grid-cols-3 items-start gap-3 sm:gap-5">
         <?= $this->partial('components/polaroid', [
-            'media' => $shot('kids-gazebo', 'Ребята из отряда сидят вместе в беседке', '(min-width: 1024px) 14rem, 31vw'),
+            'media' => $shot('evening-circle', '(min-width: 1024px) 14rem, 31vw'),
             'tilt' => 'left',
-            'caption' => 'Знакомимся',
+            'caption' => 'Вечерний круг',
         ]) ?>
         <?= $this->partial('components/polaroid', [
-            'media' => $shot('spas-demo', 'Спасатель МЧС показывает ребятам, как переносить пострадавшего', '(min-width: 1024px) 14rem, 31vw'),
+            'media' => $shot('games-chairs', '(min-width: 1024px) 14rem, 31vw'),
             'tilt' => 'right',
-            'caption' => 'Первая помощь',
+            'caption' => 'Игры всем отрядом',
             'class' => 'translate-y-6',
         ]) ?>
         <?= $this->partial('components/polaroid', [
-            'media' => $shot('sturm-cheer', 'Отряд радуется, подняв руки вверх', '(min-width: 1024px) 14rem, 31vw'),
+            'media' => $shot('awards-group', '(min-width: 1024px) 14rem, 31vw'),
             'tilt' => 'slight',
-            'caption' => 'Всем отрядом',
+            'caption' => 'Грамоты в финале',
         ]) ?>
       </div>
     </div>
@@ -410,7 +423,7 @@ $steps = [
       'title' => 'Готовы к приключению?',
       'lead' => 'Выберите смену и оставьте заявку. Офис перезвонит, ответит на вопросы и поможет оформить путёвку.',
       'href' => '/booking/',
-      'image' => photo('kids-evening'),
+      'image' => photo('campfire'),
       'id' => 'cta-title',
   ]) ?>
 </section>

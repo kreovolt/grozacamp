@@ -10,11 +10,19 @@ use Groza\Tests\Unit\Data\CopyLintTest;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
+use function Groza\View\photo;
+
 /** Главная (спека §7.1): 12 блоков из данных seed/demo, часы приложения — 2027-01-15. */
 final class HomePageTest extends TestCase
 {
     private const BLOCKS = ['hero', 'stats', 'shifts', 'kids', 'care', 'steps', 'included', 'base', 'team', 'reviews', 'faq', 'cta'];
     private const MILITARY_ROLE = '/военн|НВП|огнев|тактик/iu';
+    /** Фото из ВК, выведенные после перехода на папку заказчика (photo-selection.md). */
+    private const RETIRED_PHOTOS = [
+        'hero-river', 'kids-evening', 'kids-girls', 'kids-boy', 'kids-bubbles', 'kids-teens', 'kids-gazebo', 'kids-tent',
+        'counselors', 'counselors-kids', 'squad-river', 'toss', 'spas-mchs', 'spas-demo', 'spas-fire', 'spas-laugh',
+        'sturm-smile', 'sturm-relay', 'sturm-theatre', 'sturm-cheer',
+    ];
 
     public function test_home_renders_all_blocks_in_spec_order(): void
     {
@@ -259,7 +267,92 @@ final class HomePageTest extends TestCase
     {
         $hero = $this->block(TestApp::get(TestApp::make(), '/')->body(), 'hero');
 
-        $this->assertMatchesRegularExpression('#<img[^>]*src="/assets/img/hero-river-[0-9]+\.jpg"[^>]*loading="eager" fetchpriority="high"#', $hero);
+        $this->assertMatchesRegularExpression('#<img[^>]*src="/assets/img/friends-selfie-[0-9]+\.jpg"[^>]*loading="eager" fetchpriority="high"#', $hero);
+    }
+
+    /** Герой — селфи вожатого с ребятами из папки заказчика (решение пользователя, photo-selection.md). */
+    public function test_hero_photo_is_friends_selfie(): void
+    {
+        $hero = $this->block(TestApp::get(TestApp::make(), '/')->body(), 'hero');
+
+        $this->assertSame(1, preg_match_all('#<img\b[^>]*>#', $hero, $imgs), 'в герое одно фото');
+        $this->assertMatchesRegularExpression('#\ssrc="/assets/img/friends-selfie-[0-9]+\.jpg"#', $imgs[0][0]);
+        $this->assertMatchesRegularExpression('#\ssrcset="/assets/img/friends-selfie-480\.jpg 480w,.*friends-selfie-1920\.jpg 1920w"#', $imgs[0][0]);
+        preg_match_all('#<source\b[^>]*srcset="([^"]*)"#', $hero, $sources);
+        $this->assertCount(2, $sources[1], 'avif и webp');
+        foreach ($sources[1] as $srcset) {
+            $this->assertMatchesRegularExpression('#^/assets/img/friends-selfie-480\.(avif|webp) 480w#', $srcset);
+        }
+    }
+
+    public function test_home_has_no_retired_photo_keys(): void
+    {
+        $html = TestApp::get(TestApp::make(), '/')->body();
+
+        foreach (self::RETIRED_PHOTOS as $key) {
+            $this->assertDoesNotMatchRegularExpression('#/assets/img/' . preg_quote($key, '#') . '-[0-9]+\.#', $html, $key);
+        }
+    }
+
+    /** Блоки главной показывают фото заказчика по таблице photo-selection.md. */
+    public function test_home_blocks_use_client_photos(): void
+    {
+        $html = TestApp::get(TestApp::make(), '/')->body();
+        $expected = [
+            'kids' => ['team-poster', 'stage-cheer', 'games-meadow'],
+            'care' => ['ropes-instructor', 'first-aid-field'],
+            'steps' => ['evening-circle', 'games-chairs', 'awards-group'],
+            'cta' => ['campfire'],
+        ];
+        foreach ($expected as $block => $keys) {
+            $part = $this->block($html, $block);
+            foreach ($keys as $key) {
+                $this->assertStringContainsString('/assets/img/' . $key . '-', $part, "{$block}: {$key}");
+            }
+        }
+        $shifts = $this->block($html, 'shifts');
+        $this->assertStringContainsString('/assets/img/spas-mchs-suit-', $this->card($shifts, 'spasatel-2027'));
+        $this->assertStringContainsString('/assets/img/ropes-zipline-', $this->card($shifts, 'shturmovik-2027'));
+        $this->assertStringContainsString('/assets/img/ropes-helmet-', $this->card($shifts, 'pogranichnik-2027'));
+    }
+
+    /** У каждого фото на главной — описание того, что на снимке, а не «фото» / «фото 2 из 5». */
+    public function test_every_photo_has_descriptive_alt(): void
+    {
+        $html = TestApp::get(TestApp::make(), '/')->body();
+        preg_match_all('#<img\b[^>]*\ssrc="/assets/img/[^"]*"[^>]*>#', $html, $imgs);
+
+        $this->assertGreaterThanOrEqual(15, count($imgs[0]), 'герой, смены, коллажи, базы, призыв');
+        foreach ($imgs[0] as $img) {
+            $this->assertMatchesRegularExpression('#\salt="([^"]*)"#', $img);
+            preg_match('#\salt="([^"]*)"#', $img, $m);
+            $alt = trim(html_entity_decode($m[1], ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+            $this->assertNotSame('', $alt, $img);
+            $this->assertDoesNotMatchRegularExpression('#^фото$|(?:^|\s)фото\s+\d#iu', $alt, $img);
+            $this->assertGreaterThanOrEqual(3, count(preg_split('#\s+#u', $alt)), "в описании хотя бы три слова: {$alt}");
+        }
+    }
+
+    /** Ключи фото в примерных и подтверждённых данных есть в манифесте (выведенные ключи не остались в данных). */
+    #[DataProvider('seedSets')]
+    public function test_seed_photo_keys_exist_in_manifest(string $set): void
+    {
+        $dir = dirname(__DIR__, 4) . "/seed/{$set}";
+        $keys = [];
+        foreach (['shifts' => 'photo', 'venues' => 'photos'] as $file => $field) {
+            $items = json_decode((string) file_get_contents("{$dir}/{$file}.json"), true, 512, JSON_THROW_ON_ERROR)['items'];
+            foreach ($items as $item) {
+                foreach ((array) ($item[$field] ?? []) as $value) {
+                    if (is_string($value)) {
+                        $keys[] = $value;
+                    }
+                }
+            }
+        }
+        foreach (array_unique($keys) as $key) {
+            $this->assertNotContains($key, self::RETIRED_PHOTOS, "seed/{$set}");
+            $this->assertSame('/assets/img/' . $key, photo($key)['src'], "seed/{$set}: {$key}");
+        }
     }
 
     public function test_texts_are_escaped(): void

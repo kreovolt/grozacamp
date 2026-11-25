@@ -5,6 +5,8 @@
 // поэтому нужен --force или --only. Манифест всегда пишется целиком.
 // crop в photos.json — доли исходника {top, left, width, height}; вырезается ДО уменьшения (так убираем водяной знак
 // фотографа с шевроном в правом верхнем углу кадра — спека §6), w/h в манифесте — уже после кропа.
+// alt — описание снимка по-русски; попадает в манифест и служит подписью по умолчанию (карточки смен, фото баз).
+// og у героя — отдельный кроп (те же доли исходника) для OG-картинки 1200×630, чтобы все лица были в кадре.
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -21,7 +23,7 @@ const chevron = join(root, '_source/logo/shevron-original.webp');
 
 const DEFAULT_WIDTHS = [480, 960, 1440];
 const FORMATS = ['avif', 'webp', 'jpg'];
-const HERO_KEY = 'hero-river';
+const HERO_KEY = 'friends-selfie'; // герой главной (решение пользователя, photo-selection.md)
 const HERO_LIMIT = 200 * 1024;
 
 const encode = {
@@ -73,6 +75,7 @@ for (const [key, cfg] of Object.entries(photos)) {
     w: top,
     h: Math.round((top * srcH) / srcW),
     ...(cfg.position ? { position: cfg.position } : {}),
+    ...(cfg.alt ? { alt: cfg.alt } : {}),
   };
 }
 
@@ -132,15 +135,17 @@ if (!chevronFresh(icoNames)) {
   await logo().webp({ quality: 80 }).toFile(chevronOut('logo-header.webp'));
 }
 
-// OG 1200×630 — кроп героя
+// OG 1200×630 — из героя: свой кроп og (если задан), иначе кроп героя и «самая интересная» часть кадра
 const heroName = files.find((f) => f.startsWith(`${photos[HERO_KEY]?.file}__`));
 const og = chevronOut('og-default.jpg');
 if (heroName && (forced(HERO_KEY) || !newer(og, join(srcDir, heroName)))) {
   const heroSrc = join(srcDir, heroName);
   const m = await sharp(heroSrc).rotate().metadata();
   const turned = (m.orientation ?? 1) >= 5;
-  const region = cropRegion(HERO_KEY, photos[HERO_KEY].crop, turned ? m.height : m.width, turned ? m.width : m.height);
-  await load(heroSrc, region).resize(1200, 630, { fit: 'cover', position: 'attention' }).jpeg({ quality: 80, mozjpeg: true }).toFile(og);
+  const ogCrop = photos[HERO_KEY].og ?? photos[HERO_KEY].crop;
+  const region = cropRegion(HERO_KEY, ogCrop, turned ? m.height : m.width, turned ? m.width : m.height);
+  const position = photos[HERO_KEY].og ? 'centre' : 'attention';
+  await load(heroSrc, region).resize(1200, 630, { fit: 'cover', position }).jpeg({ quality: 80, mozjpeg: true }).toFile(og);
 }
 
 // --- отчёт ---
@@ -157,10 +162,10 @@ if (missing.length) {
 }
 const hero = rows.find((r) => r[0] === HERO_KEY && r[1] === 1920 && r[2] === 'avif');
 if (!hero) {
-  console.error('Не найден hero-river-1920.avif');
+  console.error(`Не найден ${HERO_KEY}-1920.avif`);
   fail = true;
 } else if (hero[3] > HERO_LIMIT) {
-  console.error(`hero-river-1920.avif ${(hero[3] / 1024).toFixed(0)} КБ > 200 КБ — снизьте качество для героя`);
+  console.error(`${HERO_KEY}-1920.avif ${(hero[3] / 1024).toFixed(0)} КБ > 200 КБ — снизьте avifQuality героя`);
   fail = true;
 }
 process.exit(fail ? 1 : 0);

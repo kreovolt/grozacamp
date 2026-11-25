@@ -1,166 +1,293 @@
 {
-  "hero-river": {
-    "file": "shoot-group-splash",
+  "friends-selfie": {
+    "file": "friends-selfie",
     "widths": [
       480,
       960,
       1440,
       1920
     ],
-    "avifQuality": 38,
-    "position": "center 40%",
+    "avifQuality": 45,
+    "position": "60% 30%",
+    "crop": {
+      "left": 0.04,
+      "width": 0.83,
+      "height": 0.94
+    },
+    "og": {
+      "left": 0.04,
+      "top": 0.085,
+      "width": 0.83,
+      "height": 0.665
+    },
+    "alt": "Вожатый делает селфи с ребятами из отряда, все улыбаются"
+  },
+  "team-poster": {
+    "file": "team-poster",
+    "crop": {
+      "width": 0.9
+    },
+    "alt": "Мальчик держит над головой самодельный плакат в поддержку своей команды"
+  },
+  "stage-cheer": {
+    "file": "stage-cheer",
+    "crop": {
+      "left": 0.02,
+      "width": 0.855
+    },
+    "alt": "Ребята и вожатые в гавайских рубашках радуются на сцене после выступления"
+  },
+  "games-meadow": {
+    "file": "games-meadow",
+    "crop": {
+      "left": 0.1,
+      "width": 0.5
+    },
+    "alt": "Мальчики бегут наперегонки по летней поляне"
+  },
+  "ropes-instructor": {
+    "file": "ropes-instructor",
+    "crop": {
+      "top": 0.14
+    },
+    "alt": "Мальчик в каске и страховочной системе на верёвочной переправе, инструктор стоит рядом"
+  },
+  "first-aid-field": {
+    "file": "first-aid-field",
+    "crop": {
+      "left": 0.38,
+      "top": 0.04,
+      "width": 0.62,
+      "height": 0.6
+    },
+    "alt": "Инструктор показывает первую помощь: мальчик в роли пострадавшего лежит на брезенте"
+  },
+  "press-camera": {
+    "file": "press-camera",
+    "crop": {
+      "width": 0.87
+    },
+    "alt": "Девушка с лазертаг-бластером на игровой площадке у домиков"
+  },
+  "morning-exercise": {
+    "file": "morning-exercise",
+    "crop": {
+      "top": 0.2
+    },
+    "alt": "Ребята на утренней зарядке, вожатый рядом показывает большой палец"
+  },
+  "evening-circle": {
+    "file": "evening-circle",
+    "crop": {
+      "left": 0.5,
+      "top": 0.2,
+      "width": 0.5,
+      "height": 0.8
+    },
+    "alt": "Отряд стоит в обнимку в вечернем кругу"
+  },
+  "games-chairs": {
+    "file": "games-chairs",
+    "crop": {
+      "left": 0.2,
+      "top": 0.1,
+      "width": 0.62,
+      "height": 0.9
+    },
+    "alt": "Мальчики катаются на большой качалке-балансире"
+  },
+  "awards-group": {
+    "file": "awards-group",
+    "crop": {
+      "left": 0.52,
+      "top": 0.42,
+      "width": 0.28,
+      "height": 0.46
+    },
+    "alt": "Ребята в зелёных футболках с грамотами в руках"
+  },
+  "campfire": {
+    "file": "campfire",
+    "crop": {
+      "width": 0.87
+    },
+    "alt": "Ребята смотрят на большой вечерний костёр"
+  },
+  "spas-mchs-suit": {
+    "file": "spas-mchs-suit",
+    "crop": {
+      "width": 0.87
+    },
+    "alt": "Сотрудник МЧС помогает подростку в жёлтом защитном костюме надеть перчатки"
+  },
+  "ropes-zipline": {
+    "file": "ropes-zipline",
+    "crop": {
+      "width": 0.86
+    },
+    "alt": "Мальчик в каске спускается по тросу между деревьями"
+  },
+  "ropes-helmet": {
+    "file": "ropes-helmet",
+    "crop": {
+      "left": 0.1,
+      "width": 0.775
+    },
+    "alt": "Мальчик в жёлтой каске на верёвочной трассе, инструктор рядом улыбается"
+  },
+  "winter-campfire": {
+    "file": "winter-campfire",
+    "crop": {
+      "top": 0.18
+    },
+    "alt": "Ребята зимой разводят костёр среди сосен у корпуса"
+  },
+  "winter-kids": {
+    "file": "winter-kids",
+    "widths": [
+      480,
+      960
+    ],
+    "crop": {
+      "width": 0.895
+    },
+    "alt": "Двое мальчиков в зимних шапках складывают дрова для костра"
+  },
+  "bonfire-group": {
+    "file": "bonfire-group",
+    "crop": {
+      "top": 0.17
+    },
+    "alt": "Вожатые и ребята стоят в обнимку на фоне большого костра"
+  },
+  "friends-girls": {
+    "file": "friends-girls",
+    "widths": [
+      480,
+      960
+    ],
+    "crop": {
+      "width": 0.89
+    },
+    "alt": "Девочки-подростки сидят на матах во время занятия"
+  },
+  "games-football": {
+    "file": "games-football",
     "crop": {
       "top": 0.23
-    }
+    },
+    "alt": "Мальчики играют в футбол на поляне"
   },
-  "kids-evening": {
-    "file": "kids-friends-hug-evening"
-  },
-  "kids-girls": {
-    "file": "kids-girls-friends",
+  "tug-of-war": {
+    "file": "tug-of-war",
     "crop": {
-      "width": 0.87
-    }
+      "width": 0.855
+    },
+    "alt": "Мальчики изо всех сил тянут канат"
   },
-  "kids-boy": {
-    "file": "kids-smiling-boy-v"
-  },
-  "kids-bubbles": {
-    "file": "kids-girl-bubbles-v"
-  },
-  "kids-teens": {
-    "file": "kids-teens-group"
-  },
-  "kids-gazebo": {
-    "file": "kids-group-gazebo"
-  },
-  "kids-tent": {
-    "file": "kids-sunny-tent"
-  },
-  "counselors": {
-    "file": "shoot-counselors",
+  "dance-stage": {
+    "file": "dance-stage",
     "crop": {
-      "width": 0.87
-    }
+      "width": 0.865
+    },
+    "alt": "Ребята исполняют танцевальный номер на сцене"
   },
-  "counselors-kids": {
-    "file": "shoot-counselors-kids",
+  "indoor-circle": {
+    "file": "indoor-circle",
     "crop": {
-      "width": 0.87
-    }
+      "top": 0.17
+    },
+    "alt": "Ребята сидят в кругу на матах и делают растяжку вместе с вожатой"
   },
-  "squad-river": {
-    "file": "shoot-squad-river",
+  "first-aid-tent": {
+    "file": "first-aid-tent",
     "crop": {
-      "width": 0.87
-    }
+      "width": 0.895
+    },
+    "alt": "Ребята в палатке учатся делать массаж сердца на манекене"
   },
-  "toss": {
-    "file": "shoot-toss-hero",
+  "audience-smiles": {
+    "file": "audience-smiles",
     "crop": {
-      "width": 0.87
-    }
-  },
-  "spas-mchs": {
-    "file": "spas-group-mchs",
-    "crop": {
-      "top": 0.215
-    }
-  },
-  "spas-demo": {
-    "file": "spas-rescuer-demo",
-    "crop": {
-      "width": 0.87
-    }
-  },
-  "spas-fire": {
-    "file": "spas-firefighter-kid"
-  },
-  "spas-laugh": {
-    "file": "spas-facepaint-laugh",
-    "crop": {
-      "top": 0.22
-    }
-  },
-  "sturm-smile": {
-    "file": "sturm-kids-group-smile"
-  },
-  "sturm-relay": {
-    "file": "sturm-relay-race"
-  },
-  "sturm-theatre": {
-    "file": "sturm-theatre-costumes"
-  },
-  "sturm-cheer": {
-    "file": "sturm-group-cheer",
-    "crop": {
-      "top": 0.22
-    }
+      "top": 0.23
+    },
+    "alt": "Ребята и вожатые на скамейках смотрят выступление на улице"
   },
   "base-cabins": {
     "file": "living-aframe-cabins",
     "crop": {
       "width": 0.87
-    }
+    },
+    "alt": "Деревянные домики-шалаши на территории базы"
   },
   "base-cabins-row": {
     "file": "living-cabins-row",
     "crop": {
       "width": 0.87
-    }
+    },
+    "alt": "Ряд деревянных домиков с крылечками среди сосен"
   },
   "base-room": {
     "file": "living-room-beds",
     "crop": {
       "width": 0.87
-    }
+    },
+    "alt": "Комната в домике: кровати, тумбочки и окно с занавеской"
   },
   "base-bunk": {
     "file": "living-room-bunk",
     "crop": {
       "width": 0.87
-    }
+    },
+    "alt": "Двухъярусная кровать у окна в деревянной комнате"
   },
   "base-wash": {
     "file": "living-washbasin",
     "crop": {
       "width": 0.87
-    }
+    },
+    "alt": "Умывальник и ванна с душем в корпусе"
   },
   "base-building": {
     "file": "living-building-wide",
     "crop": {
       "width": 0.87
-    }
+    },
+    "alt": "Одноэтажный корпус с цветной отделкой на краю леса"
   },
   "base-stage": {
     "file": "living-stage-hall",
     "crop": {
       "width": 0.87
-    }
+    },
+    "alt": "Зал со сценой и световым оборудованием для выступлений"
   },
   "base-gazebo": {
     "file": "living-gazebo",
     "crop": {
       "width": 0.87
-    }
+    },
+    "alt": "Крытая беседка на поляне у леса"
   },
   "base-rafts": {
     "file": "living-rafts",
     "crop": {
       "width": 0.87
-    }
+    },
+    "alt": "Надувной катамаран и вёсла на траве у берега"
   },
   "base-sports": {
     "file": "living-sports-bars",
     "crop": {
       "width": 0.87
-    }
+    },
+    "alt": "Спортивная площадка с брусьями и футбольными воротами"
   },
   "base-playground": {
     "file": "living-playground-v",
     "crop": {
       "top": 0.18
-    }
+    },
+    "alt": "Детская площадка с горкой рядом с корпусом"
   }
 }

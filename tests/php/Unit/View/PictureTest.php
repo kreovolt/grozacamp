@@ -15,7 +15,7 @@ final class PictureTest extends TestCase
     /** @return array{src:string,widths:list<int>,formats:list<string>,w:int,h:int} */
     private function img(): array
     {
-        return ['src' => '/assets/img/hero-river', 'widths' => [480, 960, 1440, 1920], 'formats' => ['avif', 'webp', 'jpg'], 'w' => 1920, 'h' => 1280];
+        return ['src' => '/assets/img/friends-selfie', 'widths' => [480, 960, 1440, 1920], 'formats' => ['avif', 'webp', 'jpg'], 'w' => 1920, 'h' => 1280];
     }
 
     public function testBuildsPictureWithSourcesInFormatOrder(): void
@@ -27,13 +27,13 @@ final class PictureTest extends TestCase
         $this->assertNotFalse($avif);
         $this->assertNotFalse($webp);
         $this->assertLessThan($webp, $avif);
-        $this->assertStringContainsString('/assets/img/hero-river-480.avif 480w', $html);
-        $this->assertStringContainsString('/assets/img/hero-river-1920.webp 1920w', $html);
+        $this->assertStringContainsString('/assets/img/friends-selfie-480.avif 480w', $html);
+        $this->assertStringContainsString('/assets/img/friends-selfie-1920.webp 1920w', $html);
         $this->assertStringContainsString('sizes="100vw"', $html);
         $this->assertStringContainsString(
-            '<img src="/assets/img/hero-river-960.jpg" srcset="', $html);
+            '<img src="/assets/img/friends-selfie-960.jpg" srcset="', $html);
         $this->assertStringContainsString('width="1920" height="1280" loading="lazy" decoding="async" alt="Ребята у реки">', $html);
-        $this->assertStringContainsString('/assets/img/hero-river-1920.jpg 1920w', $html);
+        $this->assertStringContainsString('/assets/img/friends-selfie-1920.jpg 1920w', $html);
     }
 
     public function testEagerImageGetsHighPriority(): void
@@ -70,15 +70,15 @@ final class PictureTest extends TestCase
     public function testFallbackIsSecondWidth(): void
     {
         $img = [...$this->img(), 'widths' => [480, 960, 1440]];
-        $this->assertStringContainsString('<img src="/assets/img/hero-river-960.jpg"', picture($img, 'x'));
+        $this->assertStringContainsString('<img src="/assets/img/friends-selfie-960.jpg"', picture($img, 'x'));
         $img = [...$this->img(), 'widths' => [480]];
-        $this->assertStringContainsString('<img src="/assets/img/hero-river-480.jpg"', picture($img, 'x'));
+        $this->assertStringContainsString('<img src="/assets/img/friends-selfie-480.jpg"', picture($img, 'x'));
     }
 
     public function testPhotoReadsManifestAndThrowsOnUnknownKey(): void
     {
-        $d = photo('hero-river');
-        $this->assertSame('/assets/img/hero-river', $d['src']);
+        $d = photo('friends-selfie');
+        $this->assertSame('/assets/img/friends-selfie', $d['src']);
         $this->assertSame([480, 960, 1440, 1920], $d['widths']);
         $this->assertContains('avif', $d['formats']);
         $this->assertGreaterThan(0, $d['w']);
