@@ -7,12 +7,14 @@ use Groza\App;
 use Groza\Domain\Shifts;
 use Groza\Tests\Support\TestApp;
 use Groza\Tests\Unit\Data\CopyLintTest;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /** Главная (спека §7.1): 12 блоков из данных seed/demo, часы приложения — 2027-01-15. */
 final class HomePageTest extends TestCase
 {
     private const BLOCKS = ['hero', 'stats', 'shifts', 'kids', 'care', 'steps', 'included', 'base', 'team', 'reviews', 'faq', 'cta'];
+    private const MILITARY_ROLE = '/военн|НВП|огнев|тактик/iu';
 
     public function test_home_renders_all_blocks_in_spec_order(): void
     {
@@ -147,6 +149,31 @@ final class HomePageTest extends TestCase
 
         $this->assertStringContainsString('Лучников', $team);
         $this->assertStringNotContainsString('Манохин', $team, 'не отмечен «на главную»');
+    }
+
+    /** @return array<string,array{string}> */
+    public static function seedSets(): array
+    {
+        return ['seed/data' => ['data'], 'seed/demo' => ['demo']];
+    }
+
+    /** Анти-цель «мама пугается»: на главной — руководство, педагоги-организаторы, вожатые; без «военных» должностей. */
+    #[DataProvider('seedSets')]
+    public function test_on_home_team_roles_are_not_military(string $set): void
+    {
+        $file = dirname(__DIR__, 4) . "/seed/{$set}/team.json";
+        $team = json_decode((string) file_get_contents($file), true, 512, JSON_THROW_ON_ERROR)['items'];
+        $roles = array_column(array_filter($team, static fn (array $m): bool => !empty($m['onHome']) && empty($m['hidden'])), 'role');
+
+        $this->assertGreaterThanOrEqual(4, count($roles), 'на главной 4–6 человек');
+        $this->assertSame([], array_values(preg_grep(self::MILITARY_ROLE, $roles)), "seed/{$set}");
+    }
+
+    public function test_team_strip_has_no_military_roles(): void
+    {
+        $team = $this->block(TestApp::get(TestApp::make(), '/')->body(), 'team');
+
+        $this->assertDoesNotMatchRegularExpression(self::MILITARY_ROLE, strip_tags($team));
     }
 
     public function test_faq_max_5_on_home(): void

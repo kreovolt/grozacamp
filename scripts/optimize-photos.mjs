@@ -1,13 +1,19 @@
 // Оптимизация фото: _source/photos → public/assets/img (avif/webp/jpg × ширины), manifest.json,
 // а также фавиконы, логотип шапки и OG-картинка из шеврона. Результат коммитится (на хостинге нет Node).
-// Запуск: npm run photos [-- --force]. Без --force пропускает файлы, которые новее исходника.
+// Запуск: npm run photos [-- --force | --only=ключ,ключ]. Без них пропускает файлы, которые новее исходника;
+// --only пересобирает только эти ключи. После смены crop/position/качества в config/photos.json исходник не меняется,
+// поэтому нужен --force или --only. Манифест всегда пишется целиком.
+// crop в photos.json — доли исходника {top, left, width, height}; вырезается ДО уменьшения (так убираем водяной знак
+// фотографа с шевроном в правом верхнем углу кадра — спека §6), w/h в манифесте — уже после кропа.
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const force = process.argv.includes('--force');
+const only = process.argv.find((a) => a.startsWith('--only='))?.slice('--only='.length).split(',').filter(Boolean) ?? null;
+const force = process.argv.includes('--force') && only === null;
+const forced = (key) => force || (only?.includes(key) ?? false);
 const srcDir = join(root, '_source/photos');
 const outDir = join(root, 'public/assets/img');
 const assets = join(root, 'public/assets');
@@ -42,17 +48,20 @@ for (const [key, cfg] of Object.entries(photos)) {
   const src = join(srcDir, name);
   const meta = await sharp(src).rotate().metadata(); // rotate() — учесть ориентацию EXIF
   const oriented = (meta.orientation ?? 1) >= 5; // 90°/270°: ширина и высота меняются местами
-  const srcW = oriented ? meta.height : meta.width;
-  const srcH = oriented ? meta.width : meta.height;
+  const fullW = oriented ? meta.height : meta.width;
+  const fullH = oriented ? meta.width : meta.height;
+  const region = cropRegion(key, cfg.crop, fullW, fullH);
+  const srcW = region ? region.width : fullW;
+  const srcH = region ? region.height : fullH;
   const widths = (cfg.widths ?? DEFAULT_WIDTHS).filter((w) => w <= srcW);
   const top = widths[widths.length - 1];
 
   for (const width of widths) {
     for (const format of FORMATS) {
       const out = join(outDir, `${key}-${width}.${format}`);
-      if (force || !newer(out, src)) {
+      if (forced(key) || !newer(out, src)) {
         // withMetadata не вызываем: EXIF/GPS в результат не попадает
-        await encode[format](sharp(src).rotate().resize({ width, withoutEnlargement: true }), cfg).toFile(out);
+        await encode[format](load(src, region).resize({ width, withoutEnlargement: true }), cfg).toFile(out);
       }
       rows.push([key, width, format, statSync(out).size]);
     }
@@ -69,9 +78,34 @@ for (const [key, cfg] of Object.entries(photos)) {
 
 writeFileSync(join(outDir, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
 
+/** Исходник, повёрнутый по EXIF, и (если задан crop) вырезанная область — до любого resize. */
+function load(file, region) {
+  const s = sharp(file).rotate();
+  return region ? s.extract(region) : s;
+}
+
+/** crop {top, left, width, height} в долях исходника → пиксели. Ошибка в конфиге — сразу и громко. */
+function cropRegion(key, crop, fullW, fullH) {
+  if (!crop) return null;
+  const { top = 0, left = 0 } = crop;
+  const { width = 1 - left, height = 1 - top } = crop;
+  const fractions = [top, left, width, height].every((v) => typeof v === 'number' && v >= 0 && v <= 1);
+  if (!fractions || width <= 0 || height <= 0 || left + width > 1.0001 || top + height > 1.0001) {
+    throw new Error(`config/photos.json: неверный crop у «${key}»: ${JSON.stringify(crop)}`);
+  }
+  const l = Math.round(left * fullW);
+  const t = Math.round(top * fullH);
+  return {
+    left: l,
+    top: t,
+    width: Math.min(fullW - l, Math.round(width * fullW)),
+    height: Math.min(fullH - t, Math.round(height * fullH)),
+  };
+}
+
 // --- шеврон: фавиконы, логотип шапки, OG ---
 const chevronOut = (name) => join(assets, name);
-const chevronFresh = (names) => !force && names.every((n) => newer(chevronOut(n), chevron));
+const chevronFresh = (names) => !force && names.every((n) => newer(chevronOut(n), chevron)); // --only шеврон не трогает
 const icoNames = ['favicon.ico', 'favicon.svg', 'apple-touch-icon.png', 'logo-header.png', 'logo-header.webp'];
 if (!chevronFresh(icoNames)) {
   const sand = { r: 241, g: 235, b: 221, alpha: 1 };
@@ -101,8 +135,12 @@ if (!chevronFresh(icoNames)) {
 // OG 1200×630 — кроп героя
 const heroName = files.find((f) => f.startsWith(`${photos[HERO_KEY]?.file}__`));
 const og = chevronOut('og-default.jpg');
-if (heroName && (force || !newer(og, join(srcDir, heroName)))) {
-  await sharp(join(srcDir, heroName)).rotate().resize(1200, 630, { fit: 'cover', position: 'attention' }).jpeg({ quality: 80, mozjpeg: true }).toFile(og);
+if (heroName && (forced(HERO_KEY) || !newer(og, join(srcDir, heroName)))) {
+  const heroSrc = join(srcDir, heroName);
+  const m = await sharp(heroSrc).rotate().metadata();
+  const turned = (m.orientation ?? 1) >= 5;
+  const region = cropRegion(HERO_KEY, photos[HERO_KEY].crop, turned ? m.height : m.width, turned ? m.width : m.height);
+  await load(heroSrc, region).resize(1200, 630, { fit: 'cover', position: 'attention' }).jpeg({ quality: 80, mozjpeg: true }).toFile(og);
 }
 
 // --- отчёт ---

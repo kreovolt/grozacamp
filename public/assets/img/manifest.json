@@ -13,7 +13,7 @@
       "jpg"
     ],
     "w": 1920,
-    "h": 1133,
+    "h": 872,
     "position": "center 40%"
   },
   "kids-evening": {
@@ -44,7 +44,7 @@
       "jpg"
     ],
     "w": 1440,
-    "h": 960
+    "h": 1104
   },
   "kids-boy": {
     "src": "/assets/img/kids-boy",
@@ -134,7 +134,7 @@
       "jpg"
     ],
     "w": 1440,
-    "h": 960
+    "h": 1104
   },
   "counselors-kids": {
     "src": "/assets/img/counselors-kids",
@@ -149,7 +149,7 @@
       "jpg"
     ],
     "w": 1440,
-    "h": 960
+    "h": 1104
   },
   "squad-river": {
     "src": "/assets/img/squad-river",
@@ -164,7 +164,7 @@
       "jpg"
     ],
     "w": 1440,
-    "h": 960
+    "h": 1104
   },
   "toss": {
     "src": "/assets/img/toss",
@@ -179,7 +179,7 @@
       "jpg"
     ],
     "w": 1440,
-    "h": 960
+    "h": 1104
   },
   "spas-mchs": {
     "src": "/assets/img/spas-mchs",
@@ -194,7 +194,7 @@
       "jpg"
     ],
     "w": 1440,
-    "h": 960
+    "h": 754
   },
   "spas-demo": {
     "src": "/assets/img/spas-demo",
@@ -209,7 +209,7 @@
       "jpg"
     ],
     "w": 1440,
-    "h": 960
+    "h": 1104
   },
   "spas-fire": {
     "src": "/assets/img/spas-fire",
@@ -239,7 +239,7 @@
       "jpg"
     ],
     "w": 1440,
-    "h": 960
+    "h": 749
   },
   "sturm-smile": {
     "src": "/assets/img/sturm-smile",
@@ -299,7 +299,7 @@
       "jpg"
     ],
     "w": 1440,
-    "h": 960
+    "h": 749
   },
   "base-cabins": {
     "src": "/assets/img/base-cabins",
@@ -314,7 +314,7 @@
       "jpg"
     ],
     "w": 1440,
-    "h": 960
+    "h": 1104
   },
   "base-cabins-row": {
     "src": "/assets/img/base-cabins-row",
@@ -329,7 +329,7 @@
       "jpg"
     ],
     "w": 1440,
-    "h": 960
+    "h": 1104
   },
   "base-room": {
     "src": "/assets/img/base-room",
@@ -344,7 +344,7 @@
       "jpg"
     ],
     "w": 1440,
-    "h": 993
+    "h": 1142
   },
   "base-bunk": {
     "src": "/assets/img/base-bunk",
@@ -359,7 +359,7 @@
       "jpg"
     ],
     "w": 1440,
-    "h": 960
+    "h": 1104
   },
   "base-wash": {
     "src": "/assets/img/base-wash",
@@ -374,7 +374,7 @@
       "jpg"
     ],
     "w": 1440,
-    "h": 960
+    "h": 1104
   },
   "base-building": {
     "src": "/assets/img/base-building",
@@ -389,7 +389,7 @@
       "jpg"
     ],
     "w": 1440,
-    "h": 960
+    "h": 1104
   },
   "base-stage": {
     "src": "/assets/img/base-stage",
@@ -404,7 +404,7 @@
       "jpg"
     ],
     "w": 1440,
-    "h": 960
+    "h": 1104
   },
   "base-gazebo": {
     "src": "/assets/img/base-gazebo",
@@ -419,7 +419,7 @@
       "jpg"
     ],
     "w": 1440,
-    "h": 960
+    "h": 1104
   },
   "base-rafts": {
     "src": "/assets/img/base-rafts",
@@ -434,7 +434,7 @@
       "jpg"
     ],
     "w": 1440,
-    "h": 960
+    "h": 1104
   },
   "base-sports": {
     "src": "/assets/img/base-sports",
@@ -449,7 +449,7 @@
       "jpg"
     ],
     "w": 1440,
-    "h": 960
+    "h": 1104
   },
   "base-playground": {
     "src": "/assets/img/base-playground",
@@ -464,6 +464,6 @@
       "jpg"
     ],
     "w": 1440,
-    "h": 2160
+    "h": 1771
   }
 }

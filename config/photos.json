@@ -8,13 +8,19 @@
       1920
     ],
     "avifQuality": 38,
-    "position": "center 40%"
+    "position": "center 40%",
+    "crop": {
+      "top": 0.23
+    }
   },
   "kids-evening": {
     "file": "kids-friends-hug-evening"
   },
   "kids-girls": {
-    "file": "kids-girls-friends"
+    "file": "kids-girls-friends",
+    "crop": {
+      "width": 0.87
+    }
   },
   "kids-boy": {
     "file": "kids-smiling-boy-v"
@@ -32,28 +38,49 @@
     "file": "kids-sunny-tent"
   },
   "counselors": {
-    "file": "shoot-counselors"
+    "file": "shoot-counselors",
+    "crop": {
+      "width": 0.87
+    }
   },
   "counselors-kids": {
-    "file": "shoot-counselors-kids"
+    "file": "shoot-counselors-kids",
+    "crop": {
+      "width": 0.87
+    }
   },
   "squad-river": {
-    "file": "shoot-squad-river"
+    "file": "shoot-squad-river",
+    "crop": {
+      "width": 0.87
+    }
   },
   "toss": {
-    "file": "shoot-toss-hero"
+    "file": "shoot-toss-hero",
+    "crop": {
+      "width": 0.87
+    }
   },
   "spas-mchs": {
-    "file": "spas-group-mchs"
+    "file": "spas-group-mchs",
+    "crop": {
+      "top": 0.215
+    }
   },
   "spas-demo": {
-    "file": "spas-rescuer-demo"
+    "file": "spas-rescuer-demo",
+    "crop": {
+      "width": 0.87
+    }
   },
   "spas-fire": {
     "file": "spas-firefighter-kid"
   },
   "spas-laugh": {
-    "file": "spas-facepaint-laugh"
+    "file": "spas-facepaint-laugh",
+    "crop": {
+      "top": 0.22
+    }
   },
   "sturm-smile": {
     "file": "sturm-kids-group-smile"
@@ -65,39 +92,75 @@
     "file": "sturm-theatre-costumes"
   },
   "sturm-cheer": {
-    "file": "sturm-group-cheer"
+    "file": "sturm-group-cheer",
+    "crop": {
+      "top": 0.22
+    }
   },
   "base-cabins": {
-    "file": "living-aframe-cabins"
+    "file": "living-aframe-cabins",
+    "crop": {
+      "width": 0.87
+    }
   },
   "base-cabins-row": {
-    "file": "living-cabins-row"
+    "file": "living-cabins-row",
+    "crop": {
+      "width": 0.87
+    }
   },
   "base-room": {
-    "file": "living-room-beds"
+    "file": "living-room-beds",
+    "crop": {
+      "width": 0.87
+    }
   },
   "base-bunk": {
-    "file": "living-room-bunk"
+    "file": "living-room-bunk",
+    "crop": {
+      "width": 0.87
+    }
   },
   "base-wash": {
-    "file": "living-washbasin"
+    "file": "living-washbasin",
+    "crop": {
+      "width": 0.87
+    }
   },
   "base-building": {
-    "file": "living-building-wide"
+    "file": "living-building-wide",
+    "crop": {
+      "width": 0.87
+    }
   },
   "base-stage": {
-    "file": "living-stage-hall"
+    "file": "living-stage-hall",
+    "crop": {
+      "width": 0.87
+    }
   },
   "base-gazebo": {
-    "file": "living-gazebo"
+    "file": "living-gazebo",
+    "crop": {
+      "width": 0.87
+    }
   },
   "base-rafts": {
-    "file": "living-rafts"
+    "file": "living-rafts",
+    "crop": {
+      "width": 0.87
+    }
   },
   "base-sports": {
-    "file": "living-sports-bars"
+    "file": "living-sports-bars",
+    "crop": {
+      "width": 0.87
+    }
   },
   "base-playground": {
-    "file": "living-playground-v"
+    "file": "living-playground-v",
+    "crop": {
+      "top": 0.18
+    }
   }
 }
