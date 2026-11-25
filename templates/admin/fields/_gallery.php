@@ -15,7 +15,7 @@ $name = (string) $f['name'];
 $rows = is_array($value) && is_array($value['rows'] ?? null) ? $value['rows'] : [];
 $new = is_array($value) && is_array($value['new'] ?? null) && $value['new'] !== [] ? $value['new'] : [1 => ''];
 ?>
-<fieldset class="gallery" data-gallery <?= $aria ?>>
+<fieldset class="gallery" id="<?= e($id) ?>" tabindex="-1" data-gallery <?= $aria ?>>
   <legend><?= e((string) $f['label']) ?></legend>
 <?php if ($altError !== null): ?>
   <p class="field-error" id="<?= e($id) ?>-alt-error"><?= e($altError) ?></p>
@@ -32,6 +32,9 @@ $new = is_array($value) && is_array($value['new'] ?? null) && $value['new'] !== 
 <?php if ($own): ?>
         <label for="<?= e($id) ?>__alt_<?= e($t) ?>">Что на фото?</label>
         <input type="text" id="<?= e($id) ?>__alt_<?= e($t) ?>" name="<?= e($name) ?>__alt_<?= e($t) ?>" value="<?= e((string) $row['alt']) ?>" maxlength="200" autocomplete="off"<?= $altError !== null && trim((string) $row['alt']) === '' && empty($row['del']) ? ' aria-invalid="true" aria-describedby="' . e($id) . '-alt-error"' : '' ?>>
+<?php if (trim((string) $row['alt']) === '' && empty($row['del'])): ?>
+        <p class="hint">У этого фото нет подписи. Напишите её одной фразой — иначе форма не сохранится.</p>
+<?php endif ?>
 <?php else: ?>
         <p class="gallery__note">Фото из библиотеки сайта, подпись уже есть. Заменить файл нельзя — только убрать.</p>
 <?php endif ?>

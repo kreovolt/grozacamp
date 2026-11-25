@@ -5,6 +5,7 @@ namespace Groza\Pages;
 
 use Groza\App;
 use Groza\Content\PageData;
+use Groza\Domain\Collections;
 use Groza\Domain\Shifts;
 use Groza\Http\Request;
 use Groza\Http\Response;
@@ -19,7 +20,7 @@ use function Groza\View\safe_url;
 final class HomePage
 {
     public const TEAM_LIMIT = 6;
-    public const FAQ_LIMIT = 5;
+    public const FAQ_LIMIT = Collections::FAQ_HOME_MAX;
     public const REVIEWS_LIMIT = 5;
 
     private const DEFAULT_TITLE = 'Лагерь настоящих приключений';

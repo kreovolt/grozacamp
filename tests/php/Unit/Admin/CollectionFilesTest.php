@@ -364,6 +364,18 @@ final class CollectionFilesTest extends TestCase
         $this->assertStringContainsString(self::ALT_MESSAGE, $res->body());
         $this->assertSame([], $this->uploadedFiles());
         $this->assertSame($v['photos'], $this->photos($v['id']));
+        // ссылка из списка ошибок ведёт на реальный элемент: у группы полей есть id
+        $this->assertStringContainsString('href="#f-photos"', $res->body());
+        $this->assertMatchesRegularExpression('/<fieldset[^>]*\sid="f-photos"/', $res->body());
+    }
+
+    public function test_gallery_hints_when_an_own_photo_has_no_caption_yet(): void
+    {
+        $doc = $this->app->store()->read('venues');
+        $doc['items'][0]['photos'][] = ['src' => '/uploads/img/0123456789abcdef', 'widths' => [480], 'formats' => ['webp', 'jpg'], 'w' => 480, 'h' => 320];
+        $this->app->store()->write('venues', $doc, 'test');
+        $body = AdminHttp::get($this->app, '/admin/venues/' . $this->venue()['id'] . '/')->body();
+        $this->assertSame(1, substr_count($body, 'У этого фото нет подписи'));
     }
 
     public function test_gallery_remove_site_key_and_uploaded_photo_keeps_files_for_history(): void

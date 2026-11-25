@@ -8,6 +8,9 @@ use InvalidArgumentException;
 /** Единая схема коллекций: проверка данных, посев и формы админки. */
 final class Collections
 {
+    /** Сколько вопросов показывается на главной: счётчик в админке, подсказка и HomePage берут число отсюда. */
+    public const FAQ_HOME_MAX = 5;
+
     /** @var array<string,array<string,mixed>>|null */
     private static ?array $cache = null;
 
@@ -168,11 +171,11 @@ final class Collections
             'faq' => [
                 'label' => 'Вопросы и ответы',
                 'publicUrl' => '/info/#faq',
-                'counter' => ['field' => 'onHome', 'label' => 'На главной', 'max' => 5],
+                'counter' => ['field' => 'onHome', 'label' => 'На главной', 'max' => self::FAQ_HOME_MAX],
                 'fields' => [
                     $f('question', 'text', 'Вопрос', $req + ['max' => 300]),
                     $f('answer', 'richtext', 'Ответ', $req),
-                    $f('onHome', 'bool', 'Показывать на главной', ['help' => 'На главной показываются до пяти вопросов']),
+                    $f('onHome', 'bool', 'Показывать на главной', ['help' => 'На главной показываются до ' . self::FAQ_HOME_MAX . ' вопросов']),
                     $f('order', 'int', 'Порядок'),
                 ],
             ],
