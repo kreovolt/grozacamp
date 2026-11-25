@@ -2,6 +2,8 @@
 declare(strict_types=1);
 
 use Groza\Admin\Controllers\AuthController;
+use Groza\Admin\Controllers\CollectionController;
+use Groza\Admin\Controllers\DashboardController;
 use Groza\App;
 use Groza\Http\Request;
 use Groza\Http\Response;
@@ -47,12 +49,27 @@ return static function (Router $router, App $app): void {
     $router->get('/spasibo/', [$forms, 'thanks']);
 
     $auth = new AuthController($app);
-    $router->get('/admin/', [$auth, 'home']);
+    $router->get('/admin/', [new DashboardController($app), 'index']);
     $router->get('/admin/login/', [$auth, 'showLogin']);
     $router->post('/admin/login/', [$auth, 'login']);
     $router->post('/admin/logout/', [$auth, 'logout']);
+    // Выход — только POST; GET отвечает 405 (иначе его перехватил бы общий маршрут /admin/{collection}/ ниже)
+    $router->get('/admin/logout/', static fn (Request $r, array $params): Response => Response::html('Method Not Allowed', 405)->withHeader('Allow', 'POST'));
     $router->get('/admin/password/', [$auth, 'showPassword']);
     $router->post('/admin/password/', [$auth, 'changePassword']);
+
+    // Редактор списков. Порядок важен: сначала точные адреса (статус смены, «new», действия над записью),
+    // потом общий /admin/{collection}/{id}/. Новые разделы админки с одним сегментом (/admin/settings/ и т. п.)
+    // регистрируются ВЫШЕ этого блока, иначе их перехватит {collection}.
+    $collections = new CollectionController($app);
+    $router->post('/admin/shifts/{id}/status/', [$collections, 'status']);
+    $router->get('/admin/{collection}/', [$collections, 'list']);
+    $router->get('/admin/{collection}/new/', [$collections, 'showNew']);
+    $router->get('/admin/{collection}/{id}/delete/', [$collections, 'confirmDelete']);
+    $router->post('/admin/{collection}/{id}/delete/', [$collections, 'delete']);
+    $router->post('/admin/{collection}/{id}/move/', [$collections, 'move']);
+    $router->get('/admin/{collection}/{id}/', [$collections, 'show']);
+    $router->post('/admin/{collection}/{id}/', [$collections, 'save']);
 
     // Витрина дизайн-системы для разработки (не для посетителей): /_styleguide/ только в dev и test.
     if (in_array($app->config()['env'], ['dev', 'test'], true)) {

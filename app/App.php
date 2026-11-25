@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace Groza;
 
 use Groza\Admin\Auth;
+use Groza\Admin\ImageProcessor;
+use Groza\Admin\Uploads;
 use Groza\Content\Nav;
 use Groza\Data\AuditLog;
 use Groza\Data\JsonStore;
@@ -36,6 +38,7 @@ final class App
     private ?JsonStore $store = null;
     private ?AuditLog $audit = null;
     private ?Auth $auth = null;
+    private ?Uploads $uploads = null;
     private ?View $view = null;
     private ?MailTransport $mailTransport = null;
     private string $currentPath = '/';
@@ -272,6 +275,22 @@ final class App
             audit: $this->audit(),
             secret: (string) $this->config['appSecret']
         );
+    }
+
+    /** Приём загруженных файлов: public/uploads (или config uploadsDir — для тестов). */
+    public function uploads(): Uploads
+    {
+        return $this->uploads ??= new Uploads(
+            (string) ($this->config['uploadsDir'] ?? $this->config['rootDir'] . '/public/uploads'),
+            '/uploads',
+            new ImageProcessor()
+        );
+    }
+
+    /** Для тестов: подменить приём загрузок. */
+    public function setUploads(Uploads $uploads): void
+    {
+        $this->uploads = $uploads;
     }
 
     /** Логин вошедшего пользователя для JsonStore::write и журнала; «-», если никто не вошёл. */

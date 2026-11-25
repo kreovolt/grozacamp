@@ -31,21 +31,23 @@
   .skip-link:focus { @apply top-4; }
 
   .admin-bar { @apply bg-forest text-cream; }
-  .admin-bar__in { @apply mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-3 px-4 py-3; }
+  .admin-bar__in { @apply mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3 px-4 py-3; }
   .admin-brand { @apply font-display text-lg font-semibold uppercase tracking-brand text-cream no-underline; }
   .admin-bar__user { @apply flex flex-wrap items-center gap-3 text-sm; }
   .admin-bar__name { @apply font-semibold; }
   .admin-link-light { @apply text-cream underline; }
   .admin-bar :focus-visible { outline-color: theme('colors.gold'); }
 
-  .admin-main { @apply mx-auto w-full max-w-3xl px-4 py-8; }
+  .admin-main { @apply mx-auto w-full max-w-4xl px-4 py-8; }
   .card { @apply rounded-card bg-paper p-6 shadow-card; }
   .card-narrow { @apply mx-auto max-w-md; }
   .h1 { @apply mb-4 font-display text-3xl font-semibold uppercase tracking-nav text-forest; }
 
   .form { @apply mt-4 grid gap-4; }
-  .field label { @apply mb-1 block text-sm font-semibold text-ink; }
-  .field input { @apply block w-full rounded-btn border border-ink-soft bg-paper px-3 py-2 text-base text-ink; min-height: 44px; }
+  .field > label, .field .label, .field legend { @apply mb-1 block text-sm font-semibold text-ink; }
+  .field input:not([type='radio'], [type='checkbox'], [type='file']), .field textarea, .field select { @apply block w-full rounded-btn border border-ink-soft bg-paper px-3 py-2 text-base text-ink; min-height: 48px; }
+  .field textarea { @apply leading-relaxed; min-height: 7rem; }
+  .field select { @apply pr-8; }
   .hint { @apply mt-1 text-sm text-ink-soft; }
 
   .btn { @apply inline-flex items-center justify-center rounded-btn px-5 py-2 font-display text-base font-semibold uppercase tracking-btn no-underline; min-height: 44px; }
@@ -58,4 +60,95 @@
   .alert-error { @apply bg-[#fbe9e3] text-rust-deep; }
   .alert-ok { @apply bg-[#e6efdd] text-forest; }
   .back { @apply mt-6 text-sm; }
+
+  /* ---- Админка: разделы, списки, формы правки ---- */
+  .lead { @apply mb-6 text-lg; }
+  .tiles { @apply grid grid-cols-1 gap-3 sm:grid-cols-2; }
+  .tile { @apply flex items-center justify-between gap-3 rounded-card bg-paper px-5 py-4 text-ink no-underline shadow-card; min-height: 64px; }
+  .tile:hover { @apply bg-sand-deep; }
+  .tile__name { @apply font-display text-xl font-semibold uppercase tracking-nav text-forest; }
+  .tile__count { @apply rounded-full bg-sand px-3 py-1 text-sm font-semibold text-ink-soft; }
+
+  .back-top { @apply mb-3 mt-0; }
+  .page-head { @apply mb-4 flex flex-wrap items-center justify-between gap-3; }
+  .page-head .h1 { @apply mb-0; }
+  .empty { @apply text-ink-soft; }
+
+  .rows { @apply grid gap-4; }
+  .row { @apply grid gap-3 rounded-card bg-paper p-4 shadow-card; scroll-margin-top: 1rem; }
+  .row:target { @apply ring-2 ring-gold; }
+  .row--hidden { @apply opacity-80; }
+  .row__title { @apply font-display text-xl font-semibold leading-snug tracking-nav text-forest; }
+  .row__title a { @apply text-forest no-underline; }
+  .row__title a:hover { @apply underline; }
+  .row__facts { @apply mt-1 text-sm text-ink-soft; }
+  .row__tools { @apply flex flex-wrap items-center gap-2; }
+  .move { @apply flex gap-2; }
+  .badge { @apply ml-1 inline-block rounded-full bg-sand-deep px-2 py-0.5 align-middle font-sans text-xs font-semibold normal-case tracking-normal text-ink-soft; }
+
+  .status { @apply grid grid-cols-2 gap-2 sm:grid-cols-4; }
+  .status__btn { @apply rounded-btn border-2 border-ink-soft bg-paper px-2 font-display text-base font-semibold uppercase tracking-btn text-ink; min-height: 52px; }
+  .status__btn:hover { @apply bg-sand; }
+  .status__btn[aria-pressed='true'] { @apply border-transparent text-paper; }
+
+  .btn-ghost { @apply border border-ink-soft bg-paper text-forest; }
+  .btn-ghost:hover { @apply bg-sand; }
+  .btn-quiet { @apply border-transparent bg-transparent text-ink-soft underline; }
+  .btn-icon { @apply border border-ink-soft bg-paper px-0 text-xl text-forest; min-width: 48px; min-height: 48px; }
+  .btn-icon:hover:not(:disabled) { @apply bg-sand; }
+  .btn-icon:disabled { @apply opacity-40; }
+  .btn-danger { @apply bg-rust-deep text-paper; }
+  .btn-primary, .btn-ghost, .btn-danger { min-height: 48px; }
+
+  .alert { @apply mb-4; }
+  .alert-note { @apply flex flex-wrap items-center justify-between gap-3 bg-gold/20 text-ink; }
+  .summary { @apply font-normal; }
+  .summary__title { @apply mb-1 font-semibold; }
+  .summary ul { @apply list-disc pl-5; }
+  .summary a { @apply font-semibold; }
+  .card-soft { @apply mb-4 rounded-card border border-sand-deep bg-paper/60 px-4 py-3 text-sm; }
+  .where__title { @apply font-semibold uppercase tracking-nav text-ink-soft; }
+  .where__path { @apply break-all font-semibold text-ink; }
+  .del-name { @apply mb-2 font-display text-xl font-semibold text-forest; }
+
+  .edit-form { @apply rounded-card bg-paper p-4 shadow-card sm:p-6; }
+  .field { @apply relative grid gap-0; }
+  .field .req { @apply text-rust-deep; }
+  .field-error { @apply mt-1 text-sm font-semibold text-rust-deep; }
+  .has-error input:not([type='radio'], [type='checkbox'], [type='file']), .has-error textarea, .has-error select { @apply border-2 border-rust-deep; }
+  .count { @apply mt-1 text-right text-xs text-ink-soft; }
+  .count.is-over { @apply font-semibold text-rust-deep; }
+  .readonly { @apply block rounded-btn bg-sand px-3 py-3 text-base text-ink-soft; }
+
+  .choices { @apply grid grid-cols-2 gap-2 border-0 p-0 sm:grid-cols-4; }
+  .choices--row { @apply grid-cols-2 sm:grid-cols-2; max-width: 20rem; }
+  .choice { @apply flex cursor-pointer items-center gap-2 rounded-btn border border-ink-soft bg-paper px-3 text-base; min-height: 48px; }
+  .choice:has(input:checked) { @apply border-forest bg-sand font-semibold; }
+  .choice input { @apply h-5 w-5 shrink-0; }
+
+  .switch { @apply relative flex cursor-pointer items-center gap-3 py-2; min-height: 48px; }
+  .switch input { @apply absolute h-px w-px opacity-0; }
+  .switch__track { @apply relative inline-block h-8 w-14 shrink-0 rounded-full bg-ink-soft/40 transition-colors; }
+  .switch__track::after { content: ''; @apply absolute left-1 top-1 h-6 w-6 rounded-full bg-paper shadow-card transition-transform; }
+  .switch input:checked + .switch__track { @apply bg-forest; }
+  .switch input:checked + .switch__track::after { transform: translateX(1.5rem); }
+  .switch input:focus-visible + .switch__track { outline: 2px solid theme('colors.rust.dark'); outline-offset: 3px; }
+  .switch__text { @apply text-base font-semibold; }
+
+  .current { @apply mb-2 flex flex-wrap items-center gap-3; }
+  .current__img { @apply h-24 w-24 rounded-btn object-cover; }
+  .current__file { @apply text-sm; }
+  .file-pick { @apply inline-flex cursor-pointer items-center rounded-btn border border-dashed border-forest bg-sand px-4 font-semibold text-forest; min-height: 48px; }
+  .file-pick:hover { @apply bg-sand-deep; }
+  .field input[type='file'] { @apply absolute h-px w-px opacity-0; }
+  .file-pick:has(+ input:focus-visible) { outline: 2px solid theme('colors.rust.dark'); outline-offset: 3px; }
+
+  .actions { @apply mt-2 flex flex-wrap items-center gap-3; }
+  .actions--sticky { @apply sticky bottom-0 -mx-4 mt-4 border-t border-sand-deep bg-paper/95 px-4 py-3 sm:-mx-6 sm:px-6; }
 }
+
+/* Цвета нажатой кнопки статуса — вне @layer: имена классов собираются в PHP, Tailwind их в шаблонах не увидит и вычистил бы */
+.status__btn--soon[aria-pressed='true'] { background-color: theme('colors.ink.soft'); }
+.status__btn--open[aria-pressed='true'] { background-color: theme('colors.forest.DEFAULT'); }
+.status__btn--few[aria-pressed='true'] { background-color: theme('colors.gold'); color: theme('colors.ink.DEFAULT'); }
+.status__btn--closed[aria-pressed='true'] { background-color: theme('colors.rust.deep'); }

@@ -43,5 +43,6 @@ $user ??= null;
 <main id="main" tabindex="-1" class="admin-main">
 <?= $content ?>
 </main>
+<script src="<?= e(asset('/assets/js/admin.js')) ?>" defer></script>
 </body>
 </html>

@@ -10,7 +10,7 @@ use Groza\Http\Request;
 use Groza\Http\Response;
 use Groza\Support\Csrf;
 
-/** Вход, выход, смена пароля и стартовая страница админки. CSRF для POST проверяет App до маршрутизации. */
+/** Вход, выход и смена пароля. CSRF для POST проверяет App до маршрутизации. */
 final class AuthController
 {
     public const MSG_INVALID = 'Неверный логин или пароль';
@@ -65,12 +65,6 @@ final class AuthController
         }
 
         return Response::redirect('/admin/login/');
-    }
-
-    /** @param array<string,string> $params */
-    public function home(Request $r, array $params): Response
-    {
-        return $this->page('admin/home', []);
     }
 
     /** @param array<string,string> $params */

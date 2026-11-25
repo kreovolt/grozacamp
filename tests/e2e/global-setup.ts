@@ -30,4 +30,23 @@ export default function globalSetup(): void {
       throw new Error(`scripts/user.php add ${login} завершился с кодом ${u.status ?? u.signal}`);
     }
   }
+
+  // Отдельные данные для admin-shifts.spec.ts (сервер на порту 8097): смены там меняются и создаются свободно
+  rmSync('storage/test-admin', { recursive: true, force: true });
+  const seed = spawnSync(
+    process.execPath,
+    ['scripts/php.mjs', 'scripts/seed.php', '--demo', '--target=storage/test-admin', '--force'],
+    { stdio: 'inherit', env: { ...process.env, GROZA_ENV: 'test' } },
+  );
+  if (seed.status !== 0) {
+    throw new Error(`scripts/seed.php (storage/test-admin) завершился с кодом ${seed.status ?? seed.signal}`);
+  }
+  const shifts = spawnSync(process.execPath, ['scripts/php.mjs', 'scripts/user.php', 'add', 'e2e-shifts', 'Тест Смены', '--password-stdin'], {
+    input: E2E_PASSWORD,
+    stdio: ['pipe', 'inherit', 'inherit'],
+    env: { ...process.env, GROZA_ENV: 'test', GROZA_STORAGE_DIR: 'storage/test-admin' },
+  });
+  if (shifts.status !== 0) {
+    throw new Error(`scripts/user.php add e2e-shifts завершился с кодом ${shifts.status ?? shifts.signal}`);
+  }
 }
