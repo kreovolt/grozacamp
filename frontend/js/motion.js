@@ -68,10 +68,31 @@ function reveal() {
   });
 }
 
+/**
+ * Переход по ссылке с хешем (/booking/?smena=…#zayavka). Браузер докручивает к якорю плавно (scroll-behavior: smooth),
+ * а ScrollTrigger при каждом пересчёте (load, шрифты, resize) запоминает текущую позицию и возвращает её через scrollTo —
+ * это обрывает плавную прокрутку на полпути, и форма остаётся за экраном. Поэтому после пересчёта, пока посетитель
+ * сам не начал прокручивать страницу, ставим якорь на место мгновенно.
+ */
+function keepHashTarget() {
+  const id = decodeURIComponent(window.location.hash.slice(1));
+  const target = id ? document.getElementById(id) : null;
+  if (!target) return;
+  let touched = false;
+  const stop = () => { touched = true; };
+  ['wheel', 'touchstart', 'keydown', 'pointerdown'].forEach((name) => window.addEventListener(name, stop, { once: true, passive: true }));
+  const until = performance.now() + 4000;
+  ScrollTrigger.addEventListener('refresh', () => {
+    if (touched || performance.now() > until) return;
+    target.scrollIntoView({ behavior: 'instant', block: 'start' });
+  });
+}
+
 if (!reduce.matches) {
   gsap.registerPlugin(ScrollTrigger);
   heroTitle();
   reveal();
+  keepHashTarget();
   // Картинки и шрифты сдвигают положение блоков — пересчитать точки срабатывания
   window.addEventListener('load', () => ScrollTrigger.refresh());
 }

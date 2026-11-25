@@ -75,3 +75,19 @@ test.describe('без JavaScript', () => {
     await expect(page.locator('#booking-phone-error')).toBeVisible();
   });
 });
+
+// Регрессия: на медленном устройстве load наступал посреди плавной прокрутки к #zayavka,
+// ScrollTrigger.refresh возвращал позицию scrollTo и обрывал её — форма оставалась за экраном.
+test('карточка смены на медленном устройстве: прокрутка к форме не обрывается', async ({ page }) => {
+  await page.goto('/booking/');
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Emulation.setCPUThrottlingRate', { rate: 6 });
+  await page.route('**/assets/img/**', async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    await route.continue();
+  });
+  await page.getByRole('link', { name: 'Забронировать смену «Спасатель»' }).click();
+  await expect(page).toHaveURL(/#zayavka$/);
+  await expect(page.locator('#zayavka')).toBeInViewport({ timeout: 10_000 });
+  await expect(page.locator('#booking-shift')).toBeInViewport();
+});
