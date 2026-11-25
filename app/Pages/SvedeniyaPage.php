@@ -7,6 +7,7 @@ use DateTimeImmutable;
 use Groza\App;
 use Groza\Content\Nav;
 use Groza\Content\PageData;
+use Groza\Content\Staff;
 use Groza\Domain\Shifts;
 use Groza\Http\Request;
 use Groza\Http\Response;
@@ -21,7 +22,8 @@ use function Groza\View\tel;
 /**
  * Раздел «Сведения об организации отдыха детей и их оздоровления» (спека §7.6, Приказ Минпросвещения № 201):
  * хаб и шесть страниц. Каждый пункт приказа выводится его дословной формулировкой (config/order201.php) и данными из админки;
- * пустое обязательное — «Информация обновляется», пустое необязательное («при наличии») — «Не предусмотрено».
+ * пустое обязательное — «Информация обновляется»; пустой необязательный («при наличии») пункт на странице не выводится
+ * (о нём предупреждает Readiness).
  * Смены, цены и базы берутся из данных смен и баз, не из текстов. HTML значений собирают только этот класс
  * и components/*: пользовательские строки экранируются, richtext уже очищен админкой.
  */
@@ -94,6 +96,7 @@ final class SvedeniyaPage
             'inaya-informaciya' => $this->buildInaya($ctx),
             default => ['sections' => []],
         };
+        $vars['sections'] = array_values(array_filter($vars['sections'], static fn (array $s): bool => $s['rows'] !== []));
         $toc = $this->toc($vars['sections']);
         $updated = $this->updated($files);
 
@@ -116,27 +119,28 @@ final class SvedeniyaPage
         $texts = $c['texts'];
         $settings = $c['settings'];
 
-        $osnovnye = [
+        $osnovnye = $this->rows([
             $this->row($c, 'osnovnye.a', $this->fullName($c)),
             $this->row($c, 'osnovnye.b', self::plain($texts['sved.director'] ?? null)),
             $this->row($c, 'osnovnye.v', self::plain($texts['sved.legalForm'] ?? null)),
             $this->row($c, 'osnovnye.g', self::plain($texts['sved.campType'] ?? null)),
             $this->row($c, 'osnovnye.d', self::bullets($this->addresses($c))),
             $this->row($c, 'osnovnye.e', self::rich($texts['sved.mode'] ?? null)),
-        ];
+        ]);
 
         $subDocs = fn (string $section, string $label): string => '<p class="font-semibold text-ink">' . e($label) . '</p>'
             . ($this->docList($c['documents'], [$section]) ?: '<p>' . pending('') . '</p>');
         $rulesPage = Readiness::filled($texts['rules'] ?? null) ? '<p><a href="/pravila/">Правила пребывания в лагере</a> (страница сайта)</p>' : '';
-        $dokumenty = [
+        $dokumenty = $this->rows([
             $this->row($c, 'dokumenty.a', $this->docList($c['documents'], ['uchreditelnye'])),
-            $this->row($c, 'dokumenty.b', $this->docList($c['documents'], ['pravila']) . $rulesPage),
+            $this->row($c, 'dokumenty.b', ($this->docList($c['documents'], ['pravila']) ?: '<p>' . pending('') . '</p>') . $rulesPage),
             $this->row($c, 'dokumenty.v', $subDocs('programma-vospitaniya', 'Программа воспитательной работы') . $subDocs('kalendarnyj-plan', 'Календарный план воспитательной работы')),
             $this->row($c, 'dokumenty.g', $this->docList($c['documents'], ['programma-razvitiya'])),
-        ];
+        ]);
 
-        $leaders = array_values(array_filter($c['staff'], static fn (array $m): bool => ($m['group'] ?? '') === 'leadership'));
-        $ovz = array_values(array_filter($c['staff'], static fn (array $m): bool => !empty($m['ovzResponsible'])));
+        $leaders = Staff::pick($c['team'], ['leadership']);
+        $pedagogical = Staff::pick($c['team'], Staff::PEDAGOGICAL);
+        $ovz = array_values(array_filter(Staff::all($c['team']), static fn (array $m): bool => !empty($m['ovzResponsible'])));
 
         $phones = '';
         foreach (['phone' => '', 'whatsapp' => ' (WhatsApp)'] as $key => $note) {
@@ -151,16 +155,16 @@ final class SvedeniyaPage
         return ['sections' => [
             ['id' => 'osnovnye-svedeniya', 'title' => 'Основные сведения', 'rows' => $osnovnye],
             ['id' => 'dokumenty', 'title' => 'Документы', 'rows' => $dokumenty],
-            ['id' => 'rukovodstvo', 'title' => 'Руководство', 'rows' => [$this->row($c, 'rukovodstvo.a', $this->staffTable($leaders, 'short'), true)]],
-            ['id' => 'sostav', 'title' => 'Педагогический и вожатский состав', 'rows' => [
-                $this->row($c, 'sostav.a', $this->staffTable($c['staff'], 'full'), true),
+            ['id' => 'rukovodstvo', 'title' => 'Руководство', 'rows' => $this->rows([$this->row($c, 'rukovodstvo.a', $this->staffTable($leaders, 'short'), true)])],
+            ['id' => 'sostav', 'title' => 'Педагогический и вожатский состав', 'rows' => $this->rows([
+                $this->row($c, 'sostav.a', $this->staffTable($pedagogical, 'full'), true),
                 $this->row($c, 'sostav.b', $this->staffTable($ovz, 'short'), true),
-            ]],
-            ['id' => 'kontakty', 'title' => 'Контакты', 'rows' => [
+            ])],
+            ['id' => 'kontakty', 'title' => 'Контакты', 'rows' => $this->rows([
                 $this->row($c, 'kontakty.a', $phones === '' ? '' : '<ul>' . $phones . '</ul>' . ($hours !== [] ? '<p class="text-ink-soft">Звонки в офис: ' . e(implode(', ', $hours)) . '</p>' : '')),
                 $this->row($c, 'kontakty.b', $email === '' ? '' : '<a href="mailto:' . e($email) . '">' . e($email) . '</a>'),
                 $this->row($c, 'kontakty.v', self::plain($settings['postalAddress'] ?? null)),
-            ]],
+            ])],
         ]];
     }
 
@@ -175,13 +179,13 @@ final class SvedeniyaPage
         ]);
 
         return ['sections' => [
-            ['id' => 'vozrast', 'title' => 'Возрастная категория детей', 'rows' => [$this->row($c, 'deyatelnost.a', self::rich($texts['sved.ages'] ?? null))]],
-            ['id' => 'smeny', 'title' => 'Даты смен', 'rows' => [$this->row($c, 'deyatelnost.b', $table, true)]],
-            ['id' => 'programmy', 'title' => 'Программы и методические разработки', 'rows' => [
+            ['id' => 'vozrast', 'title' => 'Возрастная категория детей', 'rows' => $this->rows([$this->row($c, 'deyatelnost.a', self::rich($texts['sved.ages'] ?? null))])],
+            ['id' => 'smeny', 'title' => 'Даты смен', 'rows' => $this->rows([$this->row($c, 'deyatelnost.b', $table, true)])],
+            ['id' => 'programmy', 'title' => 'Программы и методические разработки', 'rows' => $this->rows([
                 $this->row($c, 'deyatelnost.v', self::rich($texts['sved.eduPrograms'] ?? null)),
                 $this->row($c, 'deyatelnost.g', self::rich($texts['sved.healthPrograms'] ?? null)),
                 $this->row($c, 'deyatelnost.d', self::rich($texts['sved.methods'] ?? null)),
-            ]],
+            ])],
         ]];
     }
 
@@ -190,23 +194,11 @@ final class SvedeniyaPage
     {
         $sections = [];
         foreach ($c['scope']['venues'] as $venue) {
-            $a = self::block($venue['mto_a'] ?? null);
-            $b = self::block($venue['mto_b'] ?? null);
-            $part = static fn (string $label, string $html): string => '<p><strong>' . e($label) . '</strong></p>' . ($html !== '' ? $html : '<p>' . pending('') . '</p>');
-            $learning = $a === '' && $b === '' ? '' : $part('Учебные кабинеты и объекты для практических занятий', $a) . $part('Библиотека и объекты спорта', $b);
-
-            // условия проживания и питания (п. 9 б, в) ведутся одним полем: один пункт с обеими формулировками
-            $living = $this->row($c, 'mto.b', self::block($venue['mto_v'] ?? null));
-            $living['item'] = 'mto.b mto.v';
-            $living['paragraph'] = '9 б, в';
-            $living['full'] = $c['order']['mto.b']['full'] . '; ' . $c['order']['mto.v']['full'];
-
-            $sections[] = $this->venueSection($venue, [
-                $this->row($c, 'mto.a', self::block($venue['mto_d'] ?? null)),
-                $living,
-                $this->row($c, 'mto.g', $learning),
-                $this->row($c, 'mto.d', self::block($venue['mto_g'] ?? null)),
-            ]);
+            $rows = [];
+            foreach (['a' => 'mto_a', 'b' => 'mto_b', 'v' => 'mto_v', 'g' => 'mto_g', 'd' => 'mto_d'] as $letter => $field) {
+                $rows[] = $this->row($c, 'mto.' . $letter, self::block($venue[$field] ?? null));
+            }
+            $sections[] = $this->venueSection($venue, $this->rows($rows));
         }
 
         return ['sections' => $sections];
@@ -223,7 +215,7 @@ final class SvedeniyaPage
                     $rows[] = $this->row($c, $id, self::block($venue['access_' . substr($id, strlen('dostupnaya.'))] ?? null));
                 }
             }
-            $sections[] = $this->venueSection($venue, $rows);
+            $sections[] = $this->venueSection($venue, $this->rows($rows));
         }
 
         return ['sections' => $sections];
@@ -241,11 +233,11 @@ final class SvedeniyaPage
         ]) . $this->averageLine($rows);
 
         return ['sections' => [
-            ['id' => 'poryadok', 'title' => 'Порядок оказания платных услуг', 'rows' => [$this->row($c, 'uslugi.a', self::rich($texts['sved.paidOrder'] ?? null))]],
-            ['id' => 'stoimost', 'title' => 'Стоимость дня и путёвки', 'rows' => [$this->row($c, 'uslugi.b', $table, true)]],
-            ['id' => 'kompensaciya', 'title' => 'Компенсация стоимости', 'rows' => [$this->row($c, 'uslugi.v', self::rich($texts['sved.compensation'] ?? null))]],
-            ['id' => 'dokumenty-zachisleniya', 'title' => 'Документы для зачисления', 'rows' => [$this->row($c, 'uslugi.g', self::bullets(PageData::lines($texts['lists.documents'] ?? null)))]],
-            ['id' => 'chto-vzyat', 'title' => 'Одежда, обувь и гигиенические принадлежности', 'rows' => [$this->row($c, 'uslugi.d', self::bullets(PageData::lines($texts['lists.packing'] ?? null)))]],
+            ['id' => 'poryadok', 'title' => 'Порядок оказания платных услуг', 'rows' => $this->rows([$this->row($c, 'uslugi.a', self::rich($texts['sved.paidOrder'] ?? null))])],
+            ['id' => 'stoimost', 'title' => 'Стоимость дня и путёвки', 'rows' => $this->rows([$this->row($c, 'uslugi.b', $table, true)])],
+            ['id' => 'kompensaciya', 'title' => 'Компенсация стоимости', 'rows' => $this->rows([$this->row($c, 'uslugi.v', self::rich($texts['sved.compensation'] ?? null))])],
+            ['id' => 'dokumenty-zachisleniya', 'title' => 'Документы для зачисления', 'rows' => $this->rows([$this->row($c, 'uslugi.g', self::bullets(PageData::lines($texts['lists.documents'] ?? null)))])],
+            ['id' => 'chto-vzyat', 'title' => 'Одежда, обувь и гигиенические принадлежности', 'rows' => $this->rows([$this->row($c, 'uslugi.d', self::bullets(PageData::lines($texts['lists.packing'] ?? null)))])],
         ]];
     }
 
@@ -273,7 +265,7 @@ final class SvedeniyaPage
             'settings' => $data['settings'],
             'texts' => $data['texts'],
             'documents' => PageData::byOrder(PageData::items($data['documents'])),
-            'staff' => Readiness::staff(PageData::items($data['team'])),
+            'team' => PageData::items($data['team']),
             'venues' => $venues,
             'scope' => $scope,
             'season' => $scope['season'],
@@ -282,18 +274,26 @@ final class SvedeniyaPage
     }
 
     /**
-     * Строка пункта приказа: номер, формулировка и значение. Пустое значение — «Информация обновляется»
-     * (обязательный пункт) или «Не предусмотрено» («при наличии»). $wide — значение под формулировкой, на всю ширину (таблицы).
+     * Строка пункта приказа: номер, формулировка и значение. Пустое значение обязательного пункта — «Информация обновляется»;
+     * пустой необязательный («при наличии») пункт не выводится (null). $wide — значение под формулировкой, на всю ширину (таблицы).
      *
      * @param array<string,mixed> $c
-     * @return array{item:string,paragraph:string,full:string,value:string,wide:bool}
+     * @return array{item:string,paragraph:string,full:string,value:string,wide:bool}|null
      */
-    private function row(array $c, string $id, string $value, bool $wide = false): array
+    private function row(array $c, string $id, string $value, bool $wide = false): ?array
     {
         $def = $c['order'][$id];
-        $empty = $def['level'] === 'required' ? pending('') : '<span class="text-ink-soft">Не предусмотрено</span>';
+        if (trim($value) === '' && $def['level'] !== 'required') {
+            return null;
+        }
 
-        return ['item' => $id, 'paragraph' => $def['paragraph'], 'full' => $def['full'], 'value' => trim($value) === '' ? $empty : $value, 'wide' => $wide];
+        return ['item' => $id, 'paragraph' => $def['paragraph'], 'full' => $def['full'], 'value' => trim($value) === '' ? pending('') : $value, 'wide' => $wide];
+    }
+
+    /** Строки без пропущенных необязательных пунктов. @param list<array<string,mixed>|null> $rows @return list<array<string,mixed>> */
+    private function rows(array $rows): array
+    {
+        return array_values(array_filter($rows));
     }
 
     /** @param array<string,mixed> $c */
@@ -332,8 +332,8 @@ final class SvedeniyaPage
     {
         $items = [];
         foreach ($docs as $doc) {
-            $file = $doc['file'] ?? null;
-            if (!in_array($doc['section'] ?? null, $sections, true) || !is_array($file) || self::str($file['url'] ?? null) === '') {
+            $file = PageData::docFile($doc);
+            if (!in_array($doc['section'] ?? null, $sections, true) || $file === null) {
                 continue;
             }
             $date = self::str($doc['date'] ?? null);
@@ -368,8 +368,7 @@ final class SvedeniyaPage
         $out = [];
         foreach ($shifts as $s) {
             $days = Shifts::days((string) $s['dateStart'], (string) $s['dateEnd']);
-            $price = $s['price'] ?? null;
-            $price = (is_int($price) || (is_string($price) && ctype_digit($price))) && (int) $price > 0 ? (int) $price : null;
+            $price = PageData::price($s['price'] ?? null);
             $min = (int) ($s['ageMin'] ?? 0);
             $max = (int) ($s['ageMax'] ?? 0);
             $out[] = [

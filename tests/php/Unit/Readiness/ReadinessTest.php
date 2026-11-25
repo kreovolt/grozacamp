@@ -55,6 +55,15 @@ final class ReadinessTest extends TestCase
         ));
     }
 
+    /** Предупреждения «warn.*» (без напоминаний о пустых необязательных пунктах opt.*). @param list<array<string,mixed>> $items @return list<string> */
+    private function warnings(array $items): array
+    {
+        return array_values(array_map(
+            static fn (array $i): string => $i['id'],
+            array_filter($items, static fn (array $i): bool => $i['level'] === 'warning' && !$i['ok'] && str_starts_with($i['id'], 'warn.'))
+        ));
+    }
+
     public function test_complete_fixture_is_ready(): void
     {
         $items = $this->evaluate($this->complete());
@@ -156,16 +165,16 @@ final class ReadinessTest extends TestCase
         $this->assertSame('/admin/documents/new/?section=kalendarnyj-plan', $item['fix']);
     }
 
-    public function test_rules_text_replaces_rules_scan(): void
+    public function test_rules_need_a_scan_text_does_not_replace_it(): void
     {
         $data = $this->complete();
-        $this->assertTrue($this->byId($this->evaluate($data), 'dokumenty.b')['ok'], 'есть и текст, и скан');
+        $this->assertTrue($this->byId($this->evaluate($data), 'dokumenty.b')['ok']);
+
         $data['documents']['items'] = array_values(array_filter($data['documents']['items'], static fn (array $d): bool => $d['section'] !== 'pravila'));
-        $this->assertTrue($this->byId($this->evaluate($data), 'dokumenty.b')['ok'], 'достаточно текста правил (страница /pravila/)');
-        $data['texts']['rules'] = '';
         $item = $this->byId($this->evaluate($data), 'dokumenty.b');
-        $this->assertFalse($item['ok']);
-        $this->assertSame('/admin/texts/info/#rules', $item['fix']);
+        $this->assertFalse($item['ok'], 'текст /pravila/ есть, скана нет');
+        $this->assertSame('/admin/documents/new/?section=pravila', $item['fix']);
+        $this->assertStringContainsString('скан', $item['label']);
     }
 
     public function test_leadership_needs_a_member(): void
@@ -179,19 +188,45 @@ final class ReadinessTest extends TestCase
         $this->assertSame('/admin/team/new/', $item['fix']);
     }
 
-    public function test_hidden_staff_are_not_checked_and_first_offender_is_linked(): void
+    public function test_staff_scope_is_pedagogues_and_counselors_only(): void
     {
         $data = $this->complete();
+        // руководство (п. 5) и «другое» (фотографы, ди-джеи) в п. 6 не входят
+        $data['team']['items'][0]['education'] = '';
+        $data['team']['items'][] = ['id' => 't00000000005', 'name' => 'Фотограф Ф. Ф.', 'role' => 'Фотограф', 'group' => 'other', 'education' => '', 'hidden' => false];
+        $this->assertTrue($this->byId($this->evaluate($data), 'sostav.a')['ok']);
+
+        // скрытый вожатый не проверяется
         $data['team']['items'][2]['hidden'] = true;
         $data['team']['items'][2]['education'] = '';
         $this->assertTrue($this->byId($this->evaluate($data), 'sostav.a')['ok']);
 
+        // без образования и должности — блок; первым назван педагог (группы идут в порядке страницы)
         $data['team']['items'][2]['hidden'] = false;
-        $data['team']['items'][1]['qualification'] = '';
-        $data['team']['items'][2]['specialty'] = '';
+        $data['team']['items'][3]['education'] = '';
         $item = $this->byId($this->evaluate($data), 'sostav.a');
         $this->assertFalse($item['ok']);
-        $this->assertSame('/admin/team/t00000000002/', $item['fix'], 'первый по порядку на странице');
+        $this->assertSame('/admin/team/t00000000004/', $item['fix']);
+
+        // нет педагогов и вожатых вовсе — тоже блок
+        $data['team']['items'][2]['group'] = 'other';
+        $data['team']['items'][3]['group'] = 'other';
+        $this->assertFalse($this->byId($this->evaluate($data), 'sostav.a')['ok']);
+    }
+
+    public function test_specialty_and_qualification_only_warn(): void
+    {
+        $data = $this->complete();
+        $data['team']['items'][3]['specialty'] = '';
+        $data['team']['items'][2]['qualification'] = '';
+        $items = $this->evaluate($data);
+
+        $this->assertTrue($this->byId($items, 'sostav.a')['ok']);
+        $this->assertTrue(Readiness::isReady($items));
+        $warn = $this->byId($items, 'warn.staffDetails');
+        $this->assertFalse($warn['ok']);
+        $this->assertSame('warning', $warn['level']);
+        $this->assertSame('/admin/team/t00000000004/', $warn['fix']);
     }
 
     public function test_each_venue_in_season_needs_13_access_fields(): void
@@ -216,19 +251,29 @@ final class ReadinessTest extends TestCase
     public function test_mto_items_per_venue_and_health_is_optional(): void
     {
         $data = $this->complete();
-        $data['venues']['items'][0]['mto_g'] = '';
+        $data['venues']['items'][0]['mto_d'] = '';
         $this->assertTrue(Readiness::isReady($this->evaluate($data)), '9 д — при условии оздоровительной деятельности');
 
-        $data['venues']['items'][0]['mto_b'] = '';
-        $data['venues']['items'][0]['mto_d'] = '';
+        $data['venues']['items'][0]['mto_a'] = '';
+        $data['venues']['items'][0]['mto_g'] = '';
         $items = $this->evaluate($data);
         $this->assertSame(['mto.a:solnyshko', 'mto.g:solnyshko'], $this->failedRequired($items));
-        $this->assertSame('/admin/venues/v00000000001/#mto_d', $this->byId($items, 'mto.a:solnyshko')['fix']);
-        $this->assertSame('/admin/venues/v00000000001/#mto_b', $this->byId($items, 'mto.g:solnyshko')['fix']);
+        $this->assertSame('/admin/venues/v00000000001/#mto_a', $this->byId($items, 'mto.a:solnyshko')['fix']);
+        $this->assertSame('/admin/venues/v00000000001/#mto_g', $this->byId($items, 'mto.g:solnyshko')['fix']);
+    }
 
+    public function test_living_and_food_are_separate_items(): void
+    {
+        $data = $this->complete();
         $data['venues']['items'][0]['mto_v'] = '';
-        $this->assertContains('mto.b:solnyshko', $this->failedRequired($this->evaluate($data)));
-        $this->assertContains('mto.v:solnyshko', $this->failedRequired($this->evaluate($data)));
+        $items = $this->evaluate($data);
+        $this->assertSame(['mto.v:solnyshko'], $this->failedRequired($items), 'проживание описано, питание — нет');
+        $this->assertSame('/admin/venues/v00000000001/#mto_v', $this->byId($items, 'mto.v:solnyshko')['fix']);
+        $this->assertTrue($this->byId($items, 'mto.b:solnyshko')['ok']);
+
+        $data = $this->complete();
+        $data['venues']['items'][0]['mto_b'] = '';
+        $this->assertSame(['mto.b:solnyshko'], $this->failedRequired($this->evaluate($data)));
     }
 
     public function test_only_venues_of_season_shifts_are_checked(): void
@@ -282,7 +327,7 @@ final class ReadinessTest extends TestCase
         $this->assertSame(['deyatelnost.b', 'uslugi.b'], $this->failedRequired($items));
     }
 
-    public function test_optional_items_never_block(): void
+    public function test_optional_items_never_block_but_warn(): void
     {
         $data = $this->complete();
         $data['texts']['sved.eduPrograms'] = '';
@@ -291,15 +336,49 @@ final class ReadinessTest extends TestCase
         $data['texts']['sved.compensation'] = '';
         $data['texts']['sved.shortName'] = '';
         $data['settings']['email'] = '';
+        $data['venues']['items'][0]['mto_d'] = '';
+        $data['venues']['items'][0]['access_e'] = '';
         $data['documents']['items'] = array_values(array_filter($data['documents']['items'], static fn (array $d): bool => $d['section'] !== 'programma-razvitiya'));
 
         $items = $this->evaluate($data);
         $this->assertTrue(Readiness::isReady($items));
         $this->assertSame([], $this->failedRequired($items));
-        $ids = array_column($items, 'id');
-        foreach (['deyatelnost.v', 'deyatelnost.g', 'deyatelnost.d', 'uslugi.v', 'dokumenty.g', 'kontakty.b', 'mto.d:solnyshko'] as $id) {
-            $this->assertNotContains($id, $ids, "$id необязательный: в проверке его нет");
+        $expected = ['deyatelnost.v', 'deyatelnost.g', 'deyatelnost.d', 'uslugi.v', 'dokumenty.g', 'kontakty.b', 'mto.d:solnyshko', 'dostupnaya.e:solnyshko'];
+        foreach ($expected as $id) {
+            $item = $this->byId($items, 'opt.' . $id);
+            $this->assertSame('warning', $item['level'], $id);
+            $this->assertFalse($item['ok'], $id);
+            $this->assertStringStartsWith('/admin/', $item['fix']);
         }
+        $this->assertSame('/admin/texts/svedeniya/#sved.compensation', $this->byId($items, 'opt.uslugi.v')['fix']);
+        $this->assertStringContainsString('Пункт 10 в пуст', $this->byId($items, 'opt.uslugi.v')['label']);
+        $this->assertSame('/admin/venues/v00000000001/#access_e', $this->byId($items, 'opt.dostupnaya.e:solnyshko')['fix']);
+        $this->assertSame('/admin/documents/new/?section=programma-razvitiya', $this->byId($items, 'opt.dokumenty.g')['fix']);
+        $this->assertSame('/admin/settings/#email', $this->byId($items, 'opt.kontakty.b')['fix']);
+        $this->assertNotContains('opt.sostav.b', array_column($items, 'id'), 'про ОВЗ — warn.ovz');
+
+        // заполненное предупреждений не даёт
+        $full = $this->complete();
+        $full['texts']['sved.compensation'] = '<p>Сертификаты.</p>';
+        $this->assertNotContains('opt.uslugi.v', array_column($this->evaluate($full), 'id'));
+    }
+
+    public function test_shifts_of_the_year_count_after_they_end(): void
+    {
+        $data = $this->complete();
+        $after = new DateTimeImmutable('2027-08-25T12:00:00+05:00');
+        $items = Readiness::evaluate($data, $after);
+
+        $this->assertSame([], $this->failedRequired($items), 'смена 2–22 июля прошла, но она в списке года');
+        $this->assertTrue($this->byId($items, 'deyatelnost.b')['ok']);
+        $this->assertTrue($this->byId($items, 'uslugi.b')['ok']);
+        $this->assertTrue($this->byId($items, 'mto.a:solnyshko')['ok'], 'база прошедшей смены проверяется');
+        $this->assertSame(['warn.openShifts'], $this->warnings($items), 'предстоящих смен с набором нет');
+
+        // а смена прошлого года в сезон не входит
+        $data['shifts']['items'][0]['dateStart'] = '2026-07-02';
+        $data['shifts']['items'][0]['dateEnd'] = '2026-07-22';
+        $this->assertFalse($this->byId(Readiness::evaluate($data, $after), 'deyatelnost.b')['ok']);
     }
 
     public function test_prices_required_for_uslugi(): void
@@ -323,32 +402,32 @@ final class ReadinessTest extends TestCase
         $data['documents']['items'][2]['date'] = '2025-01-01';
         $items = $this->evaluate($data);
 
-        $warnings = array_values(array_filter($items, static fn (array $i): bool => $i['level'] === 'warning' && !$i['ok']));
-        $this->assertCount(1, $warnings);
-        $this->assertSame('dokumenty', $warnings[0]['section']);
-        $this->assertSame('/admin/documents/d00000000003/', $warnings[0]['fix']);
-        $this->assertStringContainsString('Программа воспитательной работы', $warnings[0]['label']);
+        $this->assertSame(['warn.oldDocument:d00000000003'], $this->warnings($items));
+        $warning = $this->byId($items, 'warn.oldDocument:d00000000003');
+        $this->assertSame('dokumenty', $warning['section']);
+        $this->assertSame('/admin/documents/d00000000003/', $warning['fix']);
+        $this->assertStringContainsString('Программа воспитательной работы', $warning['label']);
         $this->assertTrue(Readiness::isReady($items), 'предупреждение не блокирует запуск');
 
         // уставу сколько угодно лет; ровно 365 дней — ещё не старый
         $data = $this->complete();
         $data['documents']['items'][0]['date'] = '1999-01-01';
         $data['documents']['items'][2]['date'] = '2026-01-15';
-        $this->assertSame([], array_filter($this->evaluate($data), static fn (array $i): bool => $i['level'] === 'warning' && !$i['ok']));
+        $this->assertSame([], $this->warnings($this->evaluate($data)));
     }
 
     public function test_warning_when_no_open_shifts_and_no_ovz_responsible(): void
     {
         $data = $this->complete();
         $items = $this->evaluate($data);
-        $this->assertSame([], array_filter($items, static fn (array $i): bool => $i['level'] === 'warning' && !$i['ok']), 'в полной выборке предупреждений нет');
+        $this->assertSame([], $this->warnings($items), 'в полной выборке предупреждений нет');
 
         $data['shifts']['items'][0]['status'] = 'closed';
         $data['team']['items'][1]['ovzResponsible'] = false;
         $items = $this->evaluate($data);
-        $warn = array_column(array_filter($items, static fn (array $i): bool => $i['level'] === 'warning' && !$i['ok']), null, 'id');
+        $warn = array_column(array_filter($items, static fn (array $i): bool => in_array($i['id'], ['warn.openShifts', 'warn.ovz'], true)), null, 'id');
 
-        $this->assertSame(['warn.openShifts', 'warn.ovz'], array_keys($warn));
+        $this->assertSame(['warn.openShifts', 'warn.ovz'], $this->warnings($items));
         $this->assertSame('/admin/shifts/', $warn['warn.openShifts']['fix']);
         $this->assertSame('/admin/team/', $warn['warn.ovz']['fix']);
         $this->assertTrue(Readiness::isReady($items));

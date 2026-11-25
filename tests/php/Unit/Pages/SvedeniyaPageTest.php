@@ -151,7 +151,9 @@ final class SvedeniyaPageTest extends TestCase
 
         preg_match_all('#<th[^>]*scope="col"[^>]*>(.*?)</th>#us', $part, $m);
         $this->assertSame(['ФИО', 'Должность', 'Образование', 'Направление подготовки / специальность', 'Квалификация'], array_map($this->plain(...), $m[1]));
-        $this->assertSame(23, substr_count($part, '<tr data-staff'), 'все нескрытые сотрудники');
+        $this->assertSame(17, substr_count($part, '<tr data-staff'), '8 педагогов и 9 вожатых');
+        $this->assertStringNotContainsString('Каменских', $part, 'группа «другое» не педагогический состав');
+        $this->assertStringNotContainsString('Лучников', $part, 'руководство — отдельный раздел (п. 5)');
         $this->assertStringContainsString('Информация обновляется', $part, 'у части сотрудников образование не заполнено');
         $this->assertStringContainsString('Высшее (пример)', $part);
     }
@@ -168,15 +170,16 @@ final class SvedeniyaPageTest extends TestCase
         $part = $this->section(TestApp::get($app, '/svedeniya/ob-organizacii/')->body(), 'sostav');
 
         $this->assertStringNotContainsString('Манохин', $part);
-        $this->assertSame(22 + 1, substr_count($part, '<tr data-staff'), '22 в составе и один ответственный за ОВЗ');
-        $this->assertStringContainsString('ответственных за организацию работы по обеспечению доступности', $this->plain($this->row($part, 'sostav.b') ?? $part));
+        $this->assertSame(16 + 1, substr_count($part, '<tr data-staff'), '16 в составе и один ответственный за ОВЗ');
+        $this->assertStringContainsString('ответственных за организацию работы по обеспечению доступности', $this->plain($this->row($part, 'sostav.b')));
     }
 
-    public function test_no_ovz_responsible_is_stated(): void
+    public function test_no_ovz_responsible_row_is_omitted(): void
     {
         $part = $this->section(TestApp::get(TestApp::make(), '/svedeniya/ob-organizacii/')->body(), 'sostav');
 
-        $this->assertStringContainsString('Не предусмотрено', $this->row($part, 'sostav.b'));
+        $this->assertStringNotContainsString('data-item="sostav.b"', $part);
+        $this->assertStringNotContainsString('Не предусмотрено', $part);
     }
 
     public function test_rukovodstvo_lists_leadership(): void
@@ -198,16 +201,24 @@ final class SvedeniyaPageTest extends TestCase
         $this->assertStringNotContainsString('Информация обновляется', $this->row($part, 'osnovnye.b'));
     }
 
-    public function test_empty_optional_is_not_pending(): void
+    public function test_empty_optional_rows_are_omitted(): void
     {
         $app = $this->withTexts(['sved.eduPrograms' => '', 'sved.healthPrograms' => '', 'sved.methods' => '', 'sved.compensation' => '']);
         $dey = TestApp::get($app, '/svedeniya/deyatelnost/')->body();
         foreach (['deyatelnost.v', 'deyatelnost.g', 'deyatelnost.d'] as $id) {
-            $row = $this->row($dey, $id);
-            $this->assertStringContainsString('Не предусмотрено', $row, $id);
-            $this->assertStringNotContainsString('Информация обновляется', $row, $id);
+            $this->assertStringNotContainsString('data-item="' . $id . '"', $dey, $id);
         }
-        $this->assertStringContainsString('Не предусмотрено', $this->row(TestApp::get($app, '/svedeniya/uslugi/')->body(), 'uslugi.v'));
+        $this->assertStringNotContainsString('id="programmy"', $dey, 'раздел без пунктов не выводится');
+        $this->assertStringNotContainsString('href="#programmy"', $dey);
+        $uslugi = TestApp::get($app, '/svedeniya/uslugi/')->body();
+        $this->assertStringNotContainsString('data-item="uslugi.v"', $uslugi);
+        $this->assertStringNotContainsString('id="kompensaciya"', $uslugi);
+        foreach ([$dey, $uslugi] as $body) {
+            $this->assertStringNotContainsString('Не предусмотрено', $body);
+        }
+
+        $filled = TestApp::get(TestApp::make(), '/svedeniya/uslugi/')->body();
+        $this->assertStringContainsString('сертификаты', mb_strtolower($this->plain($this->row($filled, 'uslugi.v'))));
     }
 
     public function test_documents_show_type_and_size(): void
@@ -229,14 +240,16 @@ final class SvedeniyaPageTest extends TestCase
         $this->assertStringContainsString('href="/uploads/docs/demo-programma-vospitaniya.pdf"', $part);
     }
 
-    public function test_documents_missing_are_pending_and_optional_is_not(): void
+    public function test_documents_missing_are_pending_and_optional_is_omitted(): void
     {
         $part = $this->section(TestApp::get(TestApp::make(), '/svedeniya/ob-organizacii/')->body(), 'dokumenty');
 
         $this->assertStringContainsString('Информация обновляется', $this->row($part, 'dokumenty.a'), 'устава в демо нет');
-        $this->assertStringContainsString('href="/pravila/"', $this->row($part, 'dokumenty.b'), 'правила — страницей сайта');
+        $rules = $this->row($part, 'dokumenty.b');
+        $this->assertStringContainsString('Информация обновляется', $rules, 'скана правил нет, текст страницы его не заменяет');
+        $this->assertStringContainsString('href="/pravila/"', $rules, 'но ссылка на страницу правил есть');
         $this->assertStringNotContainsString('Информация обновляется', $this->row($part, 'dokumenty.v'));
-        $this->assertStringContainsString('Не предусмотрено', $this->row($part, 'dokumenty.g'));
+        $this->assertStringNotContainsString('data-item="dokumenty.g"', $part, 'программы развития нет — пункт не выводится');
     }
 
     public function test_kontakty(): void
@@ -284,11 +297,13 @@ final class SvedeniyaPageTest extends TestCase
         $this->assertStringContainsString('>ДЗОЛ «Солнышко»<', $venue);
         $this->assertStringContainsString('дер. Коляды', $venue);
         preg_match_all('#\sdata-item="([a-z. ]+)"#', $venue, $m);
-        $this->assertSame(['mto.a', 'mto.b mto.v', 'mto.g', 'mto.d'], $m[1]);
+        $this->assertSame(['mto.a', 'mto.b', 'mto.v', 'mto.g', 'mto.d'], $m[1], 'по одному полю на пункт 9 а–д');
         $this->assertStringContainsString('1985', $this->row($venue, 'mto.a'));
+        $this->assertStringContainsString('Деревянные корпуса с санузлом', $this->row($venue, 'mto.b'));
+        $this->assertStringContainsString('питание пять раз в день', $this->row($venue, 'mto.v'));
         $this->assertStringContainsString('Корпуса для занятий', $this->row($venue, 'mto.g'));
-        $this->assertStringContainsString('Спортивная площадка с турниками', $this->row($venue, 'mto.g'));
-        $this->assertStringContainsString('питание пять раз в день', $this->row($venue, 'mto.b'));
+        $this->assertStringContainsString('библиотеки нет', $this->row($venue, 'mto.g'));
+        $this->assertStringContainsString('Медицинский пункт', $this->row($venue, 'mto.d'));
     }
 
     public function test_dostupnaya_lists_13_items_per_venue(): void
@@ -304,20 +319,28 @@ final class SvedeniyaPageTest extends TestCase
         $this->assertStringNotContainsString('Восток', $body);
     }
 
-    public function test_dostupnaya_empty_required_pending_optional_stated(): void
+    public function test_dostupnaya_empty_required_pending_optional_omitted(): void
     {
         $app = TestApp::make();
         $this->withItems($app, 'venues', static function (array $items): array {
             $items[0]['access_k'] = '';
             $items[0]['access_e'] = '';
+            $items[0]['mto_d'] = '';
+            $items[0]['mto_v'] = '';
 
             return $items;
         });
         $venue = $this->section(TestApp::get($app, '/svedeniya/dostupnaya-sreda/')->body(), 'solnyshko');
 
         $this->assertStringContainsString('Информация обновляется', $this->row($venue, 'dostupnaya.k'));
-        $this->assertStringContainsString('Не предусмотрено', $this->row($venue, 'dostupnaya.e'));
+        $this->assertStringNotContainsString('data-item="dostupnaya.e"', $venue, 'п. 11 е — при наличии');
+        $this->assertSame(12, substr_count($venue, 'data-item="dostupnaya.'));
         $this->assertStringNotContainsString('Информация обновляется', $this->row($venue, 'dostupnaya.l'));
+
+        $mto = TestApp::get($app, '/svedeniya/mto/')->body();
+        $this->assertStringContainsString('Информация обновляется', $this->row($mto, 'mto.v'), 'питание не описано — это видно отдельно от проживания');
+        $this->assertStringNotContainsString('Информация обновляется', $this->row($mto, 'mto.b'));
+        $this->assertStringNotContainsString('data-item="mto.d"', $mto);
     }
 
     public function test_two_venues_get_a_toc(): void
@@ -377,6 +400,21 @@ final class SvedeniyaPageTest extends TestCase
             $this->assertStringContainsString(htmlspecialchars($item, ENT_QUOTES), $this->row($body, 'uslugi.d'));
         }
         $this->assertStringContainsString('Информация обновляется', $this->row(TestApp::get($this->withTexts(['lists.packing' => []]), '/svedeniya/uslugi/')->body(), 'uslugi.d'));
+    }
+
+    public function test_year_shifts_stay_on_the_pages_after_they_end(): void
+    {
+        $app = TestApp::make(['fakeNow' => '2027-12-20T12:00:00+05:00']);
+        $dey = $this->plain($this->row(TestApp::get($app, '/svedeniya/deyatelnost/')->body(), 'deyatelnost.b'));
+        $this->assertStringContainsString('Спасатель', $dey);
+        $this->assertStringContainsString('2–22 июля 2027', $dey);
+        $this->assertStringNotContainsString('Информация обновляется', $dey);
+
+        $uslugi = $this->plain($this->row(TestApp::get($app, '/svedeniya/uslugi/')->body(), 'uslugi.b'));
+        $this->assertStringContainsString('60 000 ₽', $uslugi);
+        $this->assertStringContainsString('≈ 2 857 ₽ в день', $uslugi);
+
+        $this->assertStringContainsString('>ДЗОЛ «Солнышко»<', TestApp::get($app, '/svedeniya/mto/')->body());
     }
 
     public function test_inaya_informaciya(): void

@@ -6,8 +6,7 @@ namespace Groza\Readiness;
 use DateTimeImmutable;
 use Groza\App;
 use Groza\Content\PageData;
-use Groza\Domain\Shifts;
-use Groza\Pages\TeamPage;
+use Groza\Content\Staff;
 use Groza\Support\Dates;
 
 /**
@@ -66,14 +65,19 @@ final class Readiness
         $textFix = static fn (string $key): string => '/admin/texts/' . (self::registry()[$key]['group'] ?? 'svedeniya') . '/#' . $key;
         $setting = static fn (string $key): bool => self::filled($settings[$key] ?? null);
 
-        $people = self::staff($team);
+        $leaders = Staff::pick($team, ['leadership']);
+        $pedagogical = Staff::pick($team, Staff::PEDAGOGICAL);
         $docsOf = static fn (string $section): array => array_values(array_filter(
             $documents,
-            static fn (array $d): bool => ($d['section'] ?? null) === $section && self::hasFile($d)
+            static fn (array $d): bool => ($d['section'] ?? null) === $section && PageData::docFile($d) !== null
         ));
 
         foreach (self::order() as $def) {
             if ($def['level'] !== 'required') {
+                // «при наличии»: не мешает запуску, но пустое поле — предупреждение (заполнить или подтвердить, что не применяется)
+                if ($def['id'] !== 'sostav.b') { // про ОВЗ — отдельное предупреждение warn.ovz
+                    self::optionalWarnings($def, $add, $texts, $settings, $scope['venues'], $docsOf);
+                }
                 continue;
             }
             $id = $def['id'];
@@ -94,9 +98,8 @@ final class Readiness
                     $add($id, $title, $docsOf('uchreditelnye') !== [], '/admin/documents/new/?section=uchreditelnye');
                     break;
 
-                case 'dokumenty.b': // скан или текст правил (страница /pravila/)
-                    $ok = $docsOf('pravila') !== [] || $text('rules');
-                    $add($id, $title, $ok, $text('rules') ? '/admin/documents/new/?section=pravila' : $textFix('rules'));
+                case 'dokumenty.b': // приказ просит скан-копию: текст страницы /pravila/ её не заменяет
+                    $add($id, $docsOf('pravila') === [] ? $title . ': загрузите скан правил (текст на странице /pravila/ скан не заменяет)' : $title, $docsOf('pravila') !== [], '/admin/documents/new/?section=pravila');
                     break;
 
                 case 'dokumenty.v':
@@ -105,18 +108,17 @@ final class Readiness
                     break;
 
                 case 'rukovodstvo.a':
-                    $leaders = array_filter($people, static fn (array $m): bool => ($m['group'] ?? '') === 'leadership' && self::str($m['role'] ?? null) !== '');
-                    $add($id, $title, $leaders !== [], '/admin/team/new/');
+                    $named = array_filter($leaders, static fn (array $m): bool => self::str($m['role'] ?? null) !== '');
+                    $add($id, $title, $named !== [], '/admin/team/new/');
                     break;
 
                 case 'sostav.a':
-                    $bad = array_values(array_filter($people, static fn (array $m): bool => self::str($m['role'] ?? null) === ''
-                        || self::str($m['education'] ?? null) === '' || self::str($m['specialty'] ?? null) === '' || self::str($m['qualification'] ?? null) === ''));
+                    $bad = array_values(array_filter($pedagogical, static fn (array $m): bool => self::str($m['role'] ?? null) === '' || self::str($m['education'] ?? null) === ''));
                     $first = $bad[0]['id'] ?? null;
                     $add(
                         $id,
-                        $bad === [] ? $title : sprintf('%s: не заполнены должность, образование или квалификация у %d из %d', $title, count($bad), count($people)),
-                        $people !== [] && $bad === [],
+                        $bad === [] ? $title : sprintf('%s: не заполнены должность или уровень образования у %d из %d', $title, count($bad), count($pedagogical)),
+                        $pedagogical !== [] && $bad === [],
                         is_string($first) && $first !== '' ? "/admin/team/$first/" : '/admin/team/'
                     );
                     break;
@@ -131,7 +133,7 @@ final class Readiness
                     break;
 
                 case 'uslugi.b':
-                    $unpriced = array_values(array_filter($scope['season'], static fn (array $s): bool => !self::hasPrice($s)));
+                    $unpriced = array_values(array_filter($scope['season'], static fn (array $s): bool => PageData::price($s['price'] ?? null) === null));
                     $first = $unpriced[0] ?? null;
                     $add(
                         $id,
@@ -169,15 +171,27 @@ final class Readiness
         }
 
         // Предупреждения: запуск не блокируют
-        $open = array_filter($scope['season'], static fn (array $s): bool => in_array($s['status'] ?? null, ['open', 'few'], true));
-        $add('warn.openShifts', 'Нет смен с открытым набором в текущем и следующем году', $open !== [], '/admin/shifts/', 'warning', 'deyatelnost');
-        $ovz = array_filter($people, static fn (array $m): bool => !empty($m['ovzResponsible']));
-        $add('warn.ovz', 'Не указан сотрудник, ответственный за работу с детьми с ОВЗ и детьми-инвалидами', $ovz !== [], '/admin/team/', 'warning', 'sostav');
-
         $today = $now->format('Y-m-d');
+        $open = array_filter($scope['season'], static fn (array $s): bool => (string) $s['dateEnd'] >= $today && in_array($s['status'] ?? null, ['open', 'few'], true));
+        $add('warn.openShifts', 'Нет предстоящих смен с открытым набором в текущем и следующем году', $open !== [], '/admin/shifts/', 'warning', 'deyatelnost');
+        $ovz = array_filter(Staff::all($team), static fn (array $m): bool => !empty($m['ovzResponsible']));
+        $add('warn.ovz', 'Не указан сотрудник, ответственный за работу с детьми с ОВЗ и детьми-инвалидами', $ovz !== [], '/admin/team/', 'warning', 'sostav');
+        $thin = array_values(array_filter($pedagogical, static fn (array $m): bool => self::str($m['specialty'] ?? null) === '' || self::str($m['qualification'] ?? null) === ''));
+        if ($thin !== []) {
+            $first = $thin[0]['id'] ?? null;
+            $add(
+                'warn.staffDetails',
+                sprintf('У %d из %d сотрудников не заполнены направление подготовки / специальность или квалификация', count($thin), count($pedagogical)),
+                false,
+                is_string($first) && $first !== '' ? "/admin/team/$first/" : '/admin/team/',
+                'warning',
+                'sostav'
+            );
+        }
+
         foreach ($documents as $doc) {
             $date = $doc['date'] ?? null;
-            if (!in_array($doc['section'] ?? null, self::AGING_DOCUMENTS, true) || !self::hasFile($doc) || !is_string($date) || preg_match(self::DATE, $date) !== 1) {
+            if (!in_array($doc['section'] ?? null, self::AGING_DOCUMENTS, true) || PageData::docFile($doc) === null || !is_string($date) || preg_match(self::DATE, $date) !== 1) {
                 continue;
             }
             $age = (int) (new DateTimeImmutable($date))->diff(new DateTimeImmutable($today))->format('%r%a');
@@ -214,18 +228,18 @@ final class Readiness
      * @param list<array<string,mixed>> $shifts
      * @param list<array<string,mixed>> $venues
      * @return array{season:list<array<string,mixed>>, venues:list<array<string,mixed>>, unlinked:list<array<string,mixed>>}
-     *         season — видимые смены с началом в этом или следующем году; venues — их базы (нет смен — базы нескрытых смен);
+     *         season — нескрытые смены с началом в этом или следующем году (в том числе уже прошедшие); venues — их базы (нет смен — базы нескрытых смен);
      *         unlinked — смены, у которых база не выбрана или не найдена
      */
     public static function scope(array $shifts, array $venues, DateTimeImmutable $now): array
     {
-        $dated = array_values(array_filter($shifts, static fn (array $s): bool => is_string($s['dateStart'] ?? null) && is_string($s['dateEnd'] ?? null)
-            && preg_match(self::DATE, $s['dateStart']) === 1 && preg_match(self::DATE, $s['dateEnd']) === 1));
         $year = (int) $now->format('Y');
-        $season = array_values(array_filter(
-            Shifts::visible($dated, $now),
-            static fn (array $s): bool => in_array((int) substr((string) $s['dateStart'], 0, 4), [$year, $year + 1], true)
-        ));
+        // п. 8 б — даты смен «на календарный год»: смены года остаются в списке и после окончания
+        $season = array_values(array_filter($shifts, static fn (array $s): bool => empty($s['hidden'])
+            && is_string($s['dateStart'] ?? null) && is_string($s['dateEnd'] ?? null)
+            && preg_match(self::DATE, $s['dateStart']) === 1 && preg_match(self::DATE, $s['dateEnd']) === 1
+            && in_array((int) substr($s['dateStart'], 0, 4), [$year, $year + 1], true)));
+        usort($season, static fn (array $a, array $b): int => strcmp($a['dateStart'], $b['dateStart']));
         $basis = $season !== [] ? $season : array_values(array_filter($shifts, static fn (array $s): bool => empty($s['hidden'])));
 
         $bySlug = [];
@@ -265,18 +279,45 @@ final class Readiness
         return is_int($value) || is_float($value);
     }
 
-    /** Сотрудники для таблиц и проверки: без скрытых, по группам и порядку, как на /team/. @param list<array<string,mixed>> $team @return list<array<string,mixed>> */
-    public static function staff(array $team): array
+    /**
+     * Предупреждения о пустых необязательных пунктах: id opt.{пункт}[:{база}], запуск не блокируют.
+     *
+     * @param array<string,mixed> $def
+     * @param array<string,mixed> $texts
+     * @param array<string,mixed> $settings
+     * @param list<array<string,mixed>> $venues
+     */
+    private static function optionalWarnings(array $def, \Closure $add, array $texts, array $settings, array $venues, \Closure $docsOf): void
     {
-        $out = [];
-        $named = array_values(array_filter($team, static fn (array $m): bool => is_string($m['name'] ?? null) && (is_string($m['group'] ?? '') || !isset($m['group']))));
-        foreach (TeamPage::grouped($named) as $group) {
-            foreach ($group['members'] as $m) {
-                $out[] = $m;
-            }
-        }
+        [$kind, $source] = explode(':', $def['source'], 2);
+        $section = explode('.', $def['id'])[0];
+        $label = static fn (string $suffix = ''): string => sprintf('Пункт %s пуст%s: «%s» — заполните или подтвердите, что не применяется', $def['paragraph'], $suffix, $def['title']);
+        $id = 'opt.' . $def['id'];
 
-        return $out;
+        switch ($kind) {
+            case 'texts':
+                if (!self::filled($texts[$source] ?? null)) {
+                    $add($id, $label(), false, '/admin/texts/' . (self::registry()[$source]['group'] ?? 'svedeniya') . '/#' . $source, 'warning', $section);
+                }
+                break;
+            case 'settings':
+                if (!self::filled($settings[$source] ?? null)) {
+                    $add($id, $label(), false, '/admin/settings/#' . $source, 'warning', $section);
+                }
+                break;
+            case 'documents':
+                if ($docsOf($source) === []) {
+                    $add($id, $label(), false, '/admin/documents/new/?section=' . $source, 'warning', $section);
+                }
+                break;
+            case 'venues':
+                foreach ($venues as $venue) {
+                    if (!self::filled($venue[$source] ?? null)) {
+                        $add($id . ':' . self::str($venue['slug'] ?? null), $label(' (' . self::str($venue['name'] ?? null) . ')'), false, '/admin/venues/' . self::str($venue['id'] ?? null) . '/#' . $source, 'warning', $section);
+                    }
+                }
+                break;
+        }
     }
 
     /** @return list<array<string,mixed>> пункты 3–11 приказа */
@@ -298,22 +339,6 @@ final class Readiness
     private static function str(mixed $v): string
     {
         return is_string($v) ? trim($v) : '';
-    }
-
-    /** @param array<string,mixed> $doc */
-    private static function hasFile(array $doc): bool
-    {
-        $file = $doc['file'] ?? null;
-
-        return is_array($file) && self::str($file['url'] ?? null) !== '';
-    }
-
-    /** @param array<string,mixed> $shift */
-    private static function hasPrice(array $shift): bool
-    {
-        $price = $shift['price'] ?? null;
-
-        return (is_int($price) || (is_string($price) && ctype_digit($price))) && (int) $price > 0;
     }
 
     /** @return array<string,array<string,mixed>> */

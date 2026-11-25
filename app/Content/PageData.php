@@ -91,6 +91,22 @@ final class PageData
         }, self::lines($value));
     }
 
+    /** Цена смены в рублях: положительное целое (число или строка из цифр), иначе null. */
+    public static function price(mixed $value): ?int
+    {
+        $ok = is_int($value) || (is_string($value) && ctype_digit($value));
+
+        return $ok && (int) $value > 0 ? (int) $value : null;
+    }
+
+    /** Файл документа (`file`) с непустым url, иначе null. @param array<string,mixed> $doc @return array<string,mixed>|null */
+    public static function docFile(array $doc): ?array
+    {
+        $file = $doc['file'] ?? null;
+
+        return is_array($file) && is_string($file['url'] ?? null) && trim($file['url']) !== '' ? $file : null;
+    }
+
     /** «Что входит в стоимость» (texts home.included). @param array<string,mixed> $texts @return list<string> */
     public static function included(array $texts): array
     {

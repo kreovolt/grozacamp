@@ -44,6 +44,21 @@
             "onHome": false,
             "order": 10,
             "hidden": false
+        },
+        {
+            "id": "t00000000004",
+            "name": "Кузнецова Мария Игоревна",
+            "role": "Педагог-организатор",
+            "group": "pedagogue",
+            "education": "Высшее",
+            "specialty": "Педагогика",
+            "qualification": "Педагог",
+            "ovzResponsible": false,
+            "photo": null,
+            "about": "",
+            "onHome": false,
+            "order": 10,
+            "hidden": false
         }
     ]
 }
