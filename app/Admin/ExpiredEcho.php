@@ -43,7 +43,7 @@ final class ExpiredEcho
                     $truncated = true;
                 }
                 $left -= strlen($value);
-                $items[] = ['label' => self::label($path, $name), 'value' => $value];
+                $items[] = ['label' => mb_substr(self::label($path, $name), 0, 80), 'value' => self::isRichtext($path, $name) ? self::plain($value) : $value];
             }
         }
 
@@ -68,7 +68,36 @@ final class ExpiredEcho
 
     private static function secret(string $name): bool
     {
-        return $name === '_csrf' || $name === '_hash' || preg_match('/pass|token|secret|_csrf|_hash|confirm_empty/i', $name) === 1;
+        return $name === '_csrf' || $name === '_hash'
+            || preg_match('/pass|token|secret|_csrf|_hash|confirm_empty/i', $name) === 1
+            || preg_match('/(^|\[)(current|new|repeat|password|pass)(\]|\[|$)/i', $name) === 1;
+    }
+
+    /** Поле с оформлением: в браузере его значение — HTML редактора, человеку его показываем текстом. */
+    private static function isRichtext(string $path, string $name): bool
+    {
+        if (preg_match('/^text\[(.+)\]$/', $name, $m) === 1) {
+            return ($m[1] !== '' && (Readiness::registry()[$m[1]]['type'] ?? '') === 'richtext');
+        }
+        if (preg_match('#^/admin/([a-z0-9-]+)/(?:new|[a-f0-9]{12})/$#', $path, $m) === 1 && isset(Collections::all()[$m[1]])) {
+            foreach (Collections::get($m[1])['fields'] as $f) {
+                if ($f['name'] === $name) {
+                    return $f['type'] === 'richtext';
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /** HTML → текст: концы блоков и <br> становятся переводами строки, теги снимаются. */
+    private static function plain(string $html): string
+    {
+        $text = preg_replace('#<br\s*/?>|</(p|div|li|h[1-6]|blockquote)>#i', "\n", $html) ?? $html;
+        $text = html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = preg_replace("/[ \t]+\n/", "\n", $text) ?? $text;
+
+        return trim((string) preg_replace("/\n{3,}/", "\n\n", $text));
     }
 
     private static function label(string $path, string $name): string

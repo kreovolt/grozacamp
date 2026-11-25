@@ -10,6 +10,7 @@
  * @var string $hash
  * @var string $basedOn
  * @var bool $unsaved
+ * @var bool $editor есть ли в группе текст с оформлением (тогда подключается Trix)
  * @var string $conflictText
  * @var string $siteUrl
  * @var array{login:string,name:string}|null $user
@@ -18,7 +19,7 @@
 use function Groza\View\e;
 
 $title = 'Тексты: ' . $groups[$group];
-$this->layout('admin/layout', ['title' => $title, 'user' => $user, 'csrf' => $csrf, 'editor' => true]);
+$this->layout('admin/layout', ['title' => $title, 'user' => $user, 'csrf' => $csrf, 'editor' => $editor]);
 ?>
 <p class="back back-top"><a href="/admin/">← К разделам</a></p>
 <h1 class="h1"><?= e($groups[$group]) ?></h1>

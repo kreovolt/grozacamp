@@ -122,4 +122,31 @@ final class SanitizerTest extends TestCase
         $this->assertSame('', Sanitizer::clean(''));
         $this->assertSame('', Sanitizer::clean("  \n "));
     }
+
+    public function test_unlisted_formatting_tags_keep_their_text(): void
+    {
+        $this->assertSame('<p>a b c</p>', Sanitizer::clean('<p>a <span>b</span> <del>c</del></p>'));
+        $this->assertStringContainsString('1000', Sanitizer::clean('<p>Цена <s>1000</s> 900 ₽</p>'));
+        $this->assertSame('<p>Начало зачёркнуто конец</p>', Sanitizer::clean('<div>Начало <del>зачёркнуто</del> конец</div>'));
+        $this->assertStringContainsString('Код', Sanitizer::clean('<pre>Код</pre>'));
+        $this->assertSame('<p>x</p>', Sanitizer::clean('<html><body><p>x</p>'));
+        foreach (['<sup>2</sup>', '<small>мелко</small>', '<table><tr><td>ячейка</td></tr></table>', '<section><p>секция</p></section>', '<code>код</code>', '<u>подч</u>'] as $html) {
+            $this->assertNotSame('', Sanitizer::clean($html), $html);
+        }
+        $this->assertStringContainsString('ячейка', Sanitizer::clean('<table><tr><td>ячейка</td></tr></table>'));
+    }
+
+    public function test_dangerous_elements_still_dropped_with_content(): void
+    {
+        $this->assertSame('', Sanitizer::clean('<script>evil</script>'));
+        $this->assertSame('<p>a</p>', Sanitizer::clean('<p>a</p><style>p{}</style><iframe>evil</iframe><svg><text>evil</text></svg><template>evil</template>'));
+    }
+
+    public function test_nested_anchor_cannot_smuggle_protocol_relative_href(): void
+    {
+        $out = Sanitizer::clean('<a href="https://ok.example">1<a href="//evil.example">x</a></a>');
+        $this->assertStringNotContainsString('evil.example', $out);
+        $this->assertStringContainsString('x', $out);
+        $this->assertSame(substr_count($out, '<a href="https'), substr_count($out, 'rel="noopener noreferrer"'));
+    }
 }

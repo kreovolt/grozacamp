@@ -177,4 +177,13 @@ final class SettingsControllerTest extends TestCase
         $this->assertSame(419, AdminHttp::post($this->app, '/admin/settings/', ['_hash' => $hash, 'settings' => ['phone' => '+79990000000']])->status());
         $this->assertSame($hash, $this->app->store()->hash('settings'));
     }
+
+    public function test_audit_only_when_data_changed(): void
+    {
+        $count = fn (): int => count(array_filter(array_column($this->app->audit()->recent(50), 'action'), fn ($a) => $a === 'settings.update'));
+        $this->save(['hoursWeekend' => 'Сб–Вс 10:00–15:00']);
+        $this->assertSame(1, $count());
+        $this->save(['hoursWeekend' => 'Сб–Вс 10:00–15:00']);
+        $this->assertSame(1, $count());
+    }
 }

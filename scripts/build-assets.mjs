@@ -30,6 +30,15 @@ const TRIX_INLINE_CSS = 'const installDefaultCSSForTagName = function (tagName, 
 const trixNoInlineStyle = {
   name: 'trix-no-inline-style',
   setup(build) {
+    // Сборка должна брать только trix.esm.js: другой файл Trix (например, минифицированный) мог бы вернуть вставку <style>
+    build.onResolve({ filter: /^trix(\/|$)/ }, (args) => {
+      if (args.path !== 'trix/dist/trix.esm.js') throw new Error('Trix подключён как «' + args.path + '»: нужен только trix/dist/trix.esm.js (в нём убрана вставка <style>)');
+      return undefined;
+    });
+    build.onLoad({ filter: /node_modules[\\/]trix[\\/].*\.js$/ }, (args) => {
+      if (!/trix[\\/]dist[\\/]trix\.esm\.js$/.test(args.path)) throw new Error('В сборку попал файл Trix ' + args.path + ': нужен только trix.esm.js');
+      return undefined;
+    });
     build.onLoad({ filter: /trix[\\/]dist[\\/]trix\.esm\.js$/ }, (args) => {
       const source = readFileSync(args.path, 'utf8');
       if (!source.includes(TRIX_INLINE_CSS)) {

@@ -231,7 +231,7 @@ final class TextsControllerTest extends TestCase
         $this->assertSame(419, $res->status());
         $body = $res->body();
         $this->assertStringContainsString('Скопируйте текст, войдите заново и вставьте его', $body);
-        $this->assertStringContainsString('Набранное полчаса &lt;script&gt;alert(1)&lt;/script&gt; &amp; &quot;кавычки&quot;', $body);
+        $this->assertStringContainsString('Набранное полчаса alert(1) &amp; &quot;кавычки&quot;', $body);
         $this->assertStringContainsString('Вторая правка', $body);
         $this->assertStringContainsString('readonly', $body);
         $this->assertStringNotContainsString('<script>alert(1)', $body);
@@ -278,7 +278,8 @@ final class TextsControllerTest extends TestCase
         $res = AdminHttp::post($this->app, '/admin/shifts/' . $shift['id'] . '/', ['title' => 'Моё название', 'body' => '<p>Длинное описание</p>']);
         $this->assertSame(419, $res->status());
         $this->assertStringContainsString('Моё название', $res->body());
-        $this->assertStringContainsString('&lt;p&gt;Длинное описание&lt;/p&gt;', $res->body());
+        $this->assertStringContainsString('Длинное описание', $res->body());
+        $this->assertStringNotContainsString('&lt;p&gt;', $res->body(), 'поле с оформлением показано текстом');
     }
 
     public function test_csrf_required_for_texts_post(): void
@@ -319,5 +320,53 @@ final class TextsControllerTest extends TestCase
     public function test_csrf_token_present(): void
     {
         $this->assertStringContainsString(Csrf::token(), AdminHttp::get($this->app, '/admin/texts/home/')->body());
+    }
+
+    public function test_expired_echo_richtext_as_text_with_line_breaks_and_draft_note(): void
+    {
+        $res = AdminHttp::post($this->app, '/admin/texts/info/', ['text' => ['info.prepare' => '<p>Первый абзац</p><ul><li>пункт один</li><li>пункт два</li></ul><p>Конец<br>строка</p>']]);
+        $this->assertSame(419, $res->status());
+        $this->assertStringContainsString("Первый абзац
+пункт один
+пункт два
+Конец
+строка</textarea>", $res->body());
+        $this->assertStringContainsString('хранится в этом браузере', $res->body());
+    }
+
+    public function test_expired_echo_long_label_cut_and_password_like_fields_skipped(): void
+    {
+        $res = AdminHttp::post($this->app, '/admin/anything/', [str_repeat('Я', 300) => 'значение', 'current' => 'old-secret-1', 'form' => ['new' => 'new-secret-2', 'repeat' => 'rep-secret-3', 'Password' => 'pw-secret-4']]);
+        $this->assertSame(419, $res->status());
+        $this->assertStringContainsString(str_repeat('Я', 80), $res->body());
+        $this->assertStringNotContainsString(str_repeat('Я', 81), $res->body());
+        foreach (['old-secret-1', 'new-secret-2', 'rep-secret-3', 'pw-secret-4'] as $secret) {
+            $this->assertStringNotContainsString($secret, $res->body());
+        }
+        $this->assertStringContainsString('значение', $res->body());
+    }
+
+    public function test_422_keeps_long_text_in_full(): void
+    {
+        $long = '<p>' . str_repeat('Длинный абзац. ', 600) . '</p>';
+        $res = $this->save('svedeniya', ['sved.fullName' => '', 'sved.mode' => $long]);
+        $this->assertSame(422, $res->status());
+        $this->assertGreaterThan(3, substr_count($res->body(), 'Длинный абзац. Длинный абзац. Длинный абзац. Длинный абзац.'));
+        $this->assertSame(1, preg_match('#Длинный абзац\.( Длинный абзац\.){599}#u', html_entity_decode($res->body())));
+    }
+
+    public function test_audit_only_when_data_changed(): void
+    {
+        $count = fn (): int => count(array_filter($this->actions(), fn ($a) => $a === 'texts.update'));
+        $this->save('home', ['home.heroTitle' => 'Заголовок для журнала']);
+        $this->assertSame(1, $count());
+        $this->save('home', ['home.heroTitle' => 'Заголовок для журнала']);
+        $this->assertSame(1, $count(), 'без изменений записи в журнале нет');
+    }
+
+    public function test_editor_bundle_only_on_groups_with_richtext(): void
+    {
+        $this->assertStringNotContainsString('admin-editor', AdminHttp::get($this->app, '/admin/texts/home/')->body());
+        $this->assertStringContainsString('admin-editor.js', AdminHttp::get($this->app, '/admin/texts/vacancies/')->body());
     }
 }

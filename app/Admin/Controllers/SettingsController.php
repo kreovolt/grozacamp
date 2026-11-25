@@ -122,8 +122,8 @@ final class SettingsController
             } catch (ConflictException) {
                 return $this->render($values, [], [], 409, self::MSG_CONFLICT, false, null, $postedHash);
             }
+            $this->app->audit()->record($this->app->actor(), 'settings.update', 'settings');
         }
-        $this->app->audit()->record($this->app->actor(), 'settings.update', 'settings');
 
         return Response::redirect('/admin/settings/?saved=1', 303);
     }

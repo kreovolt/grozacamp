@@ -99,7 +99,7 @@ final class TextsController
             $value = self::normalize($def['type'], $raw);
             if ($value === null) {
                 $errors[$key] = self::TOO_LONG;
-                $values[$key] = mb_substr($raw, 0, 2000);
+                $values[$key] = mb_substr($raw, 0, self::MAX_RICH);
                 continue;
             }
             $clean[$key] = $value;
@@ -118,14 +118,14 @@ final class TextsController
         }
 
         $next = array_replace($stored, $clean);
-        if ($next !== $stored) {
+        if ($next !== $stored) { // ничего не изменилось — ни записи, ни строки в журнале
             try {
                 $store->write('texts', $next, $this->app->actor(), $postedHash);
             } catch (ConflictException) {
                 return $this->render($group, $values, [], [], 409, self::MSG_CONFLICT, false, null, $postedHash);
             }
+            $this->app->audit()->record($this->app->actor(), 'texts.update', $group);
         }
-        $this->app->audit()->record($this->app->actor(), 'texts.update', $group);
 
         return Response::redirect('/admin/texts/' . $group . '/?saved=1', 303);
     }
@@ -244,6 +244,7 @@ final class TextsController
             'hash' => $hash ?? $now,
             'basedOn' => $basedOn ?? $hash ?? $now,
             'unsaved' => $status !== 200,
+            'editor' => (bool) array_filter($fields, static fn (array $f): bool => $f['type'] === 'richtext'),
             'conflictText' => self::MSG_CONFLICT,
             'siteUrl' => ['home' => '/', 'info' => '/info/', 'svedeniya' => '/svedeniya/', 'vacancies' => '/vacancies/', 'legal' => '/policy/'][$group],
         ]), $status);
