@@ -16,6 +16,7 @@ final class ImageProcessor
     private const BYTES_PER_PIXEL = 5;        // раскодированная картинка + копия при масштабировании
     private const BYTES_PER_PIXEL_ROTATE = 9; // imagerotate держит рядом ещё одну полноразмерную копию
     private const RAISED_MEMORY = 268435456;  // 256 МБ
+    private const TOO_LITTLE_MEMORY = 'Серверу не хватает памяти для обработки фото. Сообщите разработчику.';
     private const REQUIRED = ['imagewebp', 'imagecreatefromjpeg', 'imagecreatefrompng', 'finfo_open'];
 
     /** @var \Closure(string):bool */
@@ -131,7 +132,7 @@ final class ImageProcessor
             }
         }
         $mp = intdiv(max(1, (int) floor($w * $lo)) * max(1, (int) floor($h * $lo)), 1000000);
-        throw new UploadException('Фото слишком большое: уменьшите до ' . max(1, $mp) . ' мегапикселей');
+        throw new UploadException($mp < 1 ? self::TOO_LITTLE_MEMORY : 'Фото слишком большое: уменьшите до ' . $mp . ' мегапикселей');
     }
 
     /**
@@ -150,6 +151,9 @@ final class ImageProcessor
         // поворот по EXIF (3, 5–8) требует второй полноразмерной копии — бюджет памяти считаем с учётом этого
         $orientation = $type === IMAGETYPE_JPEG ? $this->orientation($path) : 1;
         $maxPixels = $this->effectiveMaxPixels(in_array($orientation, [3, 5, 6, 7, 8], true));
+        if ($maxPixels < 1) { // памяти не хватает даже на запас PHP: «уменьшите до 1 Мп» было бы неправдой
+            throw new UploadException(self::TOO_LITTLE_MEMORY);
+        }
         if ($srcW * $srcH > $maxPixels) {
             throw new UploadException('Фото слишком большое: уменьшите до ' . max(1, intdiv($maxPixels, 1000000)) . ' мегапикселей');
         }
@@ -166,7 +170,11 @@ final class ImageProcessor
         if ($img === false) {
             throw new UploadException('Не удалось прочитать фото. Откройте его и сохраните заново как JPEG');
         }
+        // Варианты строятся во временной папке и переносятся на место только когда готовы все: если PHP оборвётся
+        // по памяти (фатальная ошибка, finally не выполняется), в папке загрузок не останется «половины» фото под настоящими именами.
+        $tmpDir = $destDir . '/.tmp-' . $base;
         $made = [];
+        $moved = [];
         try {
             if ($type === IMAGETYPE_JPEG) {
                 $this->orient($img, $orientation);
@@ -181,6 +189,10 @@ final class ImageProcessor
             if (!is_dir($destDir) && !@mkdir($destDir, 0755, true) && !is_dir($destDir)) {
                 throw new UploadException('Не удалось сохранить фото. Попробуйте ещё раз');
             }
+            $this->removeDir($tmpDir);
+            if (!@mkdir($tmpDir, 0755) && !is_dir($tmpDir)) {
+                throw new UploadException('Не удалось сохранить фото. Попробуйте ещё раз');
+            }
             $out = ['w' => 0, 'h' => 0];
             foreach ($sizes as $tw) {
                 $th = max(1, (int) round($h * $tw / $w));
@@ -188,7 +200,7 @@ final class ImageProcessor
                 // у JPEG прозрачности нет, значит одна уменьшенная картинка годится и для WebP, и для JPEG;
                 // с прозрачностью (PNG/WebP) промежуточная картинка для WebP освобождается до создания плоской копии для JPEG.
                 $scaled = $tw === $w && $th === $h ? $img : $this->scale($img, $w, $h, $tw, $th);
-                $made[] = $webp = "$destDir/$base-$tw.webp";
+                $made[] = $webp = "$tmpDir/$base-$tw.webp";
                 $okWebp = @imagewebp($scaled, $webp, self::WEBP_QUALITY);
                 if ($hasAlpha) {
                     unset($scaled);
@@ -198,7 +210,7 @@ final class ImageProcessor
                     unset($scaled);
                 }
                 imageinterlace($flat, true); // progressive
-                $made[] = $jpg = "$destDir/$base-$tw.jpg";
+                $made[] = $jpg = "$tmpDir/$base-$tw.jpg";
                 $okJpg = @imagejpeg($flat, $jpg, self::JPEG_QUALITY);
                 unset($flat);
                 if (!$okWebp || !$okJpg) {
@@ -208,16 +220,39 @@ final class ImageProcessor
                 @chmod($jpg, 0644);
                 $out = ['w' => $tw, 'h' => $th];
             }
+            unset($img); // перед переносом память уже не нужна
+            foreach ($made as $file) {
+                $to = $destDir . '/' . basename($file);
+                if (!@rename($file, $to)) {
+                    throw new UploadException('Не удалось сохранить фото. Попробуйте ещё раз');
+                }
+                $moved[] = $to;
+            }
         } catch (\Throwable $e) {
-            foreach ($made as $f) {
+            foreach ([...$made, ...$moved] as $f) {
                 @unlink($f);
             }
             throw $e;
         } finally {
             unset($img);
+            $this->removeDir($tmpDir);
         }
 
         return ['src' => $base, 'widths' => $sizes, 'formats' => ['webp', 'jpg'], 'w' => $out['w'], 'h' => $out['h']];
+    }
+
+    /** Удаляет временную папку вместе с файлами первого уровня (вложенных в ней не бывает). */
+    private function removeDir(string $dir): void
+    {
+        if (!is_dir($dir)) {
+            return;
+        }
+        foreach (scandir($dir) ?: [] as $name) {
+            if (is_file($dir . '/' . $name)) {
+                @unlink($dir . '/' . $name);
+            }
+        }
+        @rmdir($dir);
     }
 
     /** Ширины строго меньше исходной, плюс сама исходная (но не больше максимальной из списка): 400 px → [400]. @param list<int> $widths @return list<int> */

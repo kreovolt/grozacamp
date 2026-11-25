@@ -58,6 +58,13 @@ if (!$force && $orphans !== []) {
 }
 
 $failed = 0;
+if (!$dry) {
+    $swept = $uploads->sweepTemp($minAge);
+    if ($swept > 0) {
+        fwrite(STDOUT, "removed temp dirs: $swept
+");
+    }
+}
 foreach ($orphans as $url) {
     if ($dry) {
         fwrite(STDOUT, "would delete $url\n");

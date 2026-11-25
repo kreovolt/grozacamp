@@ -197,6 +197,33 @@ final class Uploads
         return $orphans;
     }
 
+    /**
+     * Убирает временные папки `.tmp-*` обработки фото, оставшиеся от оборвавшихся запросов (PHP упал по памяти).
+     * Папки моложе `$minAge` секунд не трогаем — их может заполнять идущий сейчас запрос.
+     *
+     * @return int сколько папок убрано
+     */
+    public function sweepTemp(int $minAge = 3600): int
+    {
+        $n = 0;
+        $now = time();
+        foreach (glob($this->baseDir . '/img/.tmp-*', GLOB_ONLYDIR) ?: [] as $dir) {
+            if (is_link($dir) || $now - (int) filemtime($dir) < $minAge) {
+                continue;
+            }
+            foreach (scandir($dir) ?: [] as $name) {
+                if (is_file($dir . '/' . $name) && !is_link($dir . '/' . $name)) {
+                    @unlink($dir . '/' . $name);
+                }
+            }
+            if (@rmdir($dir)) {
+                $n++;
+            }
+        }
+
+        return $n;
+    }
+
     /** Все загруженные файлы: адрес (для фото — адрес-основа) → время изменения самого свежего файла. @return array<string,int> */
     public function inventory(): array
     {

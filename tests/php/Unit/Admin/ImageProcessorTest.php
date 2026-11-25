@@ -172,6 +172,53 @@ final class ImageProcessorTest extends TestCase
         }
     }
 
+    public function test_peak_memory_of_scaled_output_stays_within_the_estimate(): void
+    {
+        // широкая картинка уменьшается до 1600 px: пик ≈ 6 Б/пикс исходника + 9,5 Б/пикс результата (PNG с прозрачностью)
+        $path = $this->tallFile('png', 2400, 1200);
+        [$peak, $n] = $this->peakOf($path, 512 * 1048576);
+        $out = 1600 * 800;
+        $this->assertLessThanOrEqual(6 * $n + (int) (9.5 * $out) + 2 * 1048576, $peak, "пик {$peak} Б, исходник $n пикселей");
+        unlink($path);
+        foreach (glob($this->dir . '/abcd*') as $f) {
+            unlink($f);
+        }
+    }
+
+    public function test_memory_budget_below_reserve_gives_server_message_not_one_megapixel(): void
+    {
+        $p = new ImageProcessor(memoryLimit: 16 * 1048576);
+        $this->assertSame(0, $p->effectiveMaxPixels());
+        try {
+            $p->process($this->fx('upright.jpg'), $this->dir, 'abcd1234abcd1234');
+            $this->fail('нужно исключение');
+        } catch (UploadException $e) {
+            $this->assertStringNotContainsString('1 мегапикс', $e->getMessage());
+            $this->assertStringContainsString('Сообщите разработчику', $e->getMessage());
+        }
+        $this->assertSame([], $this->files());
+    }
+
+    public function test_variants_are_built_in_a_temp_dir_that_never_stays_behind(): void
+    {
+        $stale = $this->dir . '/.tmp-abcd1234abcd1234'; // остаток прерванной (по памяти) обработки
+        mkdir($stale);
+        file_put_contents($stale . '/abcd1234abcd1234-480.webp', 'junk');
+
+        $d = $this->proc('upright.jpg');
+        $this->assertDirectoryDoesNotExist($stale);
+        foreach ($d['widths'] as $w) {
+            $this->assertNotSame('junk', file_get_contents("{$this->dir}/abcd1234abcd1234-$w.webp"));
+        }
+        $this->assertSame([], glob($this->dir . '/.tmp-*') ?: []);
+
+        try {
+            $this->proc('fake.jpg');
+        } catch (UploadException) {
+        }
+        $this->assertSame([], glob($this->dir . '/.tmp-*') ?: []);
+    }
+
     public function test_narrow_tall_photo_that_would_not_fit_is_rejected_gracefully(): void
     {
         $path = $this->tallFile('jpg'); // 2,88 Мп: нужно ≈ 10,5 Б/пикс = 30 МБ + 32 МБ запаса

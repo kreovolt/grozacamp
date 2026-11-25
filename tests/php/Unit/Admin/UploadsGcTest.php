@@ -96,6 +96,24 @@ final class UploadsGcTest extends TestCase
         $this->assertFileExists($this->uploads . '/docs/keep.pdf');
     }
 
+    public function test_sweeps_stale_temp_dirs_of_interrupted_photo_processing(): void
+    {
+        $this->data(2);
+        $this->doc('keep.pdf');
+        mkdir($this->uploads . '/img/.tmp-abcd', 0777, true);
+        file_put_contents($this->uploads . '/img/.tmp-abcd/abcd-480.webp', 'half');
+
+        [$code, $out] = $this->gc(['--dry-run']);
+        $this->assertSame(0, $code, $out);
+        $this->assertDirectoryExists($this->uploads . '/img/.tmp-abcd', 'dry-run ничего не удаляет');
+
+        [$code, $out] = $this->gc();
+        $this->assertSame(0, $code, $out);
+        clearstatcache();
+        $this->assertDirectoryDoesNotExist($this->uploads . "/img/.tmp-abcd");
+        $this->assertFileExists($this->uploads . '/docs/keep.pdf');
+    }
+
     public function test_dry_run_deletes_nothing(): void
     {
         $this->data(2);
