@@ -19,11 +19,11 @@ if ($items === []) {
   <?php foreach ($items as $item): ?>
     <details class="group border-b border-dashed border-moss/45">
       <summary class="flex items-start justify-between gap-6 py-5 text-[1.0625rem] font-bold leading-snug text-ink transition-colors hover:text-rust-deep sm:text-lg">
-        <span><?= e((string) $item['question']) ?></span>
+        <span><?= e((string) ($item['question'] ?? '')) ?></span>
         <?= icon('chevron-down', 'mt-0.5 size-6 text-rust-dark transition-transform duration-200 group-open:rotate-180') ?>
       </summary>
       <div class="richtext max-w-[62ch] pb-6 pr-8 leading-relaxed text-ink-soft">
-        <?= richtext((string) $item['answer']) ?>
+        <?= richtext((string) ($item['answer'] ?? '')) ?>
       </div>
     </details>
   <?php endforeach ?>

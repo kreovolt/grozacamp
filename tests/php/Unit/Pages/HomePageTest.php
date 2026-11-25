@@ -231,6 +231,41 @@ final class HomePageTest extends TestCase
         $this->assertStringContainsString('href="https://vk.com/topic-185063757_43871120"', $reviews);
     }
 
+    public function test_reviews_link_wording_matches_where_it_leads(): void
+    {
+        $app = TestApp::make();
+        $quotes = $this->block(TestApp::get($app, '/')->body(), 'reviews');
+        $this->assertStringContainsString('Ещё отзывы во ВКонтакте', $quotes);
+
+        // ссылка на обсуждение не задана — ведём в группу, и подпись не обещает «отзывы»
+        $app->store()->write('settings', ['vkReviewsUrl' => ''] + $app->store()->read('settings'), 'test');
+        $quotes = $this->block(TestApp::get($app, '/')->body(), 'reviews');
+        $this->assertStringContainsString('href="https://vk.com/grozacamp"', $quotes);
+        $this->assertStringNotContainsString('Ещё отзывы', $quotes);
+        $this->assertStringContainsString('Мы во ВКонтакте', $quotes);
+
+        $app->store()->write('reviews', ['items' => []], 'test');
+        $empty = $this->block(TestApp::get($app, '/')->body(), 'reviews');
+        $this->assertStringNotContainsString('Читать отзывы', $empty);
+        $this->assertStringContainsString('Группа ВКонтакте', $empty);
+    }
+
+    public function test_incomplete_records_do_not_break_the_home_page(): void
+    {
+        $app = TestApp::make();
+        $venues = $app->store()->read('venues');
+        unset($venues['items'][0]['name']);
+        $app->store()->write('venues', $venues, 'test');
+        $shifts = $app->store()->read('shifts');
+        unset($shifts['items'][0]['title']);
+        $app->store()->write('shifts', $shifts, 'test');
+        $faq = $app->store()->read('faq');
+        unset($faq['items'][0]['question'], $faq['items'][0]['answer']);
+        $app->store()->write('faq', $faq, 'test');
+        $this->assertSame(200, TestApp::get($app, '/')->status());
+        $this->assertSame(200, TestApp::get($app, '/info/')->status());
+    }
+
     public function test_base_block_shows_venues_with_visible_shifts(): void
     {
         $app = TestApp::make();

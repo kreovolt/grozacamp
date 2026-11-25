@@ -31,7 +31,7 @@ $cell = 'px-3 py-2.5 first:pl-0 max-md:block max-md:px-0 max-md:py-1 max-md:befo
   <tbody>
     <?php foreach ($shifts as $s): ?>
       <tr class="border-b border-dashed border-moss/45 align-top max-md:block max-md:py-3">
-        <td data-label="<?= e($cols[0]) ?>" class="<?= $cell ?> font-semibold text-ink"><?= e($s['title']) ?></td>
+        <td data-label="<?= e($cols[0]) ?>" class="<?= $cell ?> font-semibold text-ink"><?= e((string) ($s['title'] ?? '')) ?></td>
         <td data-label="<?= e($cols[1]) ?>" class="<?= $cell ?> whitespace-nowrap max-md:whitespace-normal"><?= e($s['dates']) ?></td>
         <td data-label="<?= e($cols[2]) ?>" class="<?= $cell ?> tabular"><?= (int) $s['days'] ?></td>
         <?php if ($prices): ?>

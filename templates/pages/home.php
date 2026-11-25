@@ -16,6 +16,7 @@ declare(strict_types=1);
  * @var list<array<string,mixed>> $faq
  * @var list<array<string,mixed>> $reviews
  * @var string $reviewsUrl
+ * @var bool $reviewsIsThread  ссылка ведёт на обсуждение с отзывами (а не на группу)
  * @var array<string,mixed> $settings
  */
 use Groza\Pages\HomePage;
@@ -315,7 +316,7 @@ $steps = [
         ?>
         <div class="mt-10 grid gap-8 lg:grid-cols-[minmax(0,19rem)_minmax(0,1fr)] lg:gap-12">
           <div class="lg:pt-2">
-            <h3 class="font-display text-[1.75rem] font-bold uppercase leading-tight tracking-[0.02em] text-ink"><?= e((string) $venue['name']) ?></h3>
+            <h3 class="font-display text-[1.75rem] font-bold uppercase leading-tight tracking-[0.02em] text-ink"><?= e((string) ($venue['name'] ?? '')) ?></h3>
             <?php if (!empty($venue['address'])): ?>
               <p class="mt-3 flex items-start gap-2 leading-snug text-ink-soft"><?= icon('map-pin', 'mt-0.5 size-[1.125rem] text-moss') ?><span><?= e((string) $venue['address']) ?></span></p>
             <?php endif ?>
@@ -328,7 +329,7 @@ $steps = [
             <ul data-reveal class="grid auto-rows-[8.5rem] grid-cols-2 gap-3 sm:auto-rows-[11rem] sm:grid-cols-4 sm:gap-4" role="list">
               <?php foreach ($photos as $i => $img): ?>
                 <li class="<?= $i === 0 ? 'col-span-2 row-span-2 ' : '' ?>overflow-hidden rounded-card bg-sand-deep">
-                  <?= picture($img, (string) ($img['alt'] ?? $venue['name'] . ': фото ' . ($i + 1) . ' из ' . count($photos)), $i === 0 ? '(min-width: 1024px) 32rem, 100vw' : '(min-width: 1024px) 16rem, 50vw', false, 'h-full w-full object-cover') ?>
+                  <?= picture($img, (string) ($img['alt'] ?? ($venue['name'] ?? 'База') . ': фото ' . ($i + 1) . ' из ' . count($photos)), $i === 0 ? '(min-width: 1024px) 32rem, 100vw' : '(min-width: 1024px) 16rem, 50vw', false, 'h-full w-full object-cover') ?>
                 </li>
               <?php endforeach ?>
             </ul>
@@ -373,13 +374,13 @@ $steps = [
           <?php endif ?>
         </div>
         <?php if ($reviewsUrl !== ''): ?>
-          <a class="<?= $moreLink ?> mt-8" href="<?= e($reviewsUrl) ?>" rel="noopener" target="_blank">Ещё отзывы во ВКонтакте<?= $moreArrow ?></a>
+          <a class="<?= $moreLink ?> mt-8" href="<?= e($reviewsUrl) ?>" rel="noopener" target="_blank"><?= $reviewsIsThread ? 'Ещё отзывы во ВКонтакте' : 'Мы во ВКонтакте' ?><?= $moreArrow ?></a>
         <?php endif ?>
       <?php else: ?>
         <div class="mt-8 flex flex-col items-start gap-5 rounded-card border-2 border-dashed border-moss/45 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
           <p class="max-w-[52ch] text-lg leading-snug text-ink">Родители рассказывают о сменах в обсуждении в нашей группе ВКонтакте. Почитайте, как ребятам у нас.</p>
           <?= $this->partial('components/button', [
-              'label' => 'Читать отзывы',
+              'label' => $reviewsIsThread ? 'Читать отзывы' : 'Группа ВКонтакте',
               'href' => $reviewsUrl,
               'variant' => 'outline',
               'icon' => 'vk',

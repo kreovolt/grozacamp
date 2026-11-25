@@ -65,6 +65,7 @@ final class HomePage
                 $this->items('reviews'),
                 static fn (array $item): bool => !empty($item['visible']) && trim((string) ($item['text'] ?? '')) !== ''
             )), 0, self::REVIEWS_LIMIT),
+            'reviewsIsThread' => safe_url((string) ($settings['vkReviewsUrl'] ?? '')) !== '',
             'reviewsUrl' => safe_url((string) (($settings['vkReviewsUrl'] ?? '') ?: ($settings['vk'] ?? ''))) ?: safe_url((string) ($settings['vk'] ?? '')),
         ]));
     }
@@ -118,7 +119,7 @@ final class HomePage
                 continue;
             }
             $out[$slug] ??= ['venue' => $venues[$slug], 'shifts' => []];
-            $out[$slug]['shifts'][] = (string) $shift['title'];
+            $out[$slug]['shifts'][] = (string) ($shift['title'] ?? '');
         }
 
         return array_values($out);
