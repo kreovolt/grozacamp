@@ -114,6 +114,12 @@ function initDraft(form) {
   // Форма показана после отказа (409/422): значения в ней — несохранённый ввод человека, а не данные сервера.
   // Такой черновик не удаляем, пока ввод не сохранён (иначе при истёкшей сессии текст пропал бы).
   const unsaved = form.hasAttribute('data-draft-unsaved');
+  const isNew = /\/new\/$/.test(location.pathname);
+  // Состояние файла, на котором основан ввод: у обычной формы — её _hash, у страницы после отказа сервер даёт прежний (data-based-on).
+  // В черновик попадает только это значение (отдельным ключом); сам _hash формы в черновик и обратно не ходит никогда.
+  let base = form.getAttribute('data-based-on') || (hashField ? hashField.value : '');
+  let conflict = form.hasAttribute('data-draft-conflict');
+  const formHash = hashField ? hashField.value : '';
 
   // Успешное сохранение: сервер вернул ?saved=1 — черновик (и черновик «новой записи») больше не нужен
   // Один раз: адрес очищается от saved/created, чтобы обновление страницы потом не стирало новый ввод.
@@ -135,11 +141,19 @@ function initDraft(form) {
   const notice = document.querySelector('[data-draft-notice]');
   if (draft && !same(draft.values, server)) {
     apply(form, draft.values);
-    // Черновик писался при том состоянии файла, которое было открыто тогда: если за это время кто-то сохранил,
-    // сервер ответит «кто-то сохранил» и покажет введённое, а не затрёт чужое молча.
-    // (для новой записи чужое сохранение ничего не перетирает — берём свежий хеш)
-    if (hashField && !/\/new\/$/.test(location.pathname) && typeof draft.hash === 'string' && draft.hash !== '') hashField.value = draft.hash;
-    if (notice) notice.hidden = false;
+    // _hash остаётся тем, что отдал сервер сейчас: человек видит нынешнее состояние записи. Предупреждаем словами.
+    if (typeof draft.base === 'string') base = draft.base;
+    conflict = draft.conflict === true;
+    if (notice) {
+      notice.hidden = false;
+      const text = notice.querySelector('[data-draft-text]');
+      if (text && !isNew) text.textContent = text.getAttribute('data-existing') || text.textContent;
+    }
+    if (!isNew) {
+      const changed = base !== '' && base !== formHash;
+      const banner = document.querySelector('[data-draft-banner="' + (conflict ? 'conflict' : 'changed') + '"]');
+      if (banner && (conflict || changed)) banner.hidden = false;
+    }
   }
 
   const persist = () => {
@@ -148,7 +162,7 @@ function initDraft(form) {
       remove(key);
       return;
     }
-    write(key, { at: Date.now(), hash: hashField ? hashField.value : '', values: now });
+    write(key, { at: Date.now(), base: base, conflict: conflict, values: now });
   };
 
   const cancel = document.querySelector('[data-draft-cancel]');

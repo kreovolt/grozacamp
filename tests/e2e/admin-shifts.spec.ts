@@ -223,3 +223,36 @@ test('ошибка в выборе (радиокнопки): фокус на к�
   await expect(page.locator('#f-status-error')).toBeVisible();
   await expect(page.locator('fieldset input[name=status]').first()).toBeFocused();
 });
+
+test('409 → возврат на страницу: плашка о конфликте есть, _hash формы свежий, в черновике _hash нет', async ({ page, browser }) => {
+  await login(page);
+  await openShift(page, 'Штурмовик');
+  const url = page.url();
+  const other = await browser.newContext({ baseURL: ADMIN, viewport: { width: 375, height: 812 } });
+  const page2 = await other.newPage();
+  await login(page2);
+  await openShift(page2, 'Штурмовик');
+  await page2.getByLabel('Коротко о смене').fill('Чужая правка');
+  await page2.getByRole('button', { name: 'Сохранить' }).click();
+  await expect(page2.locator('.alert-ok')).toContainText('Сохранено');
+
+  await page.getByLabel('Коротко о смене').fill('Моя правка после чужой');
+  await page.getByRole('button', { name: 'Сохранить' }).click();
+  await expect(page.getByRole('alert').first()).toContainText('кто-то сохранил изменения');
+  await page.waitForTimeout(300);
+
+  await page.goto(url); // вернулись на страницу позже: баннера сервера уже нет, есть черновик
+  await expect(page.getByLabel('Коротко о смене')).toHaveValue('Моя правка после чужой');
+  await expect(page.getByText('Пока вас не было, запись могли изменить')).toBeVisible();
+  await expect(page.locator('[data-draft-banner="conflict"]')).toBeVisible();
+  await expect(page.locator('[data-draft-banner="conflict"]')).toContainText('Пока вы редактировали, кто-то сохранил изменения');
+
+  const formHash = await page.locator('input[name=_hash]').inputValue();
+  await page2.goto(url);
+  expect(await page2.locator('input[name=_hash]').inputValue()).toBe(formHash); // свежий, как у сервера сейчас
+  const draft = await page.evaluate(() => window.localStorage.getItem('draft:' + window.location.pathname) ?? '');
+  expect(draft).not.toBe('');
+  expect(draft).not.toContain('_hash');
+  expect(draft).not.toContain(formHash);
+  await other.close();
+});

@@ -137,7 +137,7 @@ final class CollectionController
         $display = $this->displayValues($def, $r->allPost(), $existing);
 
         if ($postedHash !== $current) {
-            return $this->conflict($name, $id, $display);
+            return $this->conflict($name, $id, $display, $postedHash);
         }
 
         // 1. Проверка всех полей. Файлы пока не загружаем: вместо них подставляем «будет загружено».
@@ -178,7 +178,7 @@ final class CollectionController
         } catch (ConflictException) {
             $this->discard($created);
 
-            return $this->conflict($name, $id, $display);
+            return $this->conflict($name, $id, $display, $postedHash);
         } catch (\Throwable $e) {
             $this->discard($created);
             throw $e;
@@ -323,7 +323,7 @@ final class CollectionController
      * @param array<string,mixed> $values
      * @param array<string,string> $errors
      */
-    private function editPage(string $name, string $id, array $values, array $errors, int $status, ?string $banner = null, bool $saved = false, ?string $hash = null): Response
+    private function editPage(string $name, string $id, array $values, array $errors, int $status, ?string $banner = null, bool $saved = false, ?string $hash = null, ?string $basedOn = null): Response
     {
         $def = Collections::get($name);
         $isNew = $id === 'new';
@@ -347,6 +347,9 @@ final class CollectionController
             // 422: тот же _hash, что прислан (чужая правка между отправками должна дать 409); 409 и открытие — свежий
             'hash' => $hash ?? $this->app->store()->hash($name),
             'unsaved' => $status !== 200,
+            // состояние файла, на котором основан ввод: при 409 это присланный (устаревший) хеш, не свежий
+            'basedOn' => $basedOn ?? $hash ?? $this->app->store()->hash($name),
+            'conflictText' => self::MSG_CONFLICT,
             'summary' => $summary,
             'banner' => $banner,
             'saved' => $saved,
@@ -357,9 +360,9 @@ final class CollectionController
     }
 
     /** @param array<string,mixed> $display */
-    private function conflict(string $name, string $id, array $display): Response
+    private function conflict(string $name, string $id, array $display, string $postedHash): Response
     {
-        return $this->editPage($name, $id, $display, [], 409, self::MSG_CONFLICT);
+        return $this->editPage($name, $id, $display, [], 409, self::MSG_CONFLICT, false, null, $postedHash);
     }
 
     /** @param array<string,mixed> $item */

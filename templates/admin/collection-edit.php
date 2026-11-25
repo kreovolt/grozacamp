@@ -13,6 +13,8 @@
  * @var bool $saved
  * @var bool $hasFiles
  * @var bool $unsaved
+ * @var string $basedOn
+ * @var string $conflictText
  * @var string|null $siteUrl
  * @var string|null $sitePattern
  * @var array{login:string,name:string}|null $user
@@ -58,10 +60,12 @@ $action = '/admin/' . $collection . '/' . $id . '/';
 <?php endif ?>
 </div>
 <div class="draft-notice alert alert-note" role="status" data-draft-notice hidden>
-  <span>Восстановлен черновик</span>
+  <span data-draft-text data-existing="Восстановлен черновик. Пока вас не было, запись могли изменить — проверьте перед сохранением.">Восстановлен черновик</span>
   <button type="button" class="btn btn-ghost" data-draft-cancel>Отменить</button>
 </div>
-<form method="post" action="<?= e($action) ?>" enctype="multipart/form-data" class="form edit-form" data-draft<?= $unsaved ? ' data-draft-unsaved' : '' ?> novalidate autocomplete="off">
+<p class="alert alert-error" role="alert" data-draft-banner="conflict" hidden><?= e($conflictText) ?></p>
+<p class="alert alert-error" role="alert" data-draft-banner="changed" hidden>Запись изменили после того, как вы начали правку — сравните и сохраните ещё раз.</p>
+<form method="post" action="<?= e($action) ?>" enctype="multipart/form-data" class="form edit-form" data-draft data-based-on="<?= e($basedOn) ?>"<?= $banner !== null ? ' data-draft-conflict' : '' ?><?= $unsaved ? ' data-draft-unsaved' : '' ?> novalidate autocomplete="off">
   <input type="hidden" name="_csrf" value="<?= e($csrf) ?>">
   <input type="hidden" name="_hash" value="<?= e($hash) ?>">
   <p class="hint"><span class="req" aria-hidden="true">*</span> — обязательное поле</p>

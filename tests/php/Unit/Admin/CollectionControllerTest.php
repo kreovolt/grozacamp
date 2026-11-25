@@ -632,6 +632,22 @@ final class CollectionControllerTest extends TestCase
         $this->assertStringContainsString('data-draft-unsaved', $res->body());
     }
 
+    public function test_409_page_tells_which_hash_the_input_is_based_on(): void
+    {
+        $s = $this->items()[0];
+        $stale = $this->hash();
+        $this->save('new', $this->valid(['title' => 'Чужая', '_hash' => $stale]));
+        $res = $this->save($s['id'], $this->valid(['_hash' => $stale]));
+
+        $this->assertSame(409, $res->status());
+        $this->assertStringContainsString('data-based-on="' . $stale . '"', $res->body());
+        $this->assertStringContainsString('name="_hash" value="' . $this->hash() . '"', $res->body());
+        $this->assertStringContainsString('data-draft-conflict', $res->body());
+        $get = AdminHttp::get($this->app, '/admin/shifts/' . $s['id'] . '/')->body();
+        $this->assertStringContainsString('data-based-on="' . $this->hash() . '"', $get);
+        $this->assertStringNotContainsString('data-draft-conflict ', $get);
+    }
+
     public function test_unsaved_marker_only_on_rerendered_forms(): void
     {
         $s = $this->items()[0];
