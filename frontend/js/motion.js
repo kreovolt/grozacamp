@@ -75,24 +75,37 @@ function reveal() {
  * сам не начал прокручивать страницу, ставим якорь на место мгновенно.
  */
 function keepHashTarget() {
-  const id = decodeURIComponent(window.location.hash.slice(1));
+  let id;
+  try {
+    id = decodeURIComponent(window.location.hash.slice(1));
+  } catch {
+    return; // битый хеш (#%E0%A4%A) — просто не следим за якорем
+  }
   const target = id ? document.getElementById(id) : null;
   if (!target) return;
   let touched = false;
   const stop = () => { touched = true; };
   ['wheel', 'touchstart', 'keydown', 'pointerdown'].forEach((name) => window.addEventListener(name, stop, { once: true, passive: true }));
   const until = performance.now() + 4000;
-  ScrollTrigger.addEventListener('refresh', () => {
-    if (touched || performance.now() > until) return;
+  const onRefresh = () => {
+    if (touched || performance.now() > until) {
+      ScrollTrigger.removeEventListener('refresh', onRefresh);
+      return;
+    }
     target.scrollIntoView({ behavior: 'instant', block: 'start' });
-  });
+  };
+  ScrollTrigger.addEventListener('refresh', onRefresh);
 }
 
 if (!reduce.matches) {
   gsap.registerPlugin(ScrollTrigger);
   heroTitle();
   reveal();
-  keepHashTarget();
+  try {
+    keepHashTarget();
+  } catch {
+    // якорь — улучшение; сбой не должен ломать остальную инициализацию
+  }
   // Картинки и шрифты сдвигают положение блоков — пересчитать точки срабатывания
   window.addEventListener('load', () => ScrollTrigger.refresh());
 }

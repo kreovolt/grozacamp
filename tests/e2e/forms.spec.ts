@@ -78,6 +78,7 @@ test.describe('без JavaScript', () => {
 
 // Регрессия: на медленном устройстве load наступал посреди плавной прокрутки к #zayavka,
 // ScrollTrigger.refresh возвращал позицию scrollTo и обрывал её — форма оставалась за экраном.
+// Воспроизводит гонку только при 6× замедлении CPU и задержке картинок 700 мс (load наступает посреди плавной прокрутки)
 test('карточка смены на медленном устройстве: прокрутка к форме не обрывается', async ({ page }) => {
   await page.goto('/booking/');
   const cdp = await page.context().newCDPSession(page);
@@ -90,4 +91,15 @@ test('карточка смены на медленном устройстве: 
   await expect(page).toHaveURL(/#zayavka$/);
   await expect(page.locator('#zayavka')).toBeInViewport({ timeout: 10_000 });
   await expect(page.locator('#booking-shift')).toBeInViewport();
+});
+
+test('битый хеш в адресе не ломает скрипты: нет ошибок в консоли, появление блоков работает', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+  await page.goto('/booking/#%E0%A4%A');
+  const block = page.locator('[data-reveal]').last();
+  await block.scrollIntoViewIfNeeded();
+  await expect(block).toHaveCSS('opacity', '1');
+  expect(errors).toEqual([]);
 });
