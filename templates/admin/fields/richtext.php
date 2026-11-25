@@ -8,7 +8,7 @@ declare(strict_types=1);
  * @var mixed $value
  * @var string $aria
  */
-use Groza\Admin\Sanitizer;
+use Groza\Support\Sanitizer;
 
 use function Groza\View\e;
 
