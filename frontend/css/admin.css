@@ -69,6 +69,35 @@
   .tile__name { @apply font-display text-xl font-semibold uppercase tracking-nav text-forest; }
   .tile__count { @apply rounded-full bg-sand px-3 py-1 text-sm font-semibold text-ink-soft; }
 
+  /* ---- Главная: готовность к проверке, последние изменения; история ---- */
+  .readiness__summary { @apply mb-6 flex flex-wrap items-baseline gap-x-4 gap-y-1 rounded-card px-5 py-4; }
+  .readiness__summary-title { @apply font-display text-2xl font-semibold uppercase tracking-nav; }
+  .readiness__summary-note { @apply text-sm font-semibold; }
+  .readiness__summary--ok { @apply bg-[#e6efdd] text-forest; border-left: 8px solid theme('colors.moss'); }
+  .readiness__summary--bad { @apply bg-[#fbe9e3] text-rust-deep; border-left: 8px solid theme('colors.rust.deep'); }
+  .readiness__section { @apply mb-2 mt-6 font-display text-xl font-semibold uppercase tracking-nav text-forest; }
+  .readiness__count { @apply ml-1 inline-block rounded-full bg-sand-deep px-2 py-0.5 align-middle font-sans text-xs font-semibold normal-case tracking-normal text-ink-soft; }
+  .readiness__list { @apply grid gap-2; }
+  .readiness__item { @apply flex flex-wrap items-center justify-between gap-3 rounded-card bg-paper px-4 py-3 shadow-card; }
+  .readiness__item--bad { border-left: 6px solid theme('colors.rust.deep'); }
+  .readiness__item--warn { @apply bg-gold/20; border-left: 6px solid theme('colors.gold'); }
+  .readiness__label { @apply min-w-0 flex-1 basis-60; overflow-wrap: anywhere; }
+  .readiness__fix { @apply shrink-0; }
+  .readiness__warnings { @apply mt-8; }
+  .changes { @apply mt-8; }
+  .changes__list { @apply grid gap-2; }
+  .changes__item { @apply flex flex-wrap gap-x-4 gap-y-0 rounded-btn bg-paper px-4 py-2 text-sm shadow-card; }
+  .changes__when { @apply w-36 shrink-0 text-ink-soft; }
+  .changes__what { @apply min-w-0 flex-1 basis-60; overflow-wrap: anywhere; }
+  .history { @apply mb-3 rounded-card bg-paper px-4 py-3 shadow-card; }
+  .history__title { @apply cursor-pointer font-display text-xl font-semibold uppercase tracking-nav text-forest; min-height: 44px; }
+  .history__list { @apply mt-3 grid gap-2; }
+  .history__item { @apply grid items-center gap-x-4 gap-y-2 border-t border-sand-deep pt-3 sm:grid-cols-[9rem_1fr_auto]; }
+  .history__who { @apply text-sm text-ink-soft; }
+  .history__form { @apply flex flex-wrap items-center gap-3; }
+  .history__confirm { @apply flex items-center gap-2 text-sm font-semibold; min-height: 44px; }
+  .history__confirm input { width: 1.5rem; height: 1.5rem; }
+
   .back-top { @apply mb-3 mt-0; }
   .page-head { @apply mb-4 flex flex-wrap items-center justify-between gap-3; }
   .page-head .h1 { @apply mb-0; }

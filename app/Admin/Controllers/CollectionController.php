@@ -33,7 +33,7 @@ final class CollectionController
     private const ID = '/^[a-f0-9]{12}$/';
     private const RETRIES = 3;
     /** Поля, из которых берётся название записи в списке (первое заполненное). */
-    private const TITLE_FIELDS = ['title', 'name', 'question', 'text', 'author'];
+    public const TITLE_FIELDS = ['title', 'name', 'question', 'text', 'author'];
     private const FLASH = ['status' => 'Статус изменён', 'delete' => 'Запись удалена', 'visibility' => 'Видимость на сайте изменена'];
     public const MSG_ALT = 'Опишите, что на фото, — это нужно незрячим посетителям';
     private const ALT_MAX = 200;
@@ -92,7 +92,16 @@ final class CollectionController
             return $this->notFound();
         }
 
-        return $this->editPage($name, 'new', [], [], 200);
+        // Ссылки «Заполнить» с панели готовности передают нужный раздел (?section=…): подставляем его, если такой вариант есть
+        $preset = [];
+        foreach (Collections::get($name)['fields'] as $f) {
+            $given = $r->query((string) $f['name']);
+            if ($f['type'] === 'enum' && $given !== null && isset($f['options'][$given])) {
+                $preset[(string) $f['name']] = $given;
+            }
+        }
+
+        return $this->editPage($name, 'new', $preset, [], 200);
     }
 
     /** @param array<string,string> $params */
@@ -909,12 +918,27 @@ final class CollectionController
         return $refs;
     }
 
-    /** Удаляет файлы; отказ или сбой — не причина ломать ответ (файл останется лишним, данные верны). @param iterable<string> $urls */
+    /**
+     * Удаляет файлы, которые больше никому не нужны: ни текущим данным, ни одной из хранимых версий (иначе «Вернуть эту версию»
+     * вернула бы битые ссылки). Заменённый файл поэтому живёт, пока его версия не выйдет из последних 20; потом его уберёт scripts/uploads-gc.php.
+     * Отказ или сбой — не причина ломать ответ (файл останется лишним, данные верны).
+     *
+     * @param iterable<string> $urls
+     */
     private function discard(iterable $urls): void
     {
+        $urls = is_array($urls) ? $urls : iterator_to_array($urls, false);
+        if ($urls === []) {
+            return;
+        }
+        $uploads = $this->app->uploads();
+        $refs = $this->app->keptUploadRefs();
         foreach ($urls as $url) {
+            if ($uploads->isReferenced($url, $refs)) {
+                continue;
+            }
             try {
-                $this->app->uploads()->delete($url);
+                $uploads->delete($url);
             } catch (\Throwable $e) {
                 error_log('Groza uploads cleanup: ' . $e->getMessage());
             }

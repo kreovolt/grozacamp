@@ -7,6 +7,7 @@ use Groza\Admin\Auth;
 use Groza\Admin\ExpiredEcho;
 use Groza\Admin\ImageProcessor;
 use Groza\Admin\Uploads;
+use Groza\Admin\Users;
 use Groza\Content\Nav;
 use Groza\Data\AuditLog;
 use Groza\Data\JsonStore;
@@ -40,6 +41,8 @@ final class App
     private ?AuditLog $audit = null;
     private ?Auth $auth = null;
     private ?Uploads $uploads = null;
+    /** @var array<string,string>|null */
+    private ?array $actorNames = null;
     private ?View $view = null;
     private ?MailTransport $mailTransport = null;
     private string $currentPath = '/';
@@ -288,6 +291,12 @@ final class App
         );
     }
 
+    /** Загруженные файлы, нужные данным: текущим и всем хранимым версиям (откат не должен вести к битым ссылкам). @return array<string,true> */
+    public function keptUploadRefs(): array
+    {
+        return $this->uploads()->referencedIn($this->store()->snapshots());
+    }
+
     /** Для тестов: подменить приём загрузок. */
     public function setUploads(Uploads $uploads): void
     {
@@ -306,6 +315,20 @@ final class App
         $defaults = require $this->config['rootDir'] . '/config/settings.defaults.php';
 
         return array_replace($defaults, $this->store()->read('settings'));
+    }
+
+    /** Как показать автора действия в журнале и истории: имя пользователя; служебные источники — словами. */
+    public function actorName(string $login): string
+    {
+        if ($this->actorNames === null) {
+            $this->actorNames = [];
+            foreach ((new Users($this->store()))->all() as $u) {
+                $this->actorNames[(string) ($u['login'] ?? '')] = (string) ($u['name'] ?? '');
+            }
+        }
+        $service = ['cli' => 'консоль сервера', 'seed' => 'стартовые данные', 'system' => 'система', '-' => 'система', '' => 'система'];
+
+        return ($this->actorNames[$login] ?? '') !== '' ? $this->actorNames[$login] : ($service[$login] ?? $login);
     }
 
     /** Защита публичных форм. Без секрета приложения форма не работает вовсе (на проде это ошибка настройки). */

@@ -124,7 +124,7 @@ final class CollectionFilesTest extends TestCase
         $this->assertStringContainsString('PDF,', $page);
     }
 
-    public function test_replace_file_deletes_old(): void
+    public function test_replace_file_keeps_old_for_history(): void
     {
         $this->save('documents', 'new', $this->doc(), ['file' => $this->upload('real.pdf', 'Устав.pdf')]);
         $doc = array_values(array_filter($this->items('documents'), static fn (array $d): bool => $d['title'] === 'Устав лагеря'))[0];
@@ -135,8 +135,70 @@ final class CollectionFilesTest extends TestCase
         $new = array_values(array_filter($this->items('documents'), static fn (array $d): bool => $d['id'] === $doc['id']))[0]['file'];
         $this->assertNotSame($doc['file']['url'], $new['url']);
         $this->assertSame('Устав-2.pdf', $new['originalName']);
-        $this->assertFileDoesNotExist($old);
+        $this->assertFileExists($old, 'старая версия записи в истории ссылается на файл: откат не должен вести в пустоту');
         $this->assertFileExists($this->uploadsDir . '/docs/' . basename($new['url']));
+    }
+
+    /** Заменить файл у документа `$doc` и вернуть прежний адрес. */
+    private function replacePdf(array $doc): string
+    {
+        $this->save('documents', $doc['id'], $this->doc(), ['file' => $this->upload('real.pdf', 'Новый.pdf')]);
+
+        return $doc['file']['url'];
+    }
+
+    public function test_replaced_file_goes_only_when_versions_roll_past_it_and_gc_runs(): void
+    {
+        $this->save('documents', 'new', $this->doc(), ['file' => $this->upload('real.pdf', 'Устав.pdf')]);
+        $doc = array_values(array_filter($this->items('documents'), static fn (array $d): bool => $d['title'] === 'Устав лагеря'))[0];
+        $oldUrl = $this->replacePdf($doc);
+        $old = $this->uploadsDir . '/docs/' . basename($oldUrl);
+        $this->assertFileExists($old);
+
+        // пока версия с файлом хранится, чистка его не трогает
+        $refs = $this->app->keptUploadRefs();
+        $this->assertArrayHasKey($oldUrl, $refs);
+        $this->assertSame([], $this->app->uploads()->orphans($refs));
+
+        // 20 следующих сохранений вытесняют ту версию из истории (хранится 20)
+        $store = $this->app->store();
+        for ($i = 0; $i < 21; $i++) {
+            $store->write('documents', $store->read('documents'), 'olga');
+        }
+        $refs = $this->app->keptUploadRefs();
+        $this->assertArrayNotHasKey($oldUrl, $refs);
+        $current = $this->items('documents');
+        $newUrl = array_values(array_filter($current, static fn (array $d): bool => $d['id'] === $doc['id']))[0]['file']['url'];
+        $this->assertArrayHasKey($newUrl, $refs);
+
+        $orphans = $this->app->uploads()->orphans($refs);
+        $this->assertSame([$oldUrl], $orphans);
+        $this->assertSame([], $this->app->uploads()->orphans($refs, 3600), 'свежие файлы щадятся: их мог только что загрузить чей-то запрос');
+        foreach ($orphans as $url) {
+            $this->app->uploads()->delete($url);
+        }
+        $this->assertFileDoesNotExist($old);
+        $this->assertFileExists($this->uploadsDir . '/docs/' . basename($newUrl));
+    }
+
+    public function test_unreferenced_new_upload_is_deleted_when_save_conflicts(): void
+    {
+        $this->save('documents', 'new', $this->doc(), ['file' => $this->upload('real.pdf', 'Устав.pdf')]);
+        $before = $this->uploadedFiles();
+        $this->assertCount(1, $before);
+        $res = $this->app->handle(Request::create('POST', '/admin/documents/new/', [], ['_csrf' => Csrf::token(), '_hash' => 'stale'] + $this->doc(['title' => 'Другой']), [], ['file' => $this->upload('real.pdf', 'Другой.pdf')]));
+        $this->assertSame(409, $res->status());
+        $this->assertSame($before, $this->uploadedFiles(), 'файл, который никто не хранит, убран');
+    }
+
+    public function test_orphans_scan_ignores_photo_widths_and_foreign_names(): void
+    {
+        $this->save('venues', $this->venue()['id'], $this->venuePost(['photos__newalt_1' => 'Корпус']), ['photos__new_1' => $this->upload('small.jpg', 'a.jpg')]);
+        $this->assertNotEmpty($this->uploadedFiles());
+        $this->assertSame([], $this->app->uploads()->orphans($this->app->keptUploadRefs()), 'все ширины фото ведут к одному адресу-основе');
+        file_put_contents($this->uploadsDir . '/img/lost-0123456789abcdef-640.webp', 'x');
+        file_put_contents($this->uploadsDir . '/img/.htaccess', 'x');
+        $this->assertSame(['/uploads/img/lost-0123456789abcdef'], $this->app->uploads()->orphans($this->app->keptUploadRefs()));
     }
 
     public function test_failed_save_keeps_old_file(): void
@@ -304,7 +366,7 @@ final class CollectionFilesTest extends TestCase
         $this->assertSame($v['photos'], $this->photos($v['id']));
     }
 
-    public function test_gallery_remove_site_key_and_uploaded_photo(): void
+    public function test_gallery_remove_site_key_and_uploaded_photo_keeps_files_for_history(): void
     {
         $v = $this->venue();
         $n = count($v['photos']);
@@ -318,7 +380,7 @@ final class CollectionFilesTest extends TestCase
         $this->assertSame(303, $res->status());
         $photos = $this->photos($v['id']);
         $this->assertSame(array_slice($v['photos'], 1), $photos);
-        $this->assertSame([], $this->uploadedFiles(), 'файлы убранного фото удалены после сохранения');
+        $this->assertNotEmpty($this->uploadedFiles(), 'убранное фото ещё нужно истории: откат вернёт его');
     }
 
     public function test_gallery_reorder_by_posted_order(): void
@@ -363,13 +425,14 @@ final class CollectionFilesTest extends TestCase
         $this->assertSame('Другая подпись', $this->photos($v['id'])[$n]['alt']);
     }
 
-    public function test_deleting_venue_removes_gallery_files(): void
+    public function test_deleting_venue_keeps_gallery_files_for_history(): void
     {
         $v = $this->venue();
         $this->save('venues', $v['id'], $this->venuePost(['photos__newalt_1' => 'Корпус']), ['photos__new_1' => $this->upload('small.jpg', 'a.jpg')]);
         $this->assertNotEmpty($this->uploadedFiles());
+        $files = $this->uploadedFiles();
         AdminHttp::postWithToken($this->app, '/admin/venues/' . $v['id'] . '/delete/', ['confirm' => '1']);
-        $this->assertSame([], $this->uploadedFiles());
+        $this->assertSame($files, $this->uploadedFiles(), 'удалённая база остаётся в истории вместе с файлами');
     }
 
     public function test_gallery_editor_lists_photos_with_controls(): void

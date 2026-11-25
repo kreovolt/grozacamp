@@ -147,6 +147,77 @@ final class Uploads
         }
     }
 
+    /**
+     * Адреса загруженных файлов, упомянутые в текстах данных (текущих и хранимых версий): по ним решают, что ещё нужно.
+     * Фото — адрес-основа /uploads/img/{id}, документ — его адрес.
+     *
+     * @param iterable<string> $raws
+     * @return array<string,true>
+     */
+    public function referencedIn(iterable $raws): array
+    {
+        $re = '#' . preg_quote($this->baseUrl, '#') . '/(img|docs)/([A-Za-z0-9_-][A-Za-z0-9._-]*)#';
+        $refs = [];
+        foreach ($raws as $raw) {
+            if (preg_match_all($re, str_replace('\\/', '/', $raw), $m, PREG_SET_ORDER) > 0) {
+                foreach ($m as $hit) {
+                    $refs[$this->key($hit[1], $hit[2])] = true;
+                }
+            }
+        }
+
+        return $refs;
+    }
+
+    /** Нужен ли ещё файл по этому адресу (в `$refs` из referencedIn). @param array<string,true> $refs */
+    public function isReferenced(string $url, array $refs): bool
+    {
+        $re = '#^' . preg_quote($this->baseUrl, '#') . '/(img|docs)/(.+)$#';
+
+        return preg_match($re, $url, $m) !== 1 || isset($refs[$this->key($m[1], $m[2])]);
+    }
+
+    /**
+     * Файлы в папке загрузок, на которые нигде нет ссылок. Файлы моложе `$minAge` секунд не трогаем:
+     * их мог только что загрузить чей-то запрос, который ещё не успел записать данные.
+     *
+     * @param array<string,true> $refs
+     * @return list<string> адреса (для фото — адрес-основа)
+     */
+    public function orphans(array $refs, int $minAge = 0): array
+    {
+        $found = []; // адрес → время изменения самого свежего файла
+        foreach (glob($this->baseDir . '/img/*') ?: [] as $file) {
+            if (is_file($file) && !is_link($file) && preg_match('/^([A-Za-z0-9_][A-Za-z0-9_-]*)-\d{1,5}\.(webp|jpg)$/', basename($file), $m) === 1) {
+                $url = $this->key('img', $m[1]);
+                $found[$url] = max($found[$url] ?? 0, (int) filemtime($file));
+            }
+        }
+        foreach (glob($this->baseDir . '/docs/*') ?: [] as $file) {
+            if (is_file($file) && !is_link($file) && preg_match('/^[A-Za-z0-9_][A-Za-z0-9._-]*$/', basename($file)) === 1) {
+                $found[$this->key('docs', basename($file))] = (int) filemtime($file);
+            }
+        }
+        $now = time();
+        $orphans = array_values(array_filter(
+            array_keys($found),
+            static fn (string $url): bool => !isset($refs[$url]) && $now - $found[$url] >= $minAge
+        ));
+        sort($orphans, SORT_STRING);
+
+        return $orphans;
+    }
+
+    private function key(string $kind, string $name): string
+    {
+        $name = rtrim($name, '.');
+        if ($kind === 'img') {
+            $name = (string) preg_replace('/-\d{1,5}\.(webp|jpg)$/', '', $name);
+        }
+
+        return $this->baseUrl . '/' . $kind . '/' . $name;
+    }
+
     private function mustBeInside(string $root, string $real, UploadException $e): void
     {
         $r = rtrim(str_replace('\\', '/', $root), '/') . '/';

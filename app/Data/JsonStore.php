@@ -10,11 +10,52 @@ final class JsonStore
     private const FLAGS = JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR;
     private const VERSION_ID = '/^\d{14}-\d{6}-[a-f0-9]{4}$/';
 
+    /** Файлы с хешами паролей: версий не хранят, в историю, откат и резервную копию не попадают. */
+    public const PRIVATE_NAMES = ['users', 'auth-meta'];
+
+    /** @param list<string> $unversioned имена файлов, для которых предыдущие версии не сохраняются */
     public function __construct(
         private string $dataDir,
         private string $versionsDir,
         private int $keepVersions = 20,
+        private array $unversioned = self::PRIVATE_NAMES,
     ) {
+    }
+
+    /** Имена файлов данных, кроме закрытых (users, auth-meta): их версии бывают, они попадают в копию. @return list<string> */
+    public function publicNames(): array
+    {
+        $names = [];
+        foreach (glob($this->dataDir . '/*.json') ?: [] as $path) {
+            $name = basename($path, '.json');
+            if (preg_match('/^[a-z0-9_-]+$/', $name) === 1 && !in_array($name, self::PRIVATE_NAMES, true)) {
+                $names[] = $name;
+            }
+        }
+        sort($names, SORT_STRING);
+
+        return $names;
+    }
+
+    /**
+     * Текст всех текущих файлов данных и всех хранимых версий (кроме закрытых): по ним понимают, какие загруженные файлы ещё нужны.
+     *
+     * @return \Generator<int,string>
+     */
+    public function snapshots(): \Generator
+    {
+        foreach ($this->publicNames() as $name) {
+            $raw = @file_get_contents($this->file($name));
+            if ($raw !== false) {
+                yield $raw;
+            }
+            foreach (glob($this->versionDir($name) . '/*.json') ?: [] as $path) {
+                $raw = @file_get_contents($path);
+                if ($raw !== false) {
+                    yield $raw;
+                }
+            }
+        }
     }
 
     /** @param array<string,mixed> $default @return array<string,mixed> */
@@ -64,7 +105,7 @@ final class JsonStore
             if ($expectedHash !== null && $expectedHash !== $current) {
                 throw new ConflictException("Data '$name' was changed by someone else");
             }
-            if ($current !== '') {
+            if ($current !== '' && !in_array($name, $this->unversioned, true)) {
                 $this->saveVersion($name, $file, $actor);
             }
             $tmp = $file . '.' . bin2hex(random_bytes(4)) . '.tmp';
@@ -100,6 +141,9 @@ final class JsonStore
 
     public function restore(string $name, string $versionId, string $actor): void
     {
+        if (in_array($name, self::PRIVATE_NAMES, true)) {
+            throw new \InvalidArgumentException("Data '$name' cannot be restored");
+        }
         if (preg_match(self::VERSION_ID, $versionId) !== 1) {
             throw new \InvalidArgumentException('Bad version id');
         }

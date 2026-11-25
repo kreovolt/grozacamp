@@ -133,4 +133,32 @@ final class JsonStoreTest extends TestCase
         $s->write('shifts', ['v' => 2], 'anna');
         $this->assertSame([], glob($this->data . '/*.tmp'));
     }
+
+    public function test_password_files_keep_no_versions_and_cannot_be_restored(): void
+    {
+        $s = $this->store();
+        foreach (['users', 'auth-meta'] as $name) {
+            $s->write($name, ['v' => 1], 'anna');
+            $s->write($name, ['v' => 2], 'anna');
+            $this->assertSame([], $s->versions($name), "$name: версии не создаются");
+            $this->assertDirectoryDoesNotExist($this->versions . '/' . $name);
+        }
+        $this->expectException(\InvalidArgumentException::class);
+        $s->restore('users', '20270101000000-000000-abcd', 'anna');
+    }
+
+    public function test_public_names_and_snapshots_skip_password_files(): void
+    {
+        $s = $this->store();
+        $s->write('shifts', ['v' => 1], 'anna');
+        $s->write('shifts', ['v' => 2], 'anna');
+        $s->write('users', ['hash' => 'SECRET'], 'anna');
+        $s->write('auth-meta', ['dummy' => 'SECRET'], 'anna');
+
+        $this->assertSame(['shifts'], $s->publicNames());
+        $all = implode("\n", iterator_to_array($s->snapshots(), false));
+        $this->assertStringContainsString('"v": 1', $all, 'и версии');
+        $this->assertStringContainsString('"v": 2', $all);
+        $this->assertStringNotContainsString('SECRET', $all);
+    }
 }

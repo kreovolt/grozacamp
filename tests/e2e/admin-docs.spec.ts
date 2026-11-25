@@ -2,7 +2,8 @@ import { expect, test, type Page } from '@playwright/test';
 import { resolve } from 'node:path';
 
 // Тот же сервер и те же данные, что у admin-shifts.spec.ts (порт 8097, storage/test-admin), свой пользователь.
-// Всё, что тест создаёт, он удаляет (вместе с загруженными файлами): общий каталог public/uploads остаётся чистым.
+// Заменённые и удалённые файлы остаются в public/uploads, пока их версия в истории: после прогонов их убирает `php scripts/uploads-gc.php`.
+
 const PASSWORD = 'e2e-password-123';
 const ADMIN = 'http://127.0.0.1:8097';
 const PDF = resolve('tests/fixtures/uploads/real.pdf');
@@ -33,7 +34,7 @@ async function removeCurrent(page: Page) {
   await expect(page).toHaveURL(/\?ok=delete$/);
 }
 
-test('PDF в «Документы» с разделом «Учредительные документы» виден в «Сведениях»; замена и удаление чистят файлы', async ({ page }) => {
+test('PDF в «Документы» с разделом «Учредительные документы» виден в «Сведениях»; замена и удаление оставляют файлы для истории', async ({ page }) => {
   await login(page);
   await page.goto('/admin/documents/new/');
   await formReady(page);
@@ -72,7 +73,7 @@ test('PDF в «Документы» с разделом «Учредительн
   await expect(docs).toContainText('Устав e2e');
   await expect(docs.locator('li', { hasText: 'Устав e2e' })).toContainText('PDF,');
 
-  // замена: старый файл больше не отдаётся, новый — отдаётся
+  // замена: новый файл отдаётся; старый остаётся, пока его версия хранится в истории (откат не должен вести к битой ссылке)
   await page.goto('/admin/documents/');
   await row.getByRole('link', { name: 'Устав e2e' }).click();
   await formReady(page);
@@ -81,11 +82,11 @@ test('PDF в «Документы» с разделом «Учредительн
   await expect(page.locator('.alert-ok')).toContainText('Сохранено');
   const url2 = await page.getByRole('link', { name: 'Открыть' }).getAttribute('href');
   expect(url2).not.toBe(url);
-  expect((await page.request.get(url!)).status()).toBe(404);
+  expect((await page.request.get(url!)).status()).toBe(200);
   expect((await page.request.get(url2!)).status()).toBe(200);
 
   await removeCurrent(page);
-  expect((await page.request.get(url2!)).status()).toBe(404);
+  expect((await page.request.get(url2!)).status()).toBe(200); // запись удалена, но версия с ней — в истории
   await page.goto('/svedeniya/ob-organizacii/');
   await expect(page.locator('#dokumenty')).not.toContainText('Устав e2e');
 });
@@ -193,7 +194,7 @@ test('редактор базы: два раздела с короткими н�
   await page.getByRole('button', { name: 'Сохранить' }).click();
   await expect(page.locator('.alert-ok')).toContainText('Сохранено');
   expect(await keys()).toEqual(before);
-  expect((await page.request.get(thumb!)).status()).toBe(404);
+  expect((await page.request.get(thumb!)).status()).toBe(200); // фото убрано из галереи, но версия с ним — в истории
 });
 
 test('вопросы: счётчик «На главной: N из 5»; отзывы: скрыть и показать', async ({ page }) => {

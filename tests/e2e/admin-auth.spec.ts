@@ -28,7 +28,7 @@ test('без входа админка отправляет на форму вх
 test('вход открывает панель, выход возвращает на форму входа', async ({ page }) => {
   await login(page, 'e2e-main');
   await expect(page).toHaveURL(/\/admin\/$/);
-  await expect(page.getByRole('heading', { name: 'Админка', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Готовность к проверке', level: 1 })).toBeVisible();
   await expect(page.getByText('Здравствуйте, Тест Основной')).toBeVisible();
 
   await page.getByRole('button', { name: 'Выйти' }).click();

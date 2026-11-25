@@ -2,8 +2,10 @@
 declare(strict_types=1);
 
 use Groza\Admin\Controllers\AuthController;
+use Groza\Admin\Controllers\BackupController;
 use Groza\Admin\Controllers\CollectionController;
 use Groza\Admin\Controllers\DashboardController;
+use Groza\Admin\Controllers\HistoryController;
 use Groza\Admin\Controllers\SettingsController;
 use Groza\Admin\Controllers\TextsController;
 use Groza\App;
@@ -67,6 +69,12 @@ return static function (Router $router, App $app): void {
     $settings = new SettingsController($app);
     $router->get('/admin/settings/', [$settings, 'show']);
     $router->post('/admin/settings/', [$settings, 'save']);
+
+    // История и резервная копия: тоже точные адреса выше общего блока
+    $history = new HistoryController($app);
+    $router->get('/admin/history/', [$history, 'index']);
+    $router->post('/admin/history/restore/', [$history, 'restore']);
+    $router->get('/admin/backup/', [new BackupController($app), 'download']);
 
     // Редактор списков. Порядок важен: сначала точные адреса (статус смены, «new», действия над записью),
     // потом общий /admin/{collection}/{id}/. ВСЕ маршруты админки с фиксированным первым сегментом

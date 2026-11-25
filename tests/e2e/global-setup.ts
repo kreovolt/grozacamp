@@ -71,4 +71,23 @@ export default function globalSetup(): void {
   if (textsUser.status !== 0) {
     throw new Error(`scripts/user.php add e2e-texts завершился с кодом ${textsUser.status ?? textsUser.signal}`);
   }
+
+  // Отдельные данные для admin-history.spec.ts (сервер на порту 8095)
+  rmSync('storage/test-history', { recursive: true, force: true });
+  const seedHistory = spawnSync(
+    process.execPath,
+    ['scripts/php.mjs', 'scripts/seed.php', '--demo', '--target=storage/test-history', '--force'],
+    { stdio: 'inherit', env: { ...process.env, GROZA_ENV: 'test' } },
+  );
+  if (seedHistory.status !== 0) {
+    throw new Error(`scripts/seed.php (storage/test-history) завершился с кодом ${seedHistory.status ?? seedHistory.signal}`);
+  }
+  const historyUser = spawnSync(process.execPath, ['scripts/php.mjs', 'scripts/user.php', 'add', 'e2e-history', 'Тест История', '--password-stdin'], {
+    input: E2E_PASSWORD,
+    stdio: ['pipe', 'inherit', 'inherit'],
+    env: { ...process.env, GROZA_ENV: 'test', GROZA_STORAGE_DIR: 'storage/test-history' },
+  });
+  if (historyUser.status !== 0) {
+    throw new Error(`scripts/user.php add e2e-history завершился с кодом ${historyUser.status ?? historyUser.signal}`);
+  }
 }

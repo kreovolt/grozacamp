@@ -657,7 +657,16 @@ final class CollectionControllerTest extends TestCase
         $this->assertStringContainsString('data-draft-unsaved', $this->save($s['id'], $this->valid(['_hash' => 'stale']))->body());
     }
 
-    public function test_old_file_deleted_only_after_successful_save(): void
+    public function test_new_record_form_preselects_enum_from_query(): void
+    {
+        $body = AdminHttp::get($this->app, '/admin/documents/new/', ['section' => 'uchreditelnye'])->body();
+        $this->assertMatchesRegularExpression('#<option value="uchreditelnye" selected#', $body, 'ссылка «Заполнить» с панели готовности ведёт к нужному разделу');
+
+        $junk = AdminHttp::get($this->app, '/admin/documents/new/', ['section' => '<script>'])->body();
+        $this->assertStringNotContainsString('<script>', $junk);
+        $this->assertDoesNotMatchRegularExpression('#<option value="[^"]*" selected#', $junk);
+    }
+    public function test_old_file_kept_for_history_and_new_one_removed_on_failure(): void
     {
         $s = $this->items()[0];
         // Сначала загружаем первое фото
@@ -680,23 +689,24 @@ final class CollectionControllerTest extends TestCase
         $new = $this->shift($s['id'])['photo']['src'];
         $this->assertNotSame($old, $new);
         foreach ($oldFiles as $f) {
-            $this->assertFileDoesNotExist($f);
+            $this->assertFileExists($f, 'прежняя версия записи в истории ещё ссылается на файл');
         }
-        $this->assertNotEmpty($this->uploadedFiles());
+        $this->assertGreaterThan(count($oldFiles), count($this->uploadedFiles()));
     }
 
-    public function test_removing_and_deleting_record_removes_its_files(): void
+    public function test_removing_and_deleting_record_keeps_files_for_history(): void
     {
         $s = $this->items()[0];
         $this->save($s['id'], $this->valid(), ['photo' => $this->upload('small.jpg', 'a.jpg')]);
         $this->assertNotEmpty($this->uploadedFiles());
 
+        $files = $this->uploadedFiles();
         $this->save($s['id'], $this->valid(['photo__action' => 'remove']));
-        $this->assertSame([], $this->uploadedFiles());
+        $this->assertSame($files, $this->uploadedFiles(), 'снятое фото остаётся в истории');
 
         $this->save($s['id'], $this->valid(), ['photo' => $this->upload('small.jpg', 'a.jpg')]);
         AdminHttp::postWithToken($this->app, '/admin/shifts/' . $s['id'] . '/delete/', ['confirm' => '1']);
-        $this->assertSame([], $this->uploadedFiles());
+        $this->assertNotEmpty($this->uploadedFiles(), 'удалённая запись остаётся в истории вместе с файлами');
     }
 
     public function test_pdf_field_upload_and_required(): void

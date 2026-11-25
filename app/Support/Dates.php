@@ -24,6 +24,18 @@ final class Dates
         return $d . ' ' . self::MONTHS[$m] . ' ' . $y;
     }
 
+    /** Момент по времени приложения (Пермь): «25 ноября, 14:05». @param string $iso время с поясом, как пишет date('c') */
+    public static function ruTime(string $iso): string
+    {
+        try {
+            $t = (new \DateTimeImmutable($iso))->setTimezone(new \DateTimeZone(date_default_timezone_get()));
+        } catch (\Exception) {
+            return '';
+        }
+
+        return $t->format('j') . ' ' . self::MONTHS[(int) $t->format('n')] . ', ' . $t->format('H:i');
+    }
+
     public static function range(string $start, string $end): string
     {
         if ($start === $end) {

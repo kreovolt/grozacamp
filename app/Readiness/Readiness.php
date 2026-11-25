@@ -23,6 +23,19 @@ final class Readiness
     private const OLD_AFTER_DAYS = 365;
     private const DATE = '/^\d{4}-\d{2}-\d{2}$/';
 
+    /** Разделы сведений (первая часть id пункта) — подписи для панели и консоли, в порядке приказа. */
+    public const SECTIONS = [
+        'osnovnye' => 'Основные сведения',
+        'dokumenty' => 'Документы',
+        'rukovodstvo' => 'Руководство',
+        'sostav' => 'Педагогический и вожатский состав',
+        'kontakty' => 'Контакты',
+        'deyatelnost' => 'Деятельность',
+        'mto' => 'Материально-техническое обеспечение',
+        'uslugi' => 'Услуги, в том числе платные',
+        'dostupnaya' => 'Доступная среда',
+    ];
+
     /** @var list<array<string,mixed>>|null */
     private static ?array $order = null;
     /** @var array<string,array<string,mixed>>|null */

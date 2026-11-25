@@ -7,6 +7,8 @@ final class Response
 {
     /** @var array<string,string> */
     private array $headers = [];
+    private ?string $file = null;
+    private bool $deleteFile = false;
 
     private function __construct(private int $status, private string $body)
     {
@@ -29,6 +31,19 @@ final class Response
         return (new Response($status, $body))->withHeader('Content-Type', 'application/json; charset=utf-8');
     }
 
+    /**
+     * Ответ-файл: отдаётся потоком по кусочкам (память не растёт с размером файла). `$deleteAfter` — убрать файл после отправки
+     * (и при обрыве соединения, на выходе из скрипта). `body()` читает файл целиком — только для тестов.
+     */
+    public static function file(string $path, string $contentType, bool $deleteAfter = false): Response
+    {
+        $r = (new Response(200, ''))->withHeader('Content-Type', $contentType)->withHeader('Content-Length', (string) filesize($path));
+        $r->file = $path;
+        $r->deleteFile = $deleteAfter;
+
+        return $r;
+    }
+
     public function withHeader(string $n, string $v): Response
     {
         $copy = clone $this;
@@ -48,7 +63,7 @@ final class Response
 
     public function body(): string
     {
-        return $this->body;
+        return $this->file !== null ? (string) file_get_contents($this->file) : $this->body;
     }
 
     public function header(string $n): ?string
@@ -67,6 +82,31 @@ final class Response
         foreach ($this->headers as $name => $value) {
             header($name . ': ' . $value);
         }
-        echo $this->body;
+        if ($this->file === null) {
+            echo $this->body;
+
+            return;
+        }
+        $file = $this->file;
+        if ($this->deleteFile) {
+            register_shutdown_function(static function () use ($file): void {
+                @unlink($file);
+            });
+        }
+        ignore_user_abort(true);
+        while (PHP_SAPI !== 'cli' && ob_get_level() > 0) {
+            ob_end_clean();
+        }
+        $in = fopen($file, 'rb');
+        if ($in !== false) {
+            while (!feof($in) && ($chunk = fread($in, 65536)) !== false) {
+                echo $chunk;
+                flush();
+            }
+            fclose($in);
+        }
+        if ($this->deleteFile) {
+            @unlink($file);
+        }
     }
 }
