@@ -1,0 +1,52 @@
+{
+    "items": [
+        {
+            "id": "d00000000001",
+            "title": "Устав",
+            "section": "uchreditelnye",
+            "file": {
+                "url": "/uploads/docs/d00000000001.pdf",
+                "bytes": 1258291,
+                "originalName": "d00000000001.pdf"
+            },
+            "date": "2015-03-01",
+            "order": 10
+        },
+        {
+            "id": "d00000000002",
+            "title": "Правила нахождения на территории",
+            "section": "pravila",
+            "file": {
+                "url": "/uploads/docs/d00000000002.pdf",
+                "bytes": 1258291,
+                "originalName": "d00000000002.pdf"
+            },
+            "date": "2026-09-01",
+            "order": 10
+        },
+        {
+            "id": "d00000000003",
+            "title": "Программа воспитательной работы",
+            "section": "programma-vospitaniya",
+            "file": {
+                "url": "/uploads/docs/d00000000003.pdf",
+                "bytes": 1258291,
+                "originalName": "d00000000003.pdf"
+            },
+            "date": "2026-12-01",
+            "order": 10
+        },
+        {
+            "id": "d00000000004",
+            "title": "Календарный план воспитательной работы",
+            "section": "kalendarnyj-plan",
+            "file": {
+                "url": "/uploads/docs/d00000000004.pdf",
+                "bytes": 1258291,
+                "originalName": "d00000000004.pdf"
+            },
+            "date": "2026-12-01",
+            "order": 10
+        }
+    ]
+}

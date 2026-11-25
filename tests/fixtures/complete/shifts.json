@@ -1,0 +1,20 @@
+{
+    "items": [
+        {
+            "id": "s00000000001",
+            "title": "Спасатель",
+            "slug": "spasatel-2027",
+            "season": "Лето 2027",
+            "dateStart": "2027-07-02",
+            "dateEnd": "2027-07-22",
+            "days": 21,
+            "ageMin": 8,
+            "ageMax": 17,
+            "price": 60000,
+            "priceNote": "",
+            "status": "open",
+            "venue": "solnyshko",
+            "hidden": false
+        }
+    ]
+}

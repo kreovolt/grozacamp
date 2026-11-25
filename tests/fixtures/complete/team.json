@@ -1,0 +1,49 @@
+{
+    "items": [
+        {
+            "id": "t00000000001",
+            "name": "Иванов Иван Иванович",
+            "role": "Директор",
+            "group": "leadership",
+            "education": "Высшее",
+            "specialty": "Менеджмент",
+            "qualification": "Менеджер",
+            "ovzResponsible": false,
+            "photo": null,
+            "about": "",
+            "onHome": false,
+            "order": 10,
+            "hidden": false
+        },
+        {
+            "id": "t00000000002",
+            "name": "Петрова Анна Сергеевна",
+            "role": "Заместитель директора",
+            "group": "leadership",
+            "education": "Высшее",
+            "specialty": "Педагогика",
+            "qualification": "Педагог",
+            "ovzResponsible": true,
+            "photo": null,
+            "about": "",
+            "onHome": false,
+            "order": 10,
+            "hidden": false
+        },
+        {
+            "id": "t00000000003",
+            "name": "Сидоров Пётр Олегович",
+            "role": "Вожатый",
+            "group": "counselor",
+            "education": "Среднее профессиональное",
+            "specialty": "Преподавание в начальных классах",
+            "qualification": "Учитель начальных классов",
+            "ovzResponsible": false,
+            "photo": null,
+            "about": "",
+            "onHome": false,
+            "order": 10,
+            "hidden": false
+        }
+    ]
+}

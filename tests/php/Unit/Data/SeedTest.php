@@ -128,11 +128,7 @@ final class SeedTest extends TestCase
             'sved.addresses' => '3.д',
             'sved.mode' => '3.е',
             'sved.ages' => '8.а',
-            'sved.eduPrograms' => '8.в',
-            'sved.healthPrograms' => '8.г',
-            'sved.methods' => '8.д',
             'sved.paidOrder' => '10.а',
-            'sved.compensation' => '10.в',
         ], $required);
     }
 

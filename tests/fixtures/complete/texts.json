@@ -1,0 +1,28 @@
+{
+    "sved.fullName": "Пермская региональная общественная организация «Гроза»",
+    "sved.shortName": "ПРОО «Гроза»",
+    "sved.director": "Иванов Иван Иванович",
+    "sved.legalForm": "Общественная организация",
+    "sved.campType": "Лагерь с дневным пребыванием",
+    "sved.addresses": [
+        "г. Пермь, ул. Милиционера Власова, 37"
+    ],
+    "sved.mode": "<p>Сезонный.</p>",
+    "sved.ages": "<p>8–17 лет.</p>",
+    "sved.eduPrograms": "",
+    "sved.healthPrograms": "",
+    "sved.methods": "",
+    "sved.paidOrder": "<p>Путёвка бронируется по договору.</p>",
+    "sved.compensation": "",
+    "sved.other": "",
+    "lists.packing": [
+        "Футболки",
+        "Кроссовки",
+        "Зубная щётка"
+    ],
+    "lists.documents": [
+        "Копия свидетельства о рождении",
+        "Копия полиса ОМС"
+    ],
+    "rules": "<p>Правила.</p>"
+}
