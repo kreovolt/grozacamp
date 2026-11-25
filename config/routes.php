@@ -6,11 +6,15 @@ use Groza\Content\Nav;
 use Groza\Http\Request;
 use Groza\Http\Response;
 use Groza\Http\Router;
+use Groza\Pages\BookingPage;
 use Groza\Pages\FormController;
 use Groza\Pages\HomePage;
+use Groza\Pages\ShiftPage;
 
 return static function (Router $router, App $app): void {
     $router->get('/', new HomePage($app));
+    $router->get('/booking/', new BookingPage($app));
+    $router->get('/program/{slug}/', new ShiftPage($app));
 
     $forms = new FormController($app);
     $router->post('/form/booking/', [$forms, 'booking']);
@@ -18,13 +22,16 @@ return static function (Router $router, App $app): void {
     $router->get('/spasibo/', [$forms, 'thanks']);
 
     // ВРЕМЕННЫЕ ЗАГЛУШКИ (Task 4), чтобы пункты меню не вели в 404. Их заменяют:
-    // /booking/ — Task 9, /info/ и /vacancies/ — Task 10, /svedeniya/ и подстраницы — Task 11.
+    // /info/ и /vacancies/ — Task 10, /svedeniya/ и подстраницы — Task 11.
     $home = ['label' => 'Главная', 'href' => '/'];
     $placeholder = static fn (string $title, array $crumbs): callable =>
         static fn (Request $r, array $params): Response => Response::html(
             $app->view()->render('pages/placeholder', ['title' => $title, 'crumbs' => $crumbs])
         );
     foreach (Nav::main() as $item) {
+        if ($item['href'] === '/booking/') {
+            continue; // настоящая страница выше
+        }
         $router->get($item['href'], $placeholder($item['label'], [$home, ['label' => $item['label']]]));
         foreach ($item['children'] ?? [] as $child) {
             $router->get($child['href'], $placeholder($child['label'], [
@@ -37,8 +44,7 @@ return static function (Router $router, App $app): void {
 
     // Витрина дизайн-системы для разработки (не для посетителей): /_styleguide/ только в dev и test.
     if (in_array($app->config()['env'], ['dev', 'test'], true)) {
-        // ВРЕМЕННО: формы отдельно от страниц, пока их нет (/booking/ — Task 9, /vacancies/ — Task 10)
-        $router->get('/_forms/booking/', static fn (Request $r, array $params): Response => $forms->preview('booking'));
+        // ВРЕМЕННО: анкета отдельно от страницы, пока нет /vacancies/ (Task 10)
         $router->get('/_forms/vacancy/', static fn (Request $r, array $params): Response => $forms->preview('vacancy'));
         $router->get('/_styleguide/', static fn (Request $r, array $params): Response => Response::html(
             $app->view()->render('pages/styleguide')

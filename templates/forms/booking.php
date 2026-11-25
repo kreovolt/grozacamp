@@ -12,7 +12,7 @@ $choices = [['', 'Выберите смену']];
 foreach ($options['shifts'] ?? [] as $s) {
     $choices[] = [$s['slug'], $s['label']];
 }
-$choices[] = ['any', 'Пока не выбрали — подскажите'];
+$choices[] = ['any', 'Пока не знаю / любая'];
 
 $field = fn (string $name, array $vars): string => $this->partial('forms/_field', $vars + [
     'formId' => 'booking', 'name' => $name, 'value' => $values[$name] ?? '', 'error' => $errors[$name] ?? '',

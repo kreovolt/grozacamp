@@ -296,7 +296,7 @@ final class FormControllerTest extends TestCase
     public function test_misconfigured_secret_does_not_break_form_page_render(): void
     {
         $app = TestApp::make(['env' => 'dev', 'appSecret' => '']);
-        $this->assertSame(200, TestApp::get($app, '/_forms/booking/')->status()); // dev: запасной секрет
+        $this->assertSame(200, TestApp::get($app, '/booking/')->status()); // dev: запасной секрет
 
         $prod = TestApp::make(['env' => 'prod', 'appSecret' => '', 'fakeNow' => null]);
         $html = $prod->view()->render('forms/booking', ['values' => [], 'errors' => [], 'options' => ['shifts' => []], 'guard' => null]);

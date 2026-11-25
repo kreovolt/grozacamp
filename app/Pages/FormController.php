@@ -12,7 +12,6 @@ use Groza\Forms\ValidationResult;
 use Groza\Forms\VacancyForm;
 use Groza\Http\Request;
 use Groza\Http\Response;
-use Groza\Support\Dates;
 
 /**
  * Приём публичных форм: POST /form/booking/ и /form/vacancy/, страница /spasibo/.
@@ -60,7 +59,7 @@ final class FormController
         return Response::html($this->app->view()->render('pages/thanks', ['form' => $form]));
     }
 
-    /** Временная страница с формой (dev/test), пока нет /booking/ и /vacancies/ (Task 9, 10). */
+    /** Временная страница с формой анкеты (dev/test), пока нет /vacancies/ (Task 10). */
     public function preview(string $formId): Response
     {
         return $this->page($formId, [], [], 200, $this->app->guardFields($formId));
@@ -149,17 +148,7 @@ final class FormController
             return ['positions' => array_values(array_unique($positions))];
         }
 
-        $shifts = [];
-        foreach (Shifts::visible($this->items('shifts'), $this->app->clock()->now()) as $s) {
-            if (in_array($s['status'] ?? '', ['open', 'few'], true) && !empty($s['slug'])) {
-                $shifts[] = [
-                    'slug' => (string) $s['slug'],
-                    'label' => trim((string) ($s['title'] ?? '') . ', ' . Dates::range((string) ($s['dateStart'] ?? ''), (string) ($s['dateEnd'] ?? '')), ', '),
-                ];
-            }
-        }
-
-        return ['shifts' => $shifts];
+        return ['shifts' => BookingPage::shiftOptions(Shifts::visible($this->items('shifts'), $this->app->clock()->now()))];
     }
 
     /** @return array<string,mixed>|null */
@@ -224,6 +213,10 @@ final class FormController
         $guard = $this->guardAfterError($r, $formId, $code);
         if ($r->wantsJson()) {
             return Response::json(['ok' => false, 'errors' => $errors, 'guard' => $guard], 422);
+        }
+
+        if ($formId === 'booking') {
+            return (new BookingPage($this->app))->render($r, $values, $errors, 422, $guard);
         }
 
         return $this->page($formId, $values, $errors, 422, $guard);

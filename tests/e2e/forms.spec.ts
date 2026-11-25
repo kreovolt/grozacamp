@@ -1,17 +1,26 @@
 import { expect, test } from '@playwright/test';
 
-// Форма живёт на временной странице /_forms/booking/ до Task 9 (тогда — /booking/).
+// Форма заявки живёт на /booking/ (анкета — пока на временной /_forms/vacancy/ до Task 10).
 // Сервер сам требует ≥ 3 с между показом формы и отправкой, поэтому тест честно ждёт.
-const FORM = '/_forms/booking/';
+const FORM = '/booking/';
 const WAIT_MS = 3300;
 
 async function fill(page: import('@playwright/test').Page) {
-  await page.getByLabel('Смена').selectOption('spasatel-2027');
+  await page.locator('#booking-shift').selectOption('spasatel-2027');
   await page.getByLabel('Ваше имя').fill('Анна Иванова');
   await page.getByLabel('Телефон').fill('8 950 441-12-99');
   await page.getByLabel('Возраст ребёнка').fill('11');
   await page.getByLabel('Согласен на обработку персональных данных').check();
 }
+
+test('карточка смены: «Забронировать» ведёт к форме с выбранной сменой', async ({ page }) => {
+  await page.goto('/booking/');
+  await page.getByRole('link', { name: 'Забронировать смену «Спасатель»' }).click();
+  await expect(page).toHaveURL(/\/booking\/\?smena=spasatel-2027#zayavka$/);
+  await expect(page.locator('#booking-shift')).toHaveValue('spasatel-2027');
+  await expect(page.locator('#zayavka')).toBeInViewport();
+  await expect(page.locator('#booking-shift')).toBeInViewport();
+});
 
 test('с JS: заявка уходит без перезагрузки и показывает «Спасибо! Мы перезвоним»', async ({ page }) => {
   await page.goto(FORM);
@@ -28,8 +37,8 @@ test('с JS: пустая отправка — ошибки у полей и ф�
   await page.getByRole('button', { name: 'Отправить заявку' }).click();
   await expect(page.locator('#booking-shift-error')).toHaveText('Выберите смену из списка');
   await expect(page.locator('#booking-consent-error')).toHaveText('Нужно согласие на обработку данных');
-  await expect(page.getByLabel('Смена')).toBeFocused();
-  await expect(page.getByLabel('Смена')).toHaveAttribute('aria-invalid', 'true');
+  await expect(page.locator('#booking-shift')).toBeFocused();
+  await expect(page.locator('#booking-shift')).toHaveAttribute('aria-invalid', 'true');
   // после исправления повторная отправка проходит сразу: принятая метка времени сохраняется
   await fill(page);
   await page.getByRole('button', { name: 'Отправить заявку' }).click();
