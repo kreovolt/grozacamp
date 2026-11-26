@@ -86,7 +86,7 @@ $steps = [
   <?= $this->partial('components/topo', ['class' => 'hero-topo pointer-events-none absolute inset-0 -z-10 h-full w-full text-sand opacity-[0.16]']) ?>
   <div class="hero-grid wrap">
     <div class="hero-photo relative overflow-hidden bg-forest-deep">
-      <?= picture($heroImg, (string) ($heroImg['alt'] ?? ''), '(min-width: 1360px) 660px, (min-width: 1024px) 52vw, 100vw', true, 'absolute inset-0 h-full w-full object-cover ' . $heroPosition) ?>
+      <?= picture($heroImg, (string) ($heroImg['alt'] ?? ''), '(min-width: 2240px) 920px, (min-width: 1680px) 700px, (min-width: 1360px) 660px, (min-width: 1024px) 52vw, 100vw', true, 'absolute inset-0 h-full w-full object-cover ' . $heroPosition) ?>
     </div>
 
     <div class="hero-copy">

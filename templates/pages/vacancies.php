@@ -45,7 +45,7 @@ $shot = static function (string $key, string $sizes): string {
     </div>
     <div class="hidden items-start lg:flex">
       <?= $this->partial('components/polaroid', [
-          'media' => $shot('bonfire-group', '(min-width: 1024px) 22rem, 60vw'),
+          'media' => $shot('bonfire-group', '(min-width: 1680px) 28rem, (min-width: 1024px) 22rem, 60vw'),
           'ratio' => '4/3',
           'tilt' => 'left',
           'caption' => 'Вечер у костра',
