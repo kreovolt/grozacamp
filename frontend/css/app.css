@@ -128,52 +128,40 @@
   }
 
   /* Герой главной. Лица на селфи занимают весь кадр, поэтому текст не кладём на фото:
-     телефон и планшет — фото сверху (16 : 9), текст ниже на forest;
-     с 1024 px — две колонки: лесная панель с текстом слева, фото справа во всю высоту в естественных цветах.
-     Доля панели --split: 1024–1199 — 0,4 (иначе крайние лица уходят за край фото), 1200–1359 — 0,45, шире — 0,47
-     (обе кнопки в одну строку). На стыке — только короткий мягкий переход в forest, чтобы край фото не резал панель. */
-  .hero-photo { aspect-ratio: 16 / 9; }
-  .hero-copy { padding: 2rem var(--gutter) 2.75rem; }
-  /* Топо-линии гаснут к заголовку: гуще внизу панели, под кнопками */
+     телефон и планшет — фото сверху во всю ширину экрана (16 : 9), текст ниже на forest;
+     с 1024 px — две колонки по сетке .wrap (края — как у логотипа и меню в шапке): текст слева,
+     справа фото-карточка 4 : 3 в естественных цветах, со скруглением и полями сверху и снизу.
+     Топо-линии идут под всем блоком, карточка лежит поверх них — фото не выглядит отрезанным куском. */
+  .hero-photo {
+    aspect-ratio: 16 / 9;
+    margin-inline: calc(-1 * var(--gutter));
+  }
+  .hero-copy { padding-block: 2rem 2.75rem; }
+  /* Топо-линии гаснут к заголовку: гуще внизу блока, под кнопками */
   .hero-topo {
     -webkit-mask-image: linear-gradient(to top, #000 0, #000 30%, transparent 85%);
     mask-image: linear-gradient(to top, #000 0, #000 30%, transparent 85%);
   }
   @screen lg {
-    .hero {
-      --split: 0.4;
+    .hero-grid {
       display: grid;
-      grid-template-columns: calc(var(--split) * 100%) minmax(0, 1fr);
-      min-height: clamp(36rem, calc(100svh - 16rem), 46rem);
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.12fr);
+      align-items: center;
+      column-gap: clamp(2.5rem, 4.5vw, 4.5rem);
+      padding-block: clamp(2.5rem, 7svh, 4.5rem);
     }
     .hero-photo {
       grid-area: 1 / 2;
-      aspect-ratio: auto;
-    }
-    .hero-photo::after {
-      content: '';
-      position: absolute;
-      inset: 0 auto 0 0;
-      width: 2.25rem;
-      background: linear-gradient(90deg, theme('colors.forest.DEFAULT'), rgb(34 57 44 / 0.5) 40%, rgb(34 57 44 / 0));
+      margin-inline: 0;
+      aspect-ratio: 4 / 3;
+      border-radius: theme('borderRadius.card');
+      /* тонкий светлый контур отделяет карточку от forest, тень — от топо-линий */
+      box-shadow: 0 0 0 1px theme('colors.sand.DEFAULT / 14%'), 0 30px 60px -28px rgb(12 22 16 / 0.75);
     }
     .hero-copy {
       grid-area: 1 / 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      padding-block: 3rem 3.5rem;
-      /* левый край текста — по сетке .wrap (как логотип в шапке); % здесь — от ширины колонки, 100 % / --split — ширина героя */
-      padding-left: max(var(--gutter), calc((100% / var(--split) - theme('maxWidth.site')) / 2 + var(--gutter)));
-      padding-right: clamp(1.75rem, 3vw, 2.5rem);
+      padding-block: 0;
     }
-  }
-  @screen desk {
-    .hero { --split: 0.45; }
-    .hero-copy { padding-block: 3.5rem 4rem; }
-  }
-  @screen xl {
-    .hero { --split: 0.47; }
   }
 
   /* «Путёвка»: корешок отделён линией отрыва (пунктир 2 px), по её краям — вырезы цвета фона секции (--notch).

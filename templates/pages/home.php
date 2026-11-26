@@ -78,23 +78,25 @@ $steps = [
     ['title' => 'Большой финал', 'text' => 'В завершающей части программы ребята вместе с инструкторами отправляются на итоговую миссию. После смены — трансфер обратно в Пермь.'],
 ];
 ?>
-<?php /* 1. Герой: лесная панель с текстом и селфи в естественных цветах (с 1024 px — две колонки, на телефоне фото сверху) */ ?>
+<?php /* 1. Герой: лесная панель с текстом и селфи в естественных цветах (с 1024 px — две колонки по сетке .wrap, на телефоне фото сверху) */ ?>
 <section class="hero on-dark relative isolate overflow-hidden bg-forest text-cream" data-block="hero" aria-labelledby="hero-title">
-  <div class="hero-photo relative overflow-hidden bg-forest-deep">
-    <?= picture($heroImg, (string) ($heroImg['alt'] ?? ''), '(min-width: 1200px) 55vw, (min-width: 1024px) 60vw, 100vw', true, 'absolute inset-0 h-full w-full object-cover ' . $heroPosition) ?>
-  </div>
+  <?= $this->partial('components/topo', ['class' => 'hero-topo pointer-events-none absolute inset-0 -z-10 h-full w-full text-sand opacity-[0.16]']) ?>
+  <div class="hero-grid wrap">
+    <div class="hero-photo relative overflow-hidden bg-forest-deep">
+      <?= picture($heroImg, (string) ($heroImg['alt'] ?? ''), '(min-width: 1360px) 660px, (min-width: 1024px) 52vw, 100vw', true, 'absolute inset-0 h-full w-full object-cover ' . $heroPosition) ?>
+    </div>
 
-  <div class="hero-copy relative">
-    <?= $this->partial('components/topo', ['class' => 'hero-topo pointer-events-none absolute inset-0 -z-10 h-full w-full text-sand opacity-[0.16]']) ?>
-    <div class="max-w-[34rem]">
-      <p class="kicker !leading-[1.5] text-gold"><?= e($hero['kicker']) ?></p>
-      <h1 class="mt-4 font-display text-[clamp(2.5rem,1.3rem+4.8vw,4rem)] font-bold uppercase leading-[1.08] tracking-[0.01em] text-[#f4efe3] lg:text-[clamp(3rem,0.25rem+4.4vw,4.25rem)]" id="hero-title" data-hero-title><?= e($hero['title']) ?></h1>
-      <?php if ($hero['lead'] !== ''): ?>
-        <p class="mt-5 max-w-[32rem] text-[1.0625rem] leading-relaxed text-cream/90 sm:text-lg"><?= e($hero['lead']) ?></p>
-      <?php endif ?>
-      <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-        <?= $this->partial('components/button', ['label' => 'Выбрать смену', 'href' => '/booking/', 'size' => 'lg']) ?>
-        <?= $this->partial('components/button', ['label' => 'Информация для родителей', 'href' => '/info/', 'size' => 'lg', 'variant' => 'outline-light']) ?>
+    <div class="hero-copy">
+      <div class="max-w-[34rem]">
+        <p class="kicker !leading-[1.5] text-gold"><?= e($hero['kicker']) ?></p>
+        <h1 class="mt-4 font-display text-[clamp(2.5rem,1.3rem+4.8vw,4rem)] font-bold uppercase leading-[1.08] tracking-[0.01em] text-[#f4efe3] lg:text-[clamp(3rem,0.25rem+4.4vw,4.25rem)]" id="hero-title" data-hero-title><?= e($hero['title']) ?></h1>
+        <?php if ($hero['lead'] !== ''): ?>
+          <p class="mt-5 max-w-[32rem] text-[1.0625rem] leading-relaxed text-cream/90 sm:text-lg"><?= e($hero['lead']) ?></p>
+        <?php endif ?>
+        <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          <?= $this->partial('components/button', ['label' => 'Выбрать смену', 'href' => '/booking/', 'size' => 'lg']) ?>
+          <?= $this->partial('components/button', ['label' => 'Информация для родителей', 'href' => '/info/', 'size' => 'lg', 'variant' => 'outline-light']) ?>
+        </div>
       </div>
     </div>
   </div>

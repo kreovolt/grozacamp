@@ -25,18 +25,27 @@ test.describe('главная, десктоп 1440×900', () => {
     await expect(hero.locator('img')).toHaveAttribute('fetchpriority', 'high');
   });
 
-  test('герой на две колонки: текст слева, селфи справа на всю высоту, не пересекаются', async ({ page }) => {
+  test('герой на две колонки по сетке шапки: текст слева, селфи-карточка справа с полями, не пересекаются', async ({ page }) => {
     const hero = page.locator('[data-block="hero"]');
-    const photo = await box(hero.locator('img'));
+    const photo = await box(hero.locator('.hero-photo'));
     const title = await box(page.getByRole('heading', { level: 1 }));
     const block = await box(hero);
     const width = page.viewportSize()!.width;
+    // правый край содержимого .wrap — тот же, что у меню в шапке
+    const gridRight = await hero.locator('.hero-grid').evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      return r.right - parseFloat(getComputedStyle(el).paddingRight);
+    });
 
     expect(await hero.locator('img').getAttribute('src')).toMatch(/\/friends-selfie-\d+\.jpg$/);
     expect(photo.x + photo.width / 2).toBeGreaterThan(width / 2);
     expect(photo.x).toBeGreaterThanOrEqual(width * 0.4);
-    expect(photo.x + photo.width).toBeGreaterThanOrEqual(width - 1);
-    expect(photo.height).toBeGreaterThanOrEqual(block.height - 1);
+    expect(Math.abs(photo.x + photo.width - gridRight)).toBeLessThanOrEqual(1);
+    expect(photo.x + photo.width).toBeLessThan(width - 16);
+    // карточка целиком внутри блока, с полями сверху и снизу, пропорции фото 4 : 3
+    expect(photo.y).toBeGreaterThan(block.y + 16);
+    expect(photo.y + photo.height).toBeLessThan(block.y + block.height - 16);
+    expect(photo.width / photo.height).toBeCloseTo(4 / 3, 1);
     expect(title.x + title.width).toBeLessThanOrEqual(width / 2);
     expect(title.x + title.width).toBeLessThanOrEqual(photo.x);
   });
