@@ -14,24 +14,24 @@ foreach ($options['shifts'] ?? [] as $s) {
 }
 $choices[] = ['any', 'Пока не знаю / любая'];
 
-$labels = [];
-$field = function (string $name, array $vars) use ($values, $errors, &$labels): string {
-    $labels[$name] = (string) $vars['label'];
-
-    return $this->partial('forms/_field', $vars + [
-        'formId' => 'booking', 'name' => $name, 'value' => $values[$name] ?? '', 'error' => $errors[$name] ?? '',
-    ]);
-};
-
-$body = $field('shift', ['label' => 'Смена', 'type' => 'select', 'choices' => $choices, 'required' => true])
-    . $field('parentName', ['label' => 'Ваше имя', 'autocomplete' => 'name', 'required' => true, 'maxlength' => 80])
-    . $field('phone', ['label' => 'Телефон', 'type' => 'tel', 'autocomplete' => 'tel', 'inputmode' => 'tel', 'required' => true, 'hint' => 'Перезвоним в рабочее время'])
-    . $field('childAge', ['label' => 'Возраст ребёнка', 'inputmode' => 'numeric', 'required' => true, 'maxlength' => 2, 'hint' => 'От 5 до 18 лет'])
-    . $field('comment', ['label' => 'Комментарий', 'type' => 'textarea', 'maxlength' => 1000])
-    . $field('consent', [
+$defs = [
+    'shift' => ['label' => 'Смена', 'type' => 'select', 'choices' => $choices, 'required' => true],
+    'parentName' => ['label' => 'Ваше имя', 'autocomplete' => 'name', 'required' => true, 'maxlength' => 80],
+    'phone' => ['label' => 'Телефон', 'type' => 'tel', 'autocomplete' => 'tel', 'inputmode' => 'tel', 'required' => true, 'hint' => 'Перезвоним в рабочее время'],
+    'childAge' => ['label' => 'Возраст ребёнка', 'inputmode' => 'numeric', 'required' => true, 'maxlength' => 2, 'hint' => 'От 5 до 18 лет'],
+    'comment' => ['label' => 'Комментарий', 'type' => 'textarea', 'maxlength' => 1000],
+    'consent' => [
         'label' => 'Согласен на обработку персональных данных', 'type' => 'checkbox', 'required' => true,
         'labelHtml' => 'Согласен на обработку персональных данных — <a class="font-semibold text-rust-deep underline" href="/policy/" target="_blank" rel="noopener">политика обработки</a>',
-    ]);
+    ],
+];
+
+$field = fn (string $name, array $vars): string => $this->partial('forms/_field', $vars + [
+    'formId' => 'booking', 'name' => $name, 'value' => $values[$name] ?? '', 'error' => $errors[$name] ?? '',
+]);
+$body = implode('', array_map($field, array_keys($defs), $defs));
+// подписи полей — для сводки ошибок в начале формы (без JS)
+$labels = array_map(static fn (array $d): string => (string) $d['label'], $defs);
 
 echo $this->partial('forms/_shell', [
     'formId' => 'booking',

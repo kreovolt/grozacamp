@@ -34,7 +34,7 @@ $demo = isset($opts['demo']);
 $force = isset($opts['force']);
 
 if ($config['env'] === 'prod' && ($force || $demo)) {
-    fwrite(STDERR, "seed: --force и --demo запрещены при env=prod (данные боевого сайта правятся только в админке).\n");
+    fwrite(STDERR, "seed: --force и --demo запрещены при env=prod (данные боевого сайта правятся только в админке). Без config/local.php сайт считается боевым: локально задайте GROZA_ENV=dev.\n");
     exit(1);
 }
 
