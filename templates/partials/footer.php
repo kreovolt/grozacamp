@@ -26,7 +26,6 @@ $hours = array_values(array_filter([$settings['hoursWeekdays'] ?? '', $settings[
 $heading = 'mb-5 font-display text-[0.875rem] font-semibold uppercase tracking-[0.16em] text-gold';
 ?>
 <footer class="on-dark relative overflow-hidden bg-forest text-cream" id="podval">
-  <?= $this->partial('components/topo', ['class' => 'pointer-events-none absolute inset-x-0 top-0 h-56 w-full text-sand opacity-[0.07]']) ?>
   <div class="wrap relative grid grid-cols-1 gap-x-10 gap-y-12 pb-12 pt-14 md:grid-cols-2 desk:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)_minmax(0,1.35fr)_minmax(0,1.1fr)] desk:pt-16">
     <div class="flex flex-col items-start gap-5">
       <?= $this->partial('partials/brand', ['stacked' => true]) ?>

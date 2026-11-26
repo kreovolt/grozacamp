@@ -202,12 +202,11 @@ test.describe('широкие мониторы', () => {
     expect(lines).toBe(3);
   });
 
-  test('3440 px: топо-линии в широком варианте (2400 × 500), обычный спрятан', async ({ page }) => {
-    await page.setViewportSize({ width: 3440, height: 1440 });
-    await page.goto('/');
-    const hero = page.locator('[data-block="hero"]');
-    await expect(hero.locator('svg.topo[viewBox="0 0 2400 500"]')).toBeVisible();
-    await expect(hero.locator('svg.topo[viewBox="0 0 1200 500"]')).toBeHidden();
+  test('декоративных топо-линий нет ни на одной странице (клиент попросил убрать)', async ({ page }) => {
+    for (const path of ['/', '/booking/', '/info/', '/vacancies/', '/contacts/', '/svedeniya/', '/program/spasatel-2027/', '/net-takoy-stranicy/']) {
+      await page.goto(path);
+      await expect(page.locator('svg.topo, svg[viewBox="0 0 1200 500"], svg[viewBox="0 0 2400 500"]'), path).toHaveCount(0);
+    }
   });
 });
 

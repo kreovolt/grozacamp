@@ -1,7 +1,7 @@
 /*
  * Сайт «Гроза» — вариант B «Экспедиция».
  * Утилиты Tailwind в шаблонах; здесь — шрифты, базовые стили и несколько повторяющихся приёмов,
- * которые неудобно описывать классами (выпадающее меню, топо-линии, фокус).
+ * которые неудобно описывать классами (выпадающее меню, фото-карточки, фокус).
  */
 
 /* ---------- Шрифты: только локальные woff2, подмножества cyrillic + latin ---------- */
@@ -126,6 +126,20 @@
   .nav-link[aria-expanded='true'] {
     @apply text-white underline decoration-gold;
   }
+  /* «Сведения…» в две строки. Подчёркивание самой кнопки тянулось на пробел перед стрелкой (хвост под стрелкой),
+     а с отступом 0.45em черта первой строки наезжала на вторую. Здесь черта только под подписью, ближе к строке,
+     и между строками есть воздух (leading 1.45 в шаблоне) */
+  .nav-link.nav-link--multi { text-decoration-line: none; }
+  .nav-link--multi .nav-link__label {
+    text-decoration-line: underline;
+    text-decoration-color: transparent;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.3em;
+    transition: text-decoration-color 160ms ease-out;
+  }
+  .nav-link--multi:is(:hover, [aria-current='page'], [data-active], [aria-expanded='true']) .nav-link__label {
+    text-decoration-color: theme('colors.gold');
+  }
 
   /* Ссылка в подвале и на тёмных полосах */
   .link-quiet {
@@ -149,18 +163,10 @@
     fill: none;
   }
 
-  /* Топо-линии (components/topo): у верхнего и нижнего края блока растворяются, а не обрываются о его границу.
-     По бокам линии и так уходят за край — там маска не нужна. */
-  .topo {
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 18%, #000 82%, transparent 100%);
-    mask-image: linear-gradient(to bottom, transparent 0, #000 18%, #000 82%, transparent 100%);
-  }
-
   /* Герой главной. Лица на селфи занимают весь кадр, поэтому текст не кладём на фото:
      телефон и планшет — фото сверху во всю ширину экрана (16 : 9), текст ниже на forest;
      с 1024 px — две колонки по сетке .wrap (края — как у логотипа и меню в шапке): текст слева,
-     справа фото-карточка 4 : 3 в естественных цветах, со скруглением и полями сверху и снизу.
-     Топо-линии идут под всем блоком, карточка лежит поверх них — фото не выглядит отрезанным куском. */
+     справа фото-карточка 4 : 3 в естественных цветах, со скруглением и полями сверху и снизу. */
   .hero-photo {
     aspect-ratio: 16 / 9;
     margin-inline: calc(-1 * var(--gutter));
@@ -176,12 +182,6 @@
     .hero-copy { padding-block: 1.5rem 2.25rem; }
     .hero-copy [data-hero-title] { font-size: 2.75rem; } /* вместо ~61 px от ширины экрана: заголовок в две строки */
   }
-  /* Топо-линии гаснут к заголовку: гуще в нижней трети блока, под кнопками, и растворяются у самого края
-     (иначе линии обрываются о границу с полосой цифр) */
-  .hero-topo {
-    -webkit-mask-image: linear-gradient(to top, transparent 0, #000 22%, #000 42%, transparent 88%);
-    mask-image: linear-gradient(to top, transparent 0, #000 22%, #000 42%, transparent 88%);
-  }
   @screen lg {
     .hero-grid {
       display: grid;
@@ -195,7 +195,7 @@
       margin-inline: 0;
       aspect-ratio: 4 / 3;
       border-radius: theme('borderRadius.card');
-      /* тонкий светлый контур отделяет карточку от forest, тень — от топо-линий */
+      /* тонкий светлый контур отделяет карточку от forest, тень даёт ей объём */
       box-shadow: 0 0 0 1px theme('colors.sand.DEFAULT / 14%'), 0 30px 60px -28px rgb(12 22 16 / 0.75);
     }
     .hero-copy {
@@ -213,6 +213,32 @@
     .hero-copy [data-hero-title] { font-size: clamp(4.25rem, 2rem + 2.2vw, 4.75rem); }
     .hero-copy [data-hero-title] + p { max-width: 36rem; font-size: 1.25rem; }
     .hero-copy [data-hero-title] ~ div { max-width: none; } /* кнопки в один ряд */
+  }
+
+  /* Финальный призыв с фото (components/cta-final): фото — карточка, как у героя. Телефон: текст → фото → контакты;
+     с 1024 px — текст и контакты слева, фото справа на высоту обоих */
+  .cta-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'text' 'photo' 'contacts';
+    row-gap: 2.5rem;
+  }
+  .cta-grid > [data-cta-text] { grid-area: text; }
+  .cta-grid > [data-cta-photo] { grid-area: photo; }
+  .cta-grid > [data-cta-contacts] { grid-area: contacts; }
+  .cta-photo {
+    aspect-ratio: 4 / 3;
+    border-radius: theme('borderRadius.card');
+    box-shadow: 0 0 0 1px theme('colors.sand.DEFAULT / 14%'), 0 30px 60px -28px rgb(12 22 16 / 0.75);
+  }
+  @screen lg {
+    .cta-grid {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+      grid-template-areas: 'text photo' 'contacts photo';
+      align-content: center;
+      column-gap: clamp(2.5rem, 4.5vw, 4.5rem);
+    }
+    .cta-grid > [data-cta-photo] { align-self: center; }
   }
 
   /* «Путёвка»: корешок отделён линией отрыва (пунктир 2 px), по её краям — вырезы цвета фона секции (--notch).

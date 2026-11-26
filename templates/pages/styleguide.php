@@ -24,7 +24,6 @@ $swatches = [
 ];
 ?>
 <section class="on-dark relative overflow-hidden bg-forest text-cream">
-  <?= $this->partial('components/topo') ?>
   <div class="wrap relative py-16 desk:py-24">
     <?= $this->partial('components/section-head', [
         'kicker' => 'Смены лета · Пермский край',

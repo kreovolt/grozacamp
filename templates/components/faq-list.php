@@ -15,10 +15,13 @@ use function Groza\View\t;
 if ($items === []) {
     return;
 }
+// Открыт только один ответ: общий name у <details> списка (браузер сам закрывает предыдущий;
+// запасной вариант и удержание вопроса на месте — frontend/js/accordion.js)
+$group = 'faq-' . substr(md5(implode("\n", array_map(static fn (array $i): string => (string) ($i['question'] ?? ''), $items))), 0, 8);
 ?>
 <div class="<?= e(trim('border-t border-dashed border-moss/45 ' . ($class ?? ''))) ?>">
   <?php foreach ($items as $item): ?>
-    <details class="group border-b border-dashed border-moss/45">
+    <details class="group border-b border-dashed border-moss/45" name="<?= e($group) ?>">
       <summary class="flex items-start justify-between gap-6 py-5 text-[1.0625rem] font-bold leading-snug text-ink transition-colors hover:text-rust-deep sm:text-lg">
         <span><?= t((string) ($item['question'] ?? '')) ?></span>
         <?= icon('chevron-down', 'mt-0.5 size-6 text-rust-dark transition-transform duration-200 group-open:rotate-180') ?>

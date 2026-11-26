@@ -20,7 +20,6 @@ $current = static fn (string $href): string => $href === $currentPath ? ' aria-c
 $hours = array_values(array_filter([$settings['hoursWeekdays'] ?? '', $settings['hoursWeekend'] ?? '']));
 ?>
 <div class="on-dark fixed inset-0 z-[60] flex flex-col overflow-y-auto overscroll-contain bg-forest text-cream desk:hidden" id="mobile-menu" role="dialog" aria-modal="true" aria-label="Меню" data-menu-panel hidden>
-  <?= $this->partial('components/topo', ['class' => 'pointer-events-none absolute inset-x-0 bottom-0 h-72 w-full text-sand opacity-[0.07]']) ?>
   <div class="wrap relative flex h-16 shrink-0 items-center gap-4 sm:gap-6">
     <?= $this->partial('partials/brand') ?>
     <button class="grid size-11 place-items-center rounded-btn border border-cream/35 text-cream transition-colors hover:border-cream hover:bg-cream/10" type="button" aria-label="Закрыть меню" data-menu-close>

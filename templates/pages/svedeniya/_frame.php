@@ -18,7 +18,6 @@ $this->layout('layout', ['page' => 'svedeniya', 'title' => $title, 'description'
 $withToc = ($toc ?? []) !== [];
 ?>
 <section class="on-dark relative isolate overflow-hidden bg-forest text-cream" data-block="hero" aria-labelledby="sved-title">
-  <?= $this->partial('components/topo', ['class' => 'pointer-events-none absolute inset-0 -z-10 h-full w-full text-sand opacity-[0.14]']) ?>
   <div class="wrap pb-12 pt-8 desk:pb-16 desk:pt-12">
     <?= $this->partial('partials/breadcrumbs', ['items' => $crumbs, 'tone' => 'dark', 'class' => 'mb-8']) ?>
     <h1 class="max-w-[52rem] font-display text-[clamp(1.625rem,1.05rem+2.9vw,3.25rem)] font-bold uppercase leading-[1.08] tracking-[0.01em] text-[#f4efe3]" id="sved-title"><?= t($title) ?></h1>

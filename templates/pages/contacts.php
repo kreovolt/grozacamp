@@ -26,7 +26,6 @@ $row = 'flex items-start gap-4 border-b border-dashed border-moss/45 py-5';
 $label = 'text-[0.875rem] font-semibold uppercase tracking-[0.08em] text-ink-soft';
 ?>
 <section class="on-dark relative isolate overflow-hidden bg-forest text-cream" data-block="hero" aria-labelledby="contacts-title">
-  <?= $this->partial('components/topo', ['class' => 'pointer-events-none absolute inset-0 -z-10 h-full w-full text-sand opacity-[0.14]']) ?>
   <div class="wrap pb-14 pt-8 desk:pb-20 desk:pt-12">
     <?= $this->partial('partials/breadcrumbs', ['items' => [['label' => 'Главная', 'href' => '/'], ['label' => 'Контакты']], 'tone' => 'dark', 'class' => 'mb-8']) ?>
     <h1 class="font-display text-[clamp(2.25rem,1.5rem+3vw,4rem)] font-bold uppercase leading-[1.05] tracking-[0.01em] text-[#f4efe3]" id="contacts-title">Контакты</h1>
@@ -77,7 +76,6 @@ $label = 'text-[0.875rem] font-semibold uppercase tracking-[0.08em] text-ink-sof
 
   <?php if ($address !== '' || $hours !== []): ?>
     <aside class="on-dark relative isolate self-start overflow-hidden rounded-card bg-forest p-6 text-cream sm:p-8" aria-labelledby="office-title">
-      <?= $this->partial('components/topo', ['class' => 'pointer-events-none absolute inset-0 -z-10 h-full w-full text-sand opacity-[0.14]']) ?>
       <h2 class="font-display text-[1.5rem] font-bold uppercase leading-tight tracking-[0.02em]" id="office-title">Офис</h2>
       <?php if ($address !== ''): ?>
         <p class="mt-4 flex items-start gap-3 text-[1.0625rem] leading-snug"><?= icon('map-pin', 'mt-0.5 size-5 shrink-0 text-gold') ?><span><?= t($address) ?></span></p>

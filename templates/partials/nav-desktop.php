@@ -35,8 +35,9 @@ $current = static fn (string $href): string => $href === $currentPath ? ' aria-c
       <?php else: ?>
         <?php $panelId = 'dd-' . trim(str_replace('/', '-', $item['href']), '-'); ?>
         <li data-dropdown>
-          <button class="nav-link group block max-w-[14.5rem] text-left text-[0.8125rem] leading-[1.3]" type="button" aria-expanded="false" aria-controls="<?= e($panelId) ?>" data-dropdown-toggle<?= Nav::isActive($item['href'], $currentPath) ? ' data-active' : '' ?>>
-            <?= t($item['label']) ?>&nbsp;<?= icon('chevron-down', 'size-4 align-[-0.25em] text-gold transition-transform duration-200 group-aria-expanded:rotate-180') ?>
+          <?php /* Подпись в две строки: подчёркивается только сама подпись (nav-link__label), не пробел и стрелка (app.css) */ ?>
+          <button class="nav-link nav-link--multi group block max-w-[14.5rem] text-left text-[0.8125rem] leading-[1.45]" type="button" aria-expanded="false" aria-controls="<?= e($panelId) ?>" data-dropdown-toggle<?= Nav::isActive($item['href'], $currentPath) ? ' data-active' : '' ?>>
+            <span class="nav-link__label"><?= t($item['label']) ?></span>&nbsp;<?= icon('chevron-down', 'size-4 align-[-0.25em] text-gold transition-transform duration-200 group-aria-expanded:rotate-180') ?>
           </button>
           <div class="absolute right-[var(--gutter)] top-full z-50 w-[31rem] rounded-b-card bg-paper text-ink shadow-pop" id="<?= e($panelId) ?>" data-dropdown-panel hidden>
             <ul class="px-3 pb-2 pt-3" role="list">

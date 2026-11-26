@@ -135,3 +135,26 @@ async function box(locator: Locator) {
   expect(b, 'элемент виден').not.toBeNull();
   return b!;
 }
+
+test.describe('вопросы и ответы', () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test('открыт только один ответ: следующий закрывает предыдущий, вопрос не уезжает', async ({ page }) => {
+    await page.goto('/info/');
+    const items = page.locator('details[name^="faq-"]');
+    expect(await items.count()).toBeGreaterThan(2);
+    const first = items.nth(0);
+    const second = items.nth(1);
+
+    await first.locator('summary').click();
+    await expect(first).toHaveAttribute('open', '');
+    const before = await second.locator('summary').boundingBox();
+    await second.locator('summary').click();
+    await expect(second).toHaveAttribute('open', '');
+    await expect(first).not.toHaveAttribute('open', '');
+    await expect(page.locator('details[name^="faq-"][open]')).toHaveCount(1);
+    // ответ над вопросом закрылся, а сам вопрос остался там же на экране
+    const after = await second.locator('summary').boundingBox();
+    expect(Math.abs(after!.y - before!.y)).toBeLessThanOrEqual(2);
+  });
+});

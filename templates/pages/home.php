@@ -83,7 +83,6 @@ $steps = [
 ?>
 <?php /* 1. Герой: лесная панель с текстом и селфи в естественных цветах (с 1024 px — две колонки по сетке .wrap, на телефоне фото сверху) */ ?>
 <section class="hero on-dark relative isolate overflow-hidden bg-forest text-cream" data-block="hero" aria-labelledby="hero-title">
-  <?= $this->partial('components/topo', ['class' => 'hero-topo pointer-events-none absolute inset-0 -z-10 h-full w-full text-sand opacity-[0.16]']) ?>
   <div class="hero-grid wrap">
     <div class="hero-photo relative overflow-hidden bg-forest-deep">
       <?= picture($heroImg, (string) ($heroImg['alt'] ?? ''), '(min-width: 2240px) 920px, (min-width: 1680px) 700px, (min-width: 1360px) 660px, (min-width: 1024px) 52vw, 100vw', true, 'absolute inset-0 h-full w-full object-cover ' . $heroPosition) ?>
@@ -193,7 +192,6 @@ $steps = [
 
 <?php /* 5. Спокойно за ребёнка — для родителей */ ?>
 <section class="on-dark relative overflow-hidden bg-forest text-cream <?= $section ?>" data-block="care" aria-labelledby="care-title">
-  <?= $this->partial('components/topo', ['class' => 'pointer-events-none absolute inset-0 h-full w-full text-sand opacity-[0.08]']) ?>
   <div class="wrap relative grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-16 desk:gap-24">
     <div>
       <?= $this->partial('components/section-head', [

@@ -87,7 +87,6 @@ $badges = ['open' => 'bg-moss text-white', 'few' => 'bg-gold text-ink', 'soon' =
 $fact = static fn (string $name, string $value): string => '<div class="border-t border-dashed border-sage/40 pt-3"><dt class="text-[0.875rem] uppercase tracking-[0.08em] text-sage">' . t($name) . '</dt><dd class="tabular mt-1 font-display text-[1.25rem] font-semibold leading-tight tracking-[0.02em] text-cream">' . t($value) . '</dd></div>';
 ?>
 <section class="on-dark relative isolate overflow-hidden bg-forest text-cream" data-block="hero" aria-labelledby="shift-title">
-  <?= $this->partial('components/topo', ['class' => 'pointer-events-none absolute inset-0 -z-10 h-full w-full text-sand opacity-[0.14]']) ?>
   <div class="wrap grid grid-cols-1 gap-10 pb-14 pt-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-center lg:gap-14 desk:pb-20 desk:pt-12">
     <div>
       <?= $this->partial('partials/breadcrumbs', ['items' => [['label' => 'Главная', 'href' => '/'], ['label' => 'Купить путёвку', 'href' => '/booking/'], ['label' => $title]], 'tone' => 'dark', 'class' => 'mb-8']) ?>
