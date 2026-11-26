@@ -84,7 +84,7 @@ $this->layout('layout', [
 
 $section = 'py-16 sm:py-20 desk:py-24';
 $badges = ['open' => 'bg-moss text-white', 'few' => 'bg-gold text-ink', 'soon' => 'bg-paper text-forest', 'closed' => 'bg-ink text-cream'];
-$fact = static fn (string $name, string $value): string => '<div class="border-t border-dashed border-sage/40 pt-3"><dt class="text-[0.8125rem] uppercase tracking-[0.1em] text-sage">' . t($name) . '</dt><dd class="tabular mt-1 font-display text-[1.25rem] font-semibold leading-tight tracking-[0.02em] text-cream">' . t($value) . '</dd></div>';
+$fact = static fn (string $name, string $value): string => '<div class="border-t border-dashed border-sage/40 pt-3"><dt class="text-[0.875rem] uppercase tracking-[0.08em] text-sage">' . t($name) . '</dt><dd class="tabular mt-1 font-display text-[1.25rem] font-semibold leading-tight tracking-[0.02em] text-cream">' . t($value) . '</dd></div>';
 ?>
 <section class="on-dark relative isolate overflow-hidden bg-forest text-cream" data-block="hero" aria-labelledby="shift-title">
   <?= $this->partial('components/topo', ['class' => 'pointer-events-none absolute inset-0 -z-10 h-full w-full text-sand opacity-[0.14]']) ?>

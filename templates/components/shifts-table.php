@@ -37,7 +37,7 @@ $cell = 'px-3 py-2.5 first:pl-0 max-md:block max-md:px-0 max-md:py-1 max-md:befo
         <td data-label="<?= e($cols[1]) ?>" class="<?= $cell ?> whitespace-nowrap max-md:whitespace-normal"><?= t($s['dates']) ?></td>
         <td data-label="<?= e($cols[2]) ?>" class="<?= $cell ?> tabular"><?= (int) $s['days'] ?></td>
         <?php if ($prices): ?>
-          <td data-label="<?= e($cols[3]) ?>" class="<?= $cell ?> tabular whitespace-nowrap font-semibold text-ink"><?= $s['price'] !== null ? t(SvedeniyaPage::rub($s['price'])) : pending('') ?><?php if ($s['note'] !== ''): ?><span class="block whitespace-normal text-[0.8125rem] font-normal text-ink-soft"><?= t($s['note']) ?></span><?php endif ?></td>
+          <td data-label="<?= e($cols[3]) ?>" class="<?= $cell ?> tabular whitespace-nowrap font-semibold text-ink"><?= $s['price'] !== null ? t(SvedeniyaPage::rub($s['price'])) : pending('') ?><?php if ($s['note'] !== ''): ?><span class="block whitespace-normal text-[0.875rem] font-normal text-ink-soft"><?= t($s['note']) ?></span><?php endif ?></td>
           <td data-label="<?= e($cols[4]) ?>" class="<?= $cell ?> tabular"><?= $s['perDay'] !== null ? t(SvedeniyaPage::perDay($s['perDay'])) : pending('') ?></td>
         <?php else: ?>
           <td data-label="<?= e($cols[3]) ?>" class="<?= $cell ?>"><?= t($s['ages']) ?></td>

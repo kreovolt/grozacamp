@@ -14,7 +14,7 @@ $stacked = !empty($stacked);
   <img class="h-10 w-auto desk:h-[52px]" src="/assets/logo-header.png" alt="" width="44" height="52">
   <span class="flex flex-col">
     <span class="font-display text-[1.375rem] font-bold uppercase leading-none tracking-brand desk:text-[1.625rem]">Гроза</span>
-    <span class="mt-1 text-[0.6875rem] font-semibold uppercase leading-tight tracking-[0.12em] text-sage <?= $stacked ? '' : 'sm:whitespace-nowrap ' ?>xl:text-xs">
+    <span class="mt-1 text-xs font-semibold uppercase leading-tight tracking-[0.1em] text-sage <?= $stacked ? '' : 'sm:whitespace-nowrap' ?>">
       <?php if ($stacked): ?>
         детский лагерь<br>Пермский край
       <?php else: ?>

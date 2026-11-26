@@ -23,7 +23,7 @@ $vk = safe_url($settings['vk'] ?? '');
 $address = trim((string) ($settings['officeAddress'] ?? ''));
 $hours = array_values(array_filter([$settings['hoursWeekdays'] ?? '', $settings['hoursWeekend'] ?? '']));
 $row = 'flex items-start gap-4 border-b border-dashed border-moss/45 py-5';
-$label = 'text-[0.8125rem] font-semibold uppercase tracking-[0.1em] text-ink-soft';
+$label = 'text-[0.875rem] font-semibold uppercase tracking-[0.08em] text-ink-soft';
 ?>
 <section class="on-dark relative isolate overflow-hidden bg-forest text-cream" data-block="hero" aria-labelledby="contacts-title">
   <?= $this->partial('components/topo', ['class' => 'pointer-events-none absolute inset-0 -z-10 h-full w-full text-sand opacity-[0.14]']) ?>
