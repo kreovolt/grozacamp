@@ -70,7 +70,7 @@ $hours = array_values(array_filter([$settings['hoursWeekdays'] ?? '', $settings[
   </div>
 </section>
 
-<section class="<?= $section ?>" id="smeny" data-block="shifts" aria-labelledby="smeny-title">
+<section class="<?= $section ?> anchor-section" id="smeny" data-block="shifts" aria-labelledby="smeny-title">
   <div class="wrap">
     <?= $this->partial('components/section-head', [
         'title' => 'Смены',
@@ -98,7 +98,7 @@ $hours = array_values(array_filter([$settings['hoursWeekdays'] ?? '', $settings[
   </div>
 </section>
 
-<section class="bg-sand-deep <?= $section ?> scroll-mt-4" id="zayavka" data-block="request" aria-labelledby="zayavka-title">
+<section class="bg-sand-deep <?= $section ?> anchor-section" id="zayavka" data-block="request" aria-labelledby="zayavka-title">
   <div class="wrap grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16">
     <div>
       <?= $this->partial('components/section-head', [

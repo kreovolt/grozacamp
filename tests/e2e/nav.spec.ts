@@ -60,10 +60,12 @@ test.describe('десктоп 1440×900', () => {
     await expect(page.locator('[data-topbar]')).not.toBeInViewport();
   });
 
-  test('якорь не прячется под шапкой', async ({ page }) => {
+  test('якорь не прячется под шапкой и останавливается у заголовка, а не у поля секции', async ({ page }) => {
     await page.goto('/booking/#zayavka');
     const header = await page.locator('header').boundingBox();
-    await expect.poll(async () => (await page.locator('#zayavka').boundingBox())?.y ?? 0).toBeGreaterThanOrEqual(header!.height);
+    const title = page.locator('#zayavka-title');
+    await expect.poll(async () => (await title.boundingBox())?.y ?? 0).toBeGreaterThanOrEqual(header!.height);
+    expect((await title.boundingBox())!.y).toBeLessThanOrEqual(header!.height + 48);
   });
 
   test('клик по «Сведения…» открывает список разделов, клик мимо закрывает', async ({ page }) => {

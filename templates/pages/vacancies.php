@@ -62,7 +62,7 @@ $shot = static function (string $key, string $sizes): string {
   </div>
 </section>
 
-<section class="<?= $section ?> scroll-mt-4" id="vakansii" data-block="openings" aria-labelledby="vakansii-title">
+<section class="<?= $section ?> anchor-section" id="vakansii" data-block="openings" aria-labelledby="vakansii-title">
   <div class="wrap">
     <?= $this->partial('components/section-head', ['title' => 'Открытые вакансии', 'id' => 'vakansii-title']) ?>
     <?php if ($intro !== ''): ?>
@@ -125,7 +125,7 @@ $shot = static function (string $key, string $sizes): string {
   </section>
 <?php endif ?>
 
-<section class="<?= $section ?> scroll-mt-4" id="anketa" data-block="form" aria-labelledby="anketa-title">
+<section class="<?= $section ?> anchor-section" id="anketa" data-block="form" aria-labelledby="anketa-title">
   <div class="wrap grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16">
     <?= $this->partial('components/section-head', [
         'title' => 'Анкета',

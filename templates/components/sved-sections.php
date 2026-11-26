@@ -12,7 +12,7 @@ use function Groza\View\t;
 
 foreach ($sections as $i => $s):
     ?>
-<section class="scroll-mt-6 <?= $i > 0 ? 'mt-14 sm:mt-16' : '' ?>" id="<?= e($s['id']) ?>" aria-labelledby="<?= e($s['id']) ?>-title">
+<section class="<?= $i > 0 ? 'mt-14 sm:mt-16' : '' ?>" id="<?= e($s['id']) ?>" aria-labelledby="<?= e($s['id']) ?>-title">
   <h2 class="font-display text-[clamp(1.5rem,1.2rem+1.1vw,2.125rem)] font-bold uppercase leading-[1.1] tracking-[0.015em] text-ink" id="<?= e($s['id']) ?>-title"><?= t($s['title']) ?></h2>
   <?php if (($s['lead'] ?? '') !== ''): ?>
     <p class="mt-2 text-ink-soft"><?= t($s['lead']) ?></p>

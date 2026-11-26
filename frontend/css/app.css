@@ -222,6 +222,16 @@
     .ticket-stub::after { top: auto; right: auto; bottom: -0.75rem; left: -0.8125rem; }
   }
 
+  /* Секция с полями py-16 / sm:py-20 / desk:py-24 ($section в шаблонах), на которую ведёт якорь (#smeny, #zayavka, #anketa…):
+     прокрутка останавливается у заголовка — под шапкой остаётся 1.5rem воздуха из scroll-padding-top, — а не у верхнего края поля */
+  .anchor-section { scroll-margin-top: -4rem; }
+  @screen sm {
+    .anchor-section { scroll-margin-top: -5rem; }
+  }
+  @screen desk {
+    .anchor-section { scroll-margin-top: -6rem; }
+  }
+
   /* Карточки смен (components/shift-card) в сетке .shift-grid (главная, «Купить путёвку»).
      Четыре части карточки — фото, описание, цена, кнопки — строки общей сетки (subgrid): в одном ряду линия цены и кнопки
      на одном уровне, даже когда у соседних карточек кнопки переносятся на две строки или у цены нет пояснения.
@@ -300,8 +310,8 @@
   .richtext li + li { margin-top: 0.35em; }
   .richtext a { @apply font-semibold text-rust-deep underline decoration-rust-deep/40 hover:decoration-rust-deep; }
   .richtext strong { @apply font-bold text-ink; }
-  /* Подзаголовки длинных текстов (правила, политика): якоря не прячутся под верхний край */
-  .richtext h3 { @apply scroll-mt-6 font-display text-[1.375rem] font-semibold uppercase leading-tight tracking-[0.03em] text-ink; margin-top: 1.9em; }
+  /* Подзаголовки длинных текстов (правила, политика); под шапку при переходе по якорю их не прячет scroll-padding-top у :root */
+  .richtext h3 { @apply font-display text-[1.375rem] font-semibold uppercase leading-tight tracking-[0.03em] text-ink; margin-top: 1.9em; }
   .richtext > h3:first-child { margin-top: 0; }
   .richtext h3 + * { margin-top: 0.6em; }
 
