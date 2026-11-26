@@ -28,7 +28,7 @@ $this->layout('pages/svedeniya/_frame', compact('title', 'description', 'crumbs'
 <section class="<?= $other !== '' || $docs !== '' ? 'mt-12' : '' ?>" aria-labelledby="inye-ssylki">
   <h2 class="mb-5 font-display text-[clamp(1.5rem,1.2rem+1.1vw,2.125rem)] font-bold uppercase leading-[1.1] tracking-[0.015em] text-ink" id="inye-ssylki"><?= t('Политика и правила') ?></h2>
   <ul class="richtext" role="list">
-    <li><a href="/policy/">Политика обработки персональных данных</a></li>
-    <li><a href="/pravila/"><?= t('Правила пребывания в лагере') ?></a></li>
+    <li><a class="tap" href="/policy/">Политика обработки персональных данных</a></li>
+    <li><a class="tap" href="/pravila/"><?= t('Правила пребывания в лагере') ?></a></li>
   </ul>
 </section>
