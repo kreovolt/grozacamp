@@ -165,13 +165,13 @@ $steps = [
       </ul>
     </div>
 
-    <div data-reveal class="relative mx-auto flex w-full max-w-xl items-start lg:order-1 lg:block lg:h-[38rem] lg:max-w-none">
+    <div data-reveal class="relative mx-auto flex w-full max-w-xl items-start lg:order-1 lg:block lg:aspect-square lg:max-h-[38rem] lg:max-w-none">
       <?= $this->partial('components/polaroid', [
           'media' => $shot('team-poster', '(min-width: 1024px) 28rem, 60vw'),
           'ratio' => '4/3',
           'tilt' => 'left',
           'caption' => 'Болеем за своих',
-          'class' => 'relative z-10 w-[62%] shrink-0 lg:absolute lg:left-0 lg:top-0 lg:w-[64%]',
+          'class' => 'relative z-10 w-[62%] shrink-0 lg:absolute lg:left-2 lg:top-0 lg:w-[64%]',
       ]) ?>
       <?= $this->partial('components/polaroid', [
           'media' => $shot('stage-cheer', '(min-width: 1024px) 24rem, 55vw'),
