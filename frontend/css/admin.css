@@ -108,7 +108,7 @@
   .rows { @apply grid gap-4; }
   .row { @apply grid gap-3 rounded-card bg-paper p-4 shadow-card; scroll-margin-top: 1rem; }
   .row:target { @apply ring-2 ring-gold; }
-  .row--hidden { @apply opacity-80; }
+  .row--hidden { @apply bg-sand; } /* скрытая запись — другим фоном, не прозрачностью: прозрачность съедает контраст подписей */
   .row__title { @apply font-display text-xl font-semibold leading-snug tracking-nav text-forest; }
   .row__title a { @apply text-forest no-underline; }
   .row__title a:hover { @apply underline; }

@@ -16,7 +16,7 @@ $current = is_scalar($value) ? (string) $value : '';
 $name = (string) $f['name'];
 if (count($options) <= FormRenderer::RADIO_MAX):
 ?>
-<fieldset class="choices" <?= $aria ?>>
+<fieldset class="choices" role="radiogroup" <?= $aria ?>><?php /* radiogroup: у группы радиокнопок можно aria-required и aria-invalid (у простой группы — нельзя) */ ?>
   <legend><?= e((string) $f['label']) ?><?php if (!empty($f['required'])): ?> <span class="req" aria-hidden="true">*</span><?php endif ?></legend>
 <?php $i = 0; foreach ($options as $key => $label): $i++; ?>
   <label class="choice"><input type="radio" name="<?= e($name) ?>" value="<?= e((string) $key) ?>"<?= $i === 1 ? ' id="' . e($id) . '"' : '' ?><?= $current === (string) $key ? ' checked' : '' ?>><span><?= e((string) $label) ?></span></label>
