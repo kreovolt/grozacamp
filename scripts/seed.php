@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 use Groza\Data\JsonStore;
 use Groza\Data\Seeder;
+use Groza\Support\Layout;
 
 $root = dirname(__DIR__);
 require $root . '/vendor/autoload.php';

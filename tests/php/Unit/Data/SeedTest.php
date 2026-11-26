@@ -446,6 +446,18 @@ final class SeedTest extends TestCase
         $this->assertSame(self::read('data', 'settings'), json_decode((string) file_get_contents($target . '/data/settings.json'), true));
     }
 
+    public function test_seed_script_demo_copies_demo_pdfs_into_the_uploads_dir(): void
+    {
+        $target = $this->tmpDir();
+        $uploads = $this->tmpDir();
+
+        [$code, $output] = self::runSeedScript(['--demo', '--force', '--target=' . $target], ['GROZA_ENV' => 'test', 'GROZA_UPLOADS_DIR' => $uploads]);
+
+        $this->assertSame(0, $code, $output);
+        $this->assertFileExists($uploads . '/docs/demo-kalendarnyj-plan.pdf');
+        $this->assertFileExists($target . '/data/shifts.json');
+    }
+
     public function test_seed_script_refuses_force_in_prod(): void
     {
         $target = $this->tmpDir();
