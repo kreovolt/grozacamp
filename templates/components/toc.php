@@ -28,7 +28,7 @@ $list = static function () use ($items): string {
     return $html;
 };
 ?>
-<nav data-toc class="<?= e(trim('self-start lg:sticky lg:top-24 desk:top-28' . ($class ?? ''))) ?>" aria-label="<?= e($caption) ?>">
+<nav data-toc class="<?= e(trim('self-start lg:sticky lg:top-24 desk:top-28 ' . ($class ?? ''))) ?>" aria-label="<?= e($caption) ?>">
   <details class="group rounded-card bg-paper p-5 shadow-card lg:hidden"<?= $long ? '' : ' open' ?>>
     <summary class="flex cursor-pointer list-none items-center justify-between font-display text-[1.125rem] font-semibold uppercase tracking-[0.04em] text-ink [&::-webkit-details-marker]:hidden">
       <span><?= t($caption) ?></span>
