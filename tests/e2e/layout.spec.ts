@@ -185,3 +185,28 @@ test('375 px: у ссылок подвала зона нажатия выше т
   });
   expect(hit).toEqual({ above: true, below: true });
 });
+
+test.describe('широкие мониторы', () => {
+  test('1920×1080: контейнер шире 1320 px, герой с полосой цифр занимают первый экран, заголовок в три строки', async ({ page }) => {
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await page.goto('/');
+    await page.evaluate(() => document.fonts.ready);
+    const wrap = await page.locator('[data-block="hero"] .wrap').boundingBox();
+    expect(wrap!.width).toBeGreaterThan(1380);
+    const stats = await page.locator('[data-block="stats"]').boundingBox();
+    const bottom = stats!.y + stats!.height;
+    expect(bottom).toBeGreaterThan(1080 - 60);
+    expect(bottom).toBeLessThanOrEqual(1080 + 4);
+    const title = page.getByRole('heading', { level: 1 });
+    const lines = await title.evaluate((h) => Math.round(h.getBoundingClientRect().height / parseFloat(getComputedStyle(h).lineHeight)));
+    expect(lines).toBe(3);
+  });
+
+  test('3440 px: топо-линии в широком варианте (2400 × 500), обычный спрятан', async ({ page }) => {
+    await page.setViewportSize({ width: 3440, height: 1440 });
+    await page.goto('/');
+    const hero = page.locator('[data-block="hero"]');
+    await expect(hero.locator('svg.topo[viewBox="0 0 2400 500"]')).toBeVisible();
+    await expect(hero.locator('svg.topo[viewBox="0 0 1200 500"]')).toBeHidden();
+  });
+});

@@ -42,6 +42,15 @@
   @screen desk {
     :root { scroll-padding-top: 6.5rem; } /* шапка 5rem */
   }
+  /* Широкие мониторы: всё на сайте в rem, поэтому крупнее корневой шрифт — крупнее и контейнер .wrap (82.5rem → ~1400 и ~1485 px),
+     и шрифты, и кнопки, а все выравнивания остаются как есть. Боковой отступ до 3rem. */
+  @media (min-width: 1680px) {
+    html { font-size: 106.25%; }
+    :root { --gutter: clamp(1.25rem, 3.2vw, 3rem); }
+  }
+  @media (min-width: 2240px) {
+    html { font-size: 112.5%; }
+  }
   @media (prefers-reduced-motion: no-preference) {
     :root { scroll-behavior: smooth; }
   }
@@ -102,7 +111,7 @@
   .tap::after {
     content: '';
     position: absolute;
-    inset: -0.875rem -0.25rem;
+    inset: -0.875rem 0;
   }
 
   /* Пункт меню в шапке: золотое подчёркивание при наведении и у текущей страницы */
@@ -193,6 +202,19 @@
       grid-area: 1 / 1;
       padding-block: 0;
     }
+  }
+  /* С 1680 px герой и полоса цифр вместе занимают первый экран (верхняя полоса 2.5rem + шапка 5rem + цифры ~9.5rem),
+     но не выше 60rem; заголовок и подзаголовок крупнее, фото-карточка выше (5 : 4, на сверхшироких 1 : 1) — не теряется в высоком блоке */
+  @media (min-width: 1680px) {
+    .hero-grid { min-height: min(calc(100svh - 17rem), 60rem); }
+    .hero-photo { aspect-ratio: 5 / 4; }
+    .hero-copy > div { max-width: 38rem; }
+    .hero-copy [data-hero-title] { font-size: clamp(4.25rem, 2rem + 2.2vw, 4.75rem); }
+    .hero-copy [data-hero-title] + p { max-width: 36rem; font-size: 1.25rem; }
+    .hero-copy [data-hero-title] ~ div { max-width: none; } /* кнопки в один ряд */
+  }
+  @media (min-width: 2240px) {
+    .hero-photo { aspect-ratio: 1 / 1; }
   }
 
   /* «Путёвка»: корешок отделён линией отрыва (пунктир 2 px), по её краям — вырезы цвета фона секции (--notch).

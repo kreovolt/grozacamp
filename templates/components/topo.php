@@ -23,9 +23,25 @@ $lines = [
     'M-20 100 C 280 40, 460 150, 680 80 S 1060 10, 1220 60',
     'M-20 60 C 290 0, 470 110, 690 40 S 1070 -30, 1220 20',
 ];
+// Для сверхшироких экранов (от 2240 px) — тот же рисунок вдвое длиннее: каждая линия продолжена двумя плавными дугами (S сохраняет
+// гладкость стыка) в поле 2400 × 500. Иначе на 3440 px растяжка 1200 × 500 почти вдвое сильнее по ширине, чем по высоте, и линии плоские.
+$wide = array_map(static function (string $d): string {
+    preg_match('/^M-20 (-?[0-9]+) C ([0-9]+)/', $d, $m);
+    $y = (int) $m[1];
+    $dx = (int) $m[2] - 180;
+
+    return $d . ' S ' . (1580 + $dx) . ' ' . ($y + 10) . ', ' . (1800 + $dx) . ' ' . ($y - 50)
+        . ' S ' . (2180 + $dx) . ' ' . ($y - 110) . ', 2420 ' . ($y - 60);
+}, $lines);
+$cls = $class ?? 'pointer-events-none absolute inset-0 h-full w-full text-sand opacity-20';
 ?>
-<svg class="topo <?= e($class ?? 'pointer-events-none absolute inset-0 h-full w-full text-sand opacity-20') ?>" viewBox="0 0 1200 500" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true" focusable="false">
+<svg class="topo <?= e($cls) ?> min-[2240px]:hidden" viewBox="0 0 1200 500" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true" focusable="false">
   <?php foreach ($lines as $d): ?>
+    <path d="<?= $d ?>" vector-effect="non-scaling-stroke"/>
+  <?php endforeach ?>
+</svg>
+<svg class="topo <?= e($cls) ?> hidden min-[2240px]:block" viewBox="0 0 2400 500" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true" focusable="false">
+  <?php foreach ($wide as $d): ?>
     <path d="<?= $d ?>" vector-effect="non-scaling-stroke"/>
   <?php endforeach ?>
 </svg>
