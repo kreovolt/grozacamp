@@ -245,17 +245,20 @@ $steps = [
             'media' => $shot('evening-circle', '(min-width: 1024px) 14rem, 31vw'),
             'tilt' => 'left',
             'caption' => 'Вечерний круг',
+            'captionClass' => 'text-[0.8125rem] sm:text-[0.9375rem]',
         ]) ?>
         <?= $this->partial('components/polaroid', [
             'media' => $shot('games-chairs', '(min-width: 1024px) 14rem, 31vw'),
             'tilt' => 'right',
             'caption' => 'Игры всем отрядом',
+            'captionClass' => 'text-[0.8125rem] sm:text-[0.9375rem]',
             'class' => 'translate-y-6',
         ]) ?>
         <?= $this->partial('components/polaroid', [
             'media' => $shot('awards-group', '(min-width: 1024px) 14rem, 31vw'),
             'tilt' => 'slight',
             'caption' => 'Грамоты в финале',
+            'captionClass' => 'text-[0.8125rem] sm:text-[0.9375rem]',
         ]) ?>
       </div>
     </div>

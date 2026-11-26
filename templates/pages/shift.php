@@ -175,9 +175,9 @@ $fact = static fn (string $name, string $value): string => '<div class="border-t
             <h3 class="font-display text-[1.375rem] font-semibold uppercase leading-tight tracking-[0.03em] text-ink">Три возрастные группы</h3>
             <ul class="mt-4 grid grid-cols-3 gap-2 sm:gap-3" role="list">
               <?php foreach ($groups as [$range, $name]): ?>
-                <li class="rounded-card bg-paper px-3 py-3.5 shadow-card sm:px-4 sm:py-4">
-                  <p class="tabular font-display text-[1.125rem] font-semibold leading-none text-ink sm:text-[1.5rem]"><?= t($range) ?></p>
-                  <p class="mt-1.5 text-[0.9375rem] text-ink-soft"><?= t($name) ?></p>
+                <li class="rounded-card bg-paper px-2 py-3 shadow-card sm:px-4 sm:py-4">
+                  <p class="tabular font-display text-base font-semibold leading-none text-ink sm:text-[1.5rem]"><?= t($range) ?></p>
+                  <p class="max-sm:hyphenate mt-1.5 text-[0.8125rem] leading-snug text-ink-soft sm:text-[0.9375rem]"><?= t($name) ?></p>
                 </li>
               <?php endforeach ?>
             </ul>

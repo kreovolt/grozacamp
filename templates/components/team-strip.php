@@ -44,10 +44,10 @@ $initials = static function (string $name): string {
       <div class="min-w-0">
         <p class="font-bold leading-snug text-ink"><?= t($name) ?></p>
         <?php if (!empty($member['role'])): ?>
-          <p class="mt-1 font-display text-[0.875rem] font-medium uppercase leading-snug tracking-[0.08em] text-rust-deep"><?= t((string) $member['role']) ?></p>
+          <p class="max-sm:hyphenate mt-1 font-display text-[0.875rem] font-medium uppercase leading-snug tracking-[0.08em] text-rust-deep"><?= t((string) $member['role']) ?></p>
         <?php endif ?>
         <?php if (!empty($member['about'])): ?>
-          <p class="mt-2 line-clamp-3 text-[0.9375rem] leading-relaxed text-ink-soft"><?= t((string) $member['about']) ?></p>
+          <p class="max-sm:hyphenate mt-2 line-clamp-3 text-[0.9375rem] leading-relaxed text-ink-soft"><?= t((string) $member['about']) ?></p>
         <?php endif ?>
       </div>
     </li>

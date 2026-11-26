@@ -8,6 +8,7 @@ declare(strict_types=1);
  * @var string|null $tilt    left (−2°) | right (+1,5°) | slight (−1°) | none
  * @var string|null $ratio   4/5 (по умолчанию) | 1/1 | 4/3 | 3/4
  * @var string|null $class
+ * @var string|null $captionClass  размер подписи (по умолчанию text-[0.9375rem]); у маленьких фото на телефоне — мельче
  */
 use function Groza\View\e;
 use function Groza\View\t;
@@ -36,6 +37,6 @@ $classes = implode(' ', array_filter([
     <?= $media ?>
   </div>
   <?php if (!empty($caption)): ?>
-    <figcaption class="px-1 pb-1 pt-2.5 text-[0.9375rem] leading-snug text-ink-soft"><?= t($caption) ?></figcaption>
+    <figcaption class="<?= e('max-sm:hyphenate px-1 pb-1 pt-2.5 leading-snug text-ink-soft ' . ($captionClass ?? 'text-[0.9375rem]')) ?>"><?= t($caption) ?></figcaption>
   <?php endif ?>
 </figure>

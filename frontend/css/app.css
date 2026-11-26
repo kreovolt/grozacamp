@@ -269,6 +269,13 @@
   .tabular { font-variant-numeric: tabular-nums lining-nums; }
   /* Диапазоны и телефоны без пробелов («10:00–19:00», «247-43-47»): браузер иначе переносит после тире и дефиса (t(), richtext()) */
   .nobr { white-space: nowrap; }
+  /* Узкие колонки (подписи к маленьким фото, карточки команды): длинное слово переносится по слогам с дефисом,
+     а не рвётся посередине. Только длинные слова (от 10 букв, минимум по 4 на строке); в шаблонах — max-sm:hyphenate, только на телефоне */
+  .hyphenate {
+    -webkit-hyphens: auto;
+    hyphens: auto;
+    hyphenate-limit-chars: 10 4 4;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
