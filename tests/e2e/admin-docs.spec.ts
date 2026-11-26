@@ -199,6 +199,48 @@ test('редактор базы: два раздела с короткими н�
   expect((await page.request.get(thumb!)).status()).toBe(200); // фото убрано из галереи, но версия с ним — в истории
 });
 
+test('«Ещё фото» дважды: три новых фото с подписями сохраняются все три', async ({ page }) => {
+  await login(page);
+  await page.goto('/admin/venues/');
+  await page.locator('.row').first().getByRole('link', { name: 'Изменить' }).click();
+  await formReady(page);
+  const keys = () => page.locator('input[name="photos__old[]"]').evaluateAll((els) => els.map((e) => (e as HTMLInputElement).value));
+  const before = await keys();
+
+  const add = page.getByRole('button', { name: 'Ещё фото' });
+  await add.click();
+  await add.click();
+  // у каждого места своё имя поля: иначе PHP оставит только последнее (пустое) и фото пропадут
+  await expect(page.locator('input[type=file][name^="photos__new_"]')).toHaveCount(3);
+  expect(await page.locator('input[type=file][name^="photos__new_"]').evaluateAll((els) => els.map((e) => (e as HTMLInputElement).name)))
+    .toEqual(['photos__new_1', 'photos__new_2', 'photos__new_3']);
+  const files = [JPG, resolve('tests/fixtures/uploads/photo.png'), resolve('tests/fixtures/uploads/photo.webp')];
+  for (const [i, file] of files.entries()) {
+    await page.locator(`#f-photos__new_${i + 1}`).setInputFiles(file);
+    await page.locator(`#f-photos__newalt_${i + 1}`).fill(`Новое фото ${i + 1}`);
+    await expect(page.locator(`label[for="f-photos__new_${i + 1}"]`)).toContainText('Выбрано:');
+  }
+  await page.getByRole('button', { name: 'Сохранить' }).click();
+  await expect(page.locator('.alert-ok')).toContainText('Сохранено');
+
+  const after = await keys();
+  expect(after.length).toBe(before.length + 3);
+  const added = after.slice(before.length);
+  for (const [i, key] of added.entries()) {
+    expect(key).toMatch(/^[0-9a-f]{16}$/);
+    await expect(page.locator(`input[name="photos__alt_${key}"]`)).toHaveValue(`Новое фото ${i + 1}`);
+  }
+
+  // вернуть как было
+  await formReady(page);
+  // флажок под липкой панелью кнопок: щелчок по координатам попал бы в неё
+  for (const key of added) await page.locator(`input[name="photos__del_${key}"]`).dispatchEvent('click');
+  for (const key of added) await expect(page.locator(`input[name="photos__del_${key}"]`)).toBeChecked();
+  await page.getByRole('button', { name: 'Сохранить' }).click();
+  await expect(page.locator('.alert-ok')).toContainText('Сохранено');
+  expect(await keys()).toEqual(before);
+});
+
 test('вопросы: счётчик «На главной: N из 5»; отзывы: скрыть и показать', async ({ page }) => {
   await login(page);
   await page.goto('/admin/faq/');

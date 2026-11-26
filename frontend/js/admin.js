@@ -257,13 +257,13 @@ function initGallery(root) {
         const last = slots[slots.length - 1];
         const copy = last.cloneNode(true);
         const number = Array.from(slots).reduce((max, slot) => {
-          const m = /__new_(d+)$/.exec(slot.querySelector('input[type=file]').name);
+          const m = /__new_(\d+)$/.exec(slot.querySelector('input[type=file]').name);
           return m ? Math.max(max, Number(m[1])) : max;
         }, 0) + 1;
         for (const el of Array.from(copy.querySelectorAll('[id], [name], [for]'))) {
           for (const attr of ['id', 'name', 'for']) {
             const v = el.getAttribute(attr);
-            if (v) el.setAttribute(attr, v.replace(/(__new(?:alt)?_)d+$/, '$1' + number));
+            if (v) el.setAttribute(attr, v.replace(/(__new(?:alt)?_)\d+$/, '$1' + number));
           }
           if (el.tagName === 'INPUT') el.value = '';
           if (el.classList.contains('file-pick')) el.textContent = 'Добавить фото';
