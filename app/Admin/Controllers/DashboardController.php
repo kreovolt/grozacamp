@@ -93,12 +93,12 @@ final class DashboardController
     private function recent(): array
     {
         $out = [];
-        $describe = fn (array $row): ?array => $this->describe((string) ($row['action'] ?? ''), (string) ($row['target'] ?? ''));
-        // Входы и выходы отсеиваются до подсчёта лимита: длинная череда неудачных входов не вытесняет настоящие изменения
-        foreach ($this->app->audit()->recent(self::RECENT, static fn (array $row): bool => $describe($row) !== null) as $row) {
-            $described = $describe($row);
+        // Входы и выходы отсеиваются до подсчёта лимита: длинная череда неудачных входов не вытесняет настоящие изменения.
+        // Описание строки считается один раз — в самом отборе.
+        $this->app->audit()->recent(self::RECENT, function (array $row) use (&$out): bool {
+            $described = $this->describe((string) ($row['action'] ?? ''), (string) ($row['target'] ?? ''));
             if ($described === null) {
-                continue;
+                return false;
             }
             $out[] = [
                 'who' => $this->app->actorName((string) ($row['actor'] ?? '')),
@@ -106,10 +106,9 @@ final class DashboardController
                 'what' => $described[0],
                 'title' => $described[1],
             ];
-            if (count($out) >= self::RECENT) {
-                break;
-            }
-        }
+
+            return true;
+        });
 
         return $out;
     }

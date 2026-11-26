@@ -40,6 +40,8 @@ final class BackupController
                 @unlink($stale);
             }
         }
+        // большая папка загрузок: сборка архива может занять дольше обычного предела времени запроса
+        @set_time_limit(300);
         $tmp = $tmpDir . '/backup-' . bin2hex(random_bytes(8)) . '.zip';
         $zip = new \ZipArchive();
         if ($zip->open($tmp, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
