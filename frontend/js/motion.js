@@ -33,8 +33,10 @@ function guarded(step) {
   }
 }
 
+// Делим только по обычным пробелам: слова, связанные неразрывным пробелом типографа («в лесу», «8–17 лет»),
+// остаются одним блоком и не разрываются переносом строки (\s в JS захватил бы и неразрывный пробел)
 function splitWords(el) {
-  const words = el.textContent.trim().split(/\s+/);
+  const words = el.textContent.trim().split(/[ \t\n\r\f]+/);
   el.textContent = '';
   return words.map((word, i) => {
     const span = document.createElement('span');
