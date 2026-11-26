@@ -9,6 +9,8 @@ use Groza\Pages\TextPage;
 use Groza\Tests\Support\TestApp;
 use PHPUnit\Framework\TestCase;
 
+use function Groza\View\t;
+
 /** «Родителям», вакансии, команда, контакты, правила, политика и 404 (спека §7.4, §7.5, §7.7). Данные — seed/demo, часы — 2027-01-15. */
 final class ContentPagesTest extends TestCase
 {
@@ -53,7 +55,7 @@ final class ContentPagesTest extends TestCase
     {
         $res = TestApp::get(TestApp::make(), '/info/');
         $this->assertSame(200, $res->status());
-        $this->assertMatchesRegularExpression('#<h1[^>]*>\s*Информация для родителей\s*</h1>#u', $res->body());
+        $this->assertMatchesRegularExpression('#<h1[^>]*>\s*Информация для\x{00A0}родителей\s*</h1>#u', $res->body());
         preg_match_all('#<section[^>]*\sid="(' . implode('|', self::INFO_IDS) . ')"#u', $res->body(), $m);
         $this->assertSame(self::INFO_IDS, $m[1]);
         foreach (self::INFO_IDS as $id) {
@@ -68,12 +70,12 @@ final class ContentPagesTest extends TestCase
         $body = TestApp::get($app, '/info/')->body();
         $packing = $this->section($body, 'packing');
         foreach ($texts['lists.packing'] as $item) {
-            $this->assertStringContainsString(htmlspecialchars($item, ENT_QUOTES), $packing);
+            $this->assertStringContainsString(t($item), $packing);
         }
         $this->assertSame(count($texts['lists.packing']), substr_count($packing, '<li'));
         $documents = $this->section($body, 'documents');
         foreach ($texts['lists.documents'] as $item) {
-            $this->assertStringContainsString(htmlspecialchars($item, ENT_QUOTES), $documents);
+            $this->assertStringContainsString(t($item), $documents);
         }
     }
 
@@ -95,7 +97,7 @@ final class ContentPagesTest extends TestCase
         $body = TestApp::get($app, '/info/')->body();
         $faq = $this->section($body, 'faq');
         foreach ($app->store()->read('faq')['items'] as $q) {
-            $this->assertStringContainsString(htmlspecialchars($q['question'], ENT_QUOTES), $faq);
+            $this->assertStringContainsString(t($q['question']), $faq);
         }
         $this->assertStringContainsString('href="/pravila/#poseshchenie"', $this->section($body, 'visits'));
         $this->assertStringContainsString('id="poseshchenie"', TestApp::get($app, '/pravila/')->body());
@@ -122,7 +124,7 @@ final class ContentPagesTest extends TestCase
         $app = TestApp::make();
         $app->store()->write('vacancies', ['items' => []], 'test');
         $body = TestApp::get($app, '/vacancies/')->body();
-        $this->assertStringContainsString('Сейчас набор закрыт, оставьте анкету на следующий сезон', $body);
+        $this->assertStringContainsString("Сейчас набор закрыт, оставьте анкету на\u{00A0}следующий сезон", $body);
         preg_match_all('#<option value="([^"]*)"#u', $this->section($body, 'anketa'), $m);
         $this->assertSame(['', 'Другое'], $m[1]);
     }
@@ -159,7 +161,7 @@ final class ContentPagesTest extends TestCase
         $body = TestApp::get($app, '/team/')->body();
 
         $this->assertStringNotContainsString('Смирнов Никита', $body);
-        $headings = ['Руководство', 'Педагоги', 'Вожатые', 'Ещё в команде'];
+        $headings = ['Руководство', 'Педагоги', 'Вожатые', "Ещё в\u{00A0}команде"];
         $last = -1;
         foreach ($headings as $h) {
             $pos = mb_strpos($body, '>' . $h . '<');
@@ -177,12 +179,12 @@ final class ContentPagesTest extends TestCase
         $body = TestApp::get(TestApp::make(), '/contacts/')->body();
         $this->assertMatchesRegularExpression('#<h1[^>]*>\s*Контакты\s*</h1>#u', $body);
         $this->assertStringContainsString('href="tel:+73422474347"', $body);
-        $this->assertStringContainsString('+7 (342) 247-43-47', $body);
+        $this->assertStringContainsString("+7\u{00A0}(342)\u{00A0}247-43-47", $body);
         $this->assertStringContainsString('href="https://wa.me/79991239300"', $body);
         $this->assertStringContainsString('href="mailto:2474347@bk.ru"', $body);
-        $this->assertStringContainsString('г. Пермь, ул. Милиционера Власова, 37', $body);
-        $this->assertStringContainsString('Пн–Пт 10:00–19:00', $body);
-        $this->assertStringContainsString('Сб–Вс 12:00–17:00', $body);
+        $this->assertStringContainsString("г.\u{00A0}Пермь, ул.\u{00A0}Милиционера Власова,\u{00A0}37", $body);
+        $this->assertStringContainsString("<span class=\"nobr\">Пн–Пт</span>\u{00A0}<span class=\"nobr\">10:00–19:00</span>", $body);
+        $this->assertStringContainsString("<span class=\"nobr\">Сб–Вс</span>\u{00A0}<span class=\"nobr\">12:00–17:00</span>", $body);
         $this->assertStringContainsString('https://vk.com/grozacamp', $body);
         $this->assertStringContainsString('yandex.ru/maps', $body);
     }
@@ -203,8 +205,8 @@ final class ContentPagesTest extends TestCase
         $texts = $app->store()->read('texts');
         $rules = TestApp::get($app, '/pravila/');
         $this->assertSame(200, $rules->status());
-        $this->assertMatchesRegularExpression('#<h1[^>]*>\s*Правила пребывания в лагере\s*</h1>#u', $rules->body());
-        $this->assertStringContainsString('В лагере запрещено', $rules->body());
+        $this->assertMatchesRegularExpression("#<h1[^>]*>\\s*Правила пребывания в\u{00A0}лагере\\s*</h1>#u", $rules->body());
+        $this->assertStringContainsString("В\u{00A0}лагере запрещено", $rules->body());
         $this->assertStringContainsString('class="richtext', $rules->body());
         $this->assertStringContainsString('href="#poseshchenie"', $rules->body(), 'оглавление');
         $this->assertStringNotContainsString('Информация обновляется', $rules->body());

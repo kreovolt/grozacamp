@@ -16,6 +16,8 @@ use Groza\Support\RateLimiter;
 use Groza\Tests\Support\TestApp;
 use PHPUnit\Framework\TestCase;
 
+use function Groza\View\t;
+
 /** Приложение в тестах живёт в 2027-01-15 12:00 (Пермь); форма «показана» за 30 с до того. */
 final class FormControllerTest extends TestCase
 {
@@ -112,7 +114,7 @@ final class FormControllerTest extends TestCase
         $html = $res->body();
         $this->assertStringContainsString('Мария &lt;b&gt;Т&lt;/b&gt;', $html);
         $this->assertStringNotContainsString('<b>Т</b>', $html);
-        $this->assertStringContainsString('Нужно согласие на обработку данных', $html);
+        $this->assertStringContainsString(t('Нужно согласие на обработку данных'), $html);
         $this->assertMatchesRegularExpression('/name="_ts" value="\d+"/', $html);
         $this->assertSame([], $this->sent($app));
     }
@@ -174,7 +176,7 @@ final class FormControllerTest extends TestCase
         });
         $res = $this->booking($app);
         $this->assertSame(503, $res->status());
-        $this->assertStringContainsString('+7 (342) 247-43-47', $res->body());
+        $this->assertStringContainsString("+7\u{00A0}(342)\u{00A0}247-43-47", $res->body());
         $this->assertStringContainsString('wa.me/79991239300', $res->body());
 
         $json = $this->booking($app, [], ['Accept' => 'application/json']);
@@ -190,7 +192,7 @@ final class FormControllerTest extends TestCase
         }
         $res = $this->booking($app);
         $this->assertSame(429, $res->status());
-        $this->assertStringContainsString('+7 (342) 247-43-47', $res->body());
+        $this->assertStringContainsString("+7\u{00A0}(342)\u{00A0}247-43-47", $res->body());
         $json = $this->booking($app, [], ['Accept' => 'application/json']);
         $this->assertSame(429, $json->status());
         $this->assertSame('{"ok":false,"fallback":true}', $json->body());
@@ -328,7 +330,7 @@ final class FormControllerTest extends TestCase
         $page = TestApp::get($app, '/booking/');
         $this->assertSame(200, $page->status());
         $this->assertStringNotContainsString('name="_ts"', $page->body());
-        $this->assertStringContainsString('+7 (342) 247-43-47', $page->body());
+        $this->assertStringContainsString("+7\u{00A0}(342)\u{00A0}247-43-47", $page->body());
 
         $vacancies = TestApp::get($app, '/vacancies/');
         $this->assertSame(200, $vacancies->status());
@@ -343,7 +345,7 @@ final class FormControllerTest extends TestCase
         $post = ['_ts' => '1', '_sig' => 'x', 'parentName' => 'Анна'];
         $res = TestApp::post($app, '/form/booking/', $post);
         $this->assertSame(503, $res->status());
-        $this->assertStringContainsString('+7 (342) 247-43-47', $res->body());
+        $this->assertStringContainsString("+7\u{00A0}(342)\u{00A0}247-43-47", $res->body());
         $this->assertStringContainsString('wa.me/79991239300', $res->body());
         $json = TestApp::post($app, '/form/booking/', $post, ['Accept' => 'application/json']);
         $this->assertSame('{"ok":false,"fallback":true}', $json->body());
@@ -367,7 +369,7 @@ final class FormControllerTest extends TestCase
         $prod = TestApp::make(['env' => 'prod', 'appSecret' => '', 'fakeNow' => null]);
         $html = $prod->view()->render('forms/booking', ['values' => [], 'errors' => [], 'options' => ['shifts' => []], 'guard' => null]);
         $this->assertStringNotContainsString('<form', $html);
-        $this->assertStringContainsString('+7 (342) 247-43-47', $html);
+        $this->assertStringContainsString("+7\u{00A0}(342)\u{00A0}247-43-47", $html);
     }
 
     public function test_valid_long_secret_in_prod_is_accepted(): void
@@ -401,7 +403,7 @@ final class FormControllerTest extends TestCase
         $app = $this->app();
         $res = TestApp::get($app, '/spasibo/', ['f' => 'booking']);
         $this->assertSame(200, $res->status());
-        $this->assertStringContainsString('Спасибо! Мы перезвоним', $res->body());
+        $this->assertStringContainsString("Спасибо! Мы\u{00A0}перезвоним", $res->body());
         $this->assertStringContainsString('noindex', $res->body());
         $this->assertSame(200, TestApp::get($app, '/spasibo/')->status());
     }
@@ -411,11 +413,11 @@ final class FormControllerTest extends TestCase
         $app = $this->app();
         $app->store()->write('settings', ['hoursWeekdays' => 'Пн–Сб 9:00–20:00', 'hoursWeekend' => ''] + $app->store()->read('settings'), 'test');
         $body = TestApp::get($app, '/spasibo/', ['f' => 'booking'])->body();
-        $this->assertStringContainsString('Позвоним в рабочее время — Пн–Сб 9:00–20:00.', $body);
+        $this->assertStringContainsString(t('Позвоним в рабочее время — Пн–Сб 9:00–20:00.'), $body);
         $this->assertStringNotContainsString('10:00', $body);
 
         $app->store()->write('settings', ['hoursWeekdays' => '', 'hoursWeekend' => ''] + $app->store()->read('settings'), 'test');
-        $this->assertStringContainsString('Позвоним в рабочее время.', TestApp::get($app, '/spasibo/', ['f' => 'booking'])->body());
+        $this->assertStringContainsString("Позвоним в\u{00A0}рабочее время.", TestApp::get($app, '/spasibo/', ['f' => 'booking'])->body());
     }
 
     public function test_get_on_form_endpoint_is_405(): void

@@ -12,6 +12,8 @@ declare(strict_types=1);
 use function Groza\View\e;
 use function Groza\View\icon;
 use function Groza\View\pending;
+use function Groza\View\t;
+use function Groza\View\typeset;
 
 $this->layout('layout', ['page' => 'text', 'title' => $title, 'description' => $description]);
 
@@ -28,7 +30,7 @@ $withToc = count($toc) >= 2;
   <?= $this->partial('components/topo', ['class' => 'pointer-events-none absolute inset-0 -z-10 h-full w-full text-sand opacity-[0.14]']) ?>
   <div class="wrap pb-14 pt-8 desk:pb-20 desk:pt-12">
     <?= $this->partial('partials/breadcrumbs', ['items' => [['label' => 'Главная', 'href' => '/'], ['label' => $title]], 'tone' => 'dark', 'class' => 'mb-8']) ?>
-    <h1 class="max-w-[24ch] font-display text-[clamp(2.25rem,1.5rem+3vw,4rem)] font-bold uppercase leading-[1.05] tracking-[0.01em] text-[#f4efe3]" id="text-title"><?= e($title) ?></h1>
+    <h1 class="max-w-[24ch] font-display text-[clamp(2.25rem,1.5rem+3vw,4rem)] font-bold uppercase leading-[1.05] tracking-[0.01em] text-[#f4efe3]" id="text-title"><?= t($title) ?></h1>
   </div>
 </section>
 
@@ -40,7 +42,7 @@ $withToc = count($toc) >= 2;
     <?php if ($html === ''): ?>
       <p class="text-lg leading-relaxed"><?= pending('') ?></p>
     <?php else: ?>
-      <div class="richtext document leading-relaxed text-ink-soft"><?= $html ?></div>
+      <div class="richtext document leading-relaxed text-ink-soft"><?= typeset($html) ?></div>
     <?php endif ?>
     <?php if ($files !== []): ?>
       <ul class="mt-10 border-t border-dashed border-moss/45" role="list">
@@ -48,7 +50,7 @@ $withToc = count($toc) >= 2;
           <li class="border-b border-dashed border-moss/45">
             <a class="flex items-center gap-3 py-4 font-semibold text-rust-deep no-underline hover:text-rust-dark" href="<?= e($f['url']) ?>" target="_blank" rel="noopener">
               <?= icon('arrow-right', 'size-5 shrink-0') ?>
-              <span><?= e($f['title'] !== '' ? $f['title'] : 'Скачать PDF') ?> <span class="font-normal text-ink-soft">(PDF<?= $size($f['bytes']) !== '' ? ', ' . $size($f['bytes']) : '' ?>)</span></span>
+              <span><?= t($f['title'] !== '' ? $f['title'] : 'Скачать PDF') ?> <span class="font-normal text-ink-soft">(PDF<?= $size($f['bytes']) !== '' ? ', ' . $size($f['bytes']) : '' ?>)</span></span>
             </a>
           </li>
         <?php endforeach ?>

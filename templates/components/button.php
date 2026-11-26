@@ -14,6 +14,7 @@ declare(strict_types=1);
  */
 use function Groza\View\e;
 use function Groza\View\icon;
+use function Groza\View\t;
 
 $variants = [
     'primary' => 'bg-rust-dark text-white shadow-cta hover:bg-rust-deep',
@@ -36,7 +37,7 @@ $extra = '';
 foreach ($attrs ?? [] as $name => $value) {
     $extra .= ' ' . e($name) . '="' . e($value) . '"';
 }
-$inner = (!empty($icon) ? icon($icon, 'size-[1.15em]') : '') . '<span>' . e($label) . '</span>';
+$inner = (!empty($icon) ? icon($icon, 'size-[1.15em]') : '') . '<span>' . t($label) . '</span>';
 ?>
 <?php if (!empty($href)): ?>
 <a class="<?= e($classes) ?>" href="<?= e($href) ?>"<?= $extra ?>><?= $inner ?></a>

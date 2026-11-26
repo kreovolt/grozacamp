@@ -11,6 +11,7 @@ use Groza\Support\Phone;
 use function Groza\View\e;
 use function Groza\View\icon;
 use function Groza\View\safe_url;
+use function Groza\View\t;
 use function Groza\View\tel;
 
 $this->layout('layout', ['page' => 'contacts']);
@@ -29,7 +30,7 @@ $label = 'text-[0.8125rem] font-semibold uppercase tracking-[0.1em] text-ink-sof
   <div class="wrap pb-14 pt-8 desk:pb-20 desk:pt-12">
     <?= $this->partial('partials/breadcrumbs', ['items' => [['label' => 'Главная', 'href' => '/'], ['label' => 'Контакты']], 'tone' => 'dark', 'class' => 'mb-8']) ?>
     <h1 class="font-display text-[clamp(2.25rem,1.5rem+3vw,4rem)] font-bold uppercase leading-[1.05] tracking-[0.01em] text-[#f4efe3]" id="contacts-title">Контакты</h1>
-    <p class="mt-5 max-w-[34rem] text-[1.0625rem] leading-relaxed text-cream/90 sm:text-lg">Быстрее всего ответим по телефону или в WhatsApp. Письма читаем в рабочее время.</p>
+    <p class="mt-5 max-w-[34rem] text-[1.0625rem] leading-relaxed text-cream/90 sm:text-lg"><?= t('Быстрее всего ответим по телефону или в WhatsApp. Письма читаем в рабочее время.') ?></p>
   </div>
 </section>
 
@@ -40,7 +41,7 @@ $label = 'text-[0.8125rem] font-semibold uppercase tracking-[0.1em] text-ink-sof
         <?= icon('phone', 'mt-1 size-6 text-moss') ?>
         <div>
           <p class="<?= $label ?>">Телефон</p>
-          <a class="tabular mt-1 inline-block font-display text-[clamp(1.75rem,1.4rem+1.4vw,2.5rem)] font-semibold leading-tight tracking-[0.02em] text-ink no-underline hover:text-rust-deep" href="<?= e(tel($phone)) ?>"><?= e(Phone::pretty($phone)) ?></a>
+          <a class="tabular mt-1 inline-block whitespace-nowrap font-display text-[clamp(1.75rem,1.4rem+1.4vw,2.5rem)] font-semibold leading-tight tracking-[0.02em] text-ink no-underline hover:text-rust-deep" href="<?= e(tel($phone)) ?>"><?= t(Phone::pretty($phone)) ?></a>
         </div>
       </li>
     <?php endif ?>
@@ -49,7 +50,7 @@ $label = 'text-[0.8125rem] font-semibold uppercase tracking-[0.1em] text-ink-sof
         <?= icon('message-circle', 'mt-1 size-6 text-moss') ?>
         <div>
           <p class="<?= $label ?>">WhatsApp</p>
-          <a class="tabular mt-1 inline-block text-xl font-semibold text-rust-deep underline decoration-rust-deep/40 underline-offset-4 hover:decoration-rust-deep" href="https://wa.me/<?= e($wa) ?>" target="_blank" rel="noopener"><?= e(Phone::pretty((string) $settings['whatsapp'])) ?></a>
+          <a class="tabular mt-1 inline-block whitespace-nowrap text-xl font-semibold text-rust-deep underline decoration-rust-deep/40 underline-offset-4 hover:decoration-rust-deep" href="https://wa.me/<?= e($wa) ?>" target="_blank" rel="noopener"><?= t(Phone::pretty((string) $settings['whatsapp'])) ?></a>
         </div>
       </li>
     <?php endif ?>
@@ -68,7 +69,7 @@ $label = 'text-[0.8125rem] font-semibold uppercase tracking-[0.1em] text-ink-sof
         <div>
           <p class="<?= $label ?>">ВКонтакте</p>
           <a class="mt-1 inline-block break-all text-xl font-semibold text-rust-deep underline decoration-rust-deep/40 underline-offset-4 hover:decoration-rust-deep" href="<?= e($vk) ?>" target="_blank" rel="noopener"><?= e(preg_replace('#^https?://#', '', $vk) ?? $vk) ?></a>
-          <p class="mt-1 text-[0.9375rem] text-ink-soft">Каждый день выкладываем фото и видео со смены.</p>
+          <p class="mt-1 text-[0.9375rem] text-ink-soft"><?= t('Каждый день выкладываем фото и видео со смены.') ?></p>
         </div>
       </li>
     <?php endif ?>
@@ -79,12 +80,12 @@ $label = 'text-[0.8125rem] font-semibold uppercase tracking-[0.1em] text-ink-sof
       <?= $this->partial('components/topo', ['class' => 'pointer-events-none absolute inset-0 -z-10 h-full w-full text-sand opacity-[0.14]']) ?>
       <h2 class="font-display text-[1.5rem] font-bold uppercase leading-tight tracking-[0.02em]" id="office-title">Офис</h2>
       <?php if ($address !== ''): ?>
-        <p class="mt-4 flex items-start gap-3 text-[1.0625rem] leading-snug"><?= icon('map-pin', 'mt-0.5 size-5 shrink-0 text-gold') ?><span><?= e($address) ?></span></p>
+        <p class="mt-4 flex items-start gap-3 text-[1.0625rem] leading-snug"><?= icon('map-pin', 'mt-0.5 size-5 shrink-0 text-gold') ?><span><?= t($address) ?></span></p>
       <?php endif ?>
       <?php if ($hours !== []): ?>
         <ul class="mt-4 space-y-1.5" role="list">
           <?php foreach ($hours as $i => $h): ?>
-            <li class="flex items-start gap-3 text-[1.0625rem] leading-snug"><?= icon('clock', 'mt-0.5 size-5 shrink-0 ' . ($i === 0 ? 'text-gold' : 'text-gold/0')) ?><span class="tabular"><?= e((string) $h) ?></span></li>
+            <li class="flex items-start gap-3 text-[1.0625rem] leading-snug"><?= icon('clock', 'mt-0.5 size-5 shrink-0 ' . ($i === 0 ? 'text-gold' : 'text-gold/0')) ?><span class="tabular"><?= t((string) $h) ?></span></li>
           <?php endforeach ?>
         </ul>
       <?php endif ?>

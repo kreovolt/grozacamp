@@ -112,7 +112,7 @@ final class ConfigTest extends TestCase
         $booking = $app->handle(Request::create('GET', '/booking/', https: true));
         $this->assertSame(200, $booking->status());
         $this->assertStringNotContainsString('name="_ts"', $booking->body(), 'форма заменена телефоном');
-        $this->assertStringContainsString('+7 (342) 247-43-47', $booking->body());
+        $this->assertStringContainsString("+7\u{00A0}(342)\u{00A0}247-43-47", $booking->body());
         $this->assertNull($app->guardFields('booking'));
     }
 

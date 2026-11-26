@@ -14,6 +14,7 @@ use Groza\Seo\Meta;
 
 use function Groza\View\asset;
 use function Groza\View\e;
+use function Groza\View\t;
 
 $page ??= 'page';
 $meta = Meta::for($page, ['baseUrl' => $baseUrl, 'path' => $currentPath, 'title' => $title ?? null, 'description' => $description ?? null]);
@@ -59,7 +60,7 @@ if ($page === 'home') {
 <?php endforeach ?>
 </head>
 <body class="flex min-h-screen flex-col" id="top">
-<a class="skip-link" href="#main">Перейти к содержанию</a>
+<a class="skip-link" href="#main"><?= t('Перейти к содержанию') ?></a>
 <?= $this->partial('partials/topbar') ?>
 <?= $this->partial('partials/header') ?>
 <main id="main" tabindex="-1" class="flex-1">

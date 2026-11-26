@@ -8,6 +8,7 @@ declare(strict_types=1);
  * @var string|null $class
  */
 use function Groza\View\e;
+use function Groza\View\t;
 
 $tag = 'h' . max(2, min(4, (int) ($level ?? 3)));
 $last = count($steps) - 1;
@@ -20,8 +21,8 @@ $last = count($steps) - 1;
       <?php endif ?>
       <span class="grid size-12 shrink-0 place-items-center rounded-full border-2 border-dashed border-moss bg-sand font-display text-xl font-bold leading-none text-forest" aria-hidden="true"><?= $i + 1 ?></span>
       <div class="pt-1.5">
-        <<?= $tag ?> class="font-display text-[1.375rem] font-semibold uppercase leading-tight tracking-[0.03em] text-ink"><?= e($step['title']) ?></<?= $tag ?>>
-        <p class="mt-1.5 max-w-[46ch] leading-relaxed text-ink-soft"><?= e($step['text']) ?></p>
+        <<?= $tag ?> class="font-display text-[1.375rem] font-semibold uppercase leading-tight tracking-[0.03em] text-ink"><?= t($step['title']) ?></<?= $tag ?>>
+        <p class="mt-1.5 max-w-[46ch] leading-relaxed text-ink-soft"><?= t($step['text']) ?></p>
       </div>
     </li>
   <?php endforeach ?>

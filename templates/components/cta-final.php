@@ -17,6 +17,7 @@ use Groza\Support\Phone;
 use function Groza\View\e;
 use function Groza\View\icon;
 use function Groza\View\picture;
+use function Groza\View\t;
 use function Groza\View\tel;
 
 $hours = array_values(array_filter([$settings['hoursWeekdays'] ?? '', $settings['hoursWeekend'] ?? '']));
@@ -32,20 +33,20 @@ $hours = array_values(array_filter([$settings['hoursWeekdays'] ?? '', $settings[
 
   <div class="wrap grid items-end gap-10 py-16 sm:py-20 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] desk:py-28">
     <div>
-      <h2 class="font-display text-[clamp(2.5rem,1.6rem+3.6vw,4.5rem)] font-bold uppercase leading-[1.08] tracking-[0.01em] text-cream"<?= !empty($id) ? ' id="' . e($id) . '"' : '' ?>><?= e($title) ?></h2>
+      <h2 class="font-display text-[clamp(2.5rem,1.6rem+3.6vw,4.5rem)] font-bold uppercase leading-[1.08] tracking-[0.01em] text-cream"<?= !empty($id) ? ' id="' . e($id) . '"' : '' ?>><?= t($title) ?></h2>
       <?php if (!empty($lead)): ?>
-        <p class="mt-5 max-w-[46ch] text-[1.0625rem] leading-relaxed text-cream/85 sm:text-lg"><?= e($lead) ?></p>
+        <p class="mt-5 max-w-[46ch] text-[1.0625rem] leading-relaxed text-cream/85 sm:text-lg"><?= t($lead) ?></p>
       <?php endif ?>
       <?= $this->partial('components/button', ['label' => $label ?? 'Выбрать смену', 'href' => $href, 'size' => 'lg', 'class' => 'mt-8 w-full sm:w-auto']) ?>
     </div>
 
     <div class="border-t border-dashed border-sage/40 pt-8 lg:border-l lg:border-t-0 lg:pb-1 lg:pl-10 lg:pt-0">
-      <p class="text-[1.0625rem] font-semibold text-cream/90">Остались вопросы? Позвоните в офис</p>
+      <p class="text-[1.0625rem] font-semibold text-cream/90"><?= t('Остались вопросы? Позвоните в офис') ?></p>
       <?php if (!empty($settings['phone'])): ?>
-        <a class="tabular mt-3 inline-block font-display text-[clamp(1.875rem,1.5rem+1.4vw,2.5rem)] font-semibold leading-none tracking-[0.02em] text-cream no-underline hover:text-white" href="<?= e(tel((string) $settings['phone'])) ?>"><?= e(Phone::pretty((string) $settings['phone'])) ?></a>
+        <a class="tabular mt-3 inline-block whitespace-nowrap font-display text-[clamp(1.875rem,1.5rem+1.4vw,2.5rem)] font-semibold leading-none tracking-[0.02em] text-cream no-underline hover:text-white" href="<?= e(tel((string) $settings['phone'])) ?>"><?= t(Phone::pretty((string) $settings['phone'])) ?></a>
       <?php endif ?>
       <?php if ($hours): ?>
-        <p class="mt-3 flex items-center gap-2 text-[0.9375rem] text-sage"><?= icon('clock', 'size-4 text-gold') ?><?= e(implode(', ', $hours)) ?></p>
+        <p class="mt-3 flex items-center gap-2 text-[0.9375rem] text-sage"><?= icon('clock', 'size-4 text-gold') ?><span><?= t(implode(', ', $hours)) ?></span></p>
       <?php endif ?>
       <?php if (!empty($settings['whatsapp'])): ?>
         <?= $this->partial('components/button', [

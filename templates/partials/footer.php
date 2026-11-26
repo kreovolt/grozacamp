@@ -13,6 +13,7 @@ use Groza\Support\Phone;
 use function Groza\View\e;
 use function Groza\View\icon;
 use function Groza\View\safe_url;
+use function Groza\View\t;
 use function Groza\View\tel;
 
 $svedeniya = null;
@@ -29,14 +30,14 @@ $heading = 'mb-5 font-display text-[0.875rem] font-semibold uppercase tracking-[
   <div class="wrap relative grid gap-x-10 gap-y-12 pb-12 pt-14 md:grid-cols-2 desk:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)_minmax(0,1.35fr)_minmax(0,1.1fr)] desk:pt-16">
     <div class="flex flex-col items-start gap-5">
       <?= $this->partial('partials/brand', ['stacked' => true]) ?>
-      <p class="max-w-[30ch] text-[0.9375rem] leading-relaxed text-sage">Детский лагерь приключений в Пермском крае. Смены летом и в каникулы.</p>
+      <p class="max-w-[30ch] text-[0.9375rem] leading-relaxed text-sage"><?= t('Детский лагерь приключений в Пермском крае. Смены летом и в каникулы.') ?></p>
     </div>
 
     <nav aria-labelledby="footer-camp">
       <h2 class="<?= $heading ?>" id="footer-camp">Лагерю</h2>
       <ul class="space-y-3" role="list">
         <?php foreach (Nav::footer() as $link): ?>
-          <li><a class="link-quiet" href="<?= e($link['href']) ?>"><?= e($link['label']) ?></a></li>
+          <li><a class="link-quiet" href="<?= e($link['href']) ?>"><?= t($link['label']) ?></a></li>
         <?php endforeach ?>
       </ul>
     </nav>
@@ -49,11 +50,11 @@ $heading = 'mb-5 font-display text-[0.875rem] font-semibold uppercase tracking-[
         <ul class="space-y-3 text-[0.9375rem] leading-snug" role="list">
           <?php foreach ($svedeniya['children'] as $section): ?>
             <li>
-              <a class="link-quiet" href="<?= e($section['href']) ?>"><?= e($section['label']) ?></a>
+              <a class="link-quiet" href="<?= e($section['href']) ?>"><?= t($section['label']) ?></a>
               <?php if (!empty($section['children'])): ?>
                 <ul class="ml-1 mt-3 space-y-2 border-l border-dashed border-sage/40 pl-4" role="list">
                   <?php foreach ($section['children'] as $sub): ?>
-                    <li><a class="link-quiet text-sage" href="<?= e($sub['href']) ?>"><?= e($sub['label']) ?></a></li>
+                    <li><a class="link-quiet text-sage" href="<?= e($sub['href']) ?>"><?= t($sub['label']) ?></a></li>
                   <?php endforeach ?>
                 </ul>
               <?php endif ?>
@@ -68,33 +69,33 @@ $heading = 'mb-5 font-display text-[0.875rem] font-semibold uppercase tracking-[
       <ul class="space-y-4 text-[0.9375rem] leading-snug" role="list">
         <?php if (!empty($settings['phone'])): ?>
           <li>
-            <a class="tabular font-display text-2xl font-semibold leading-none tracking-[0.02em] text-cream no-underline hover:text-white" href="<?= e(tel($settings['phone'])) ?>"><?= e(Phone::pretty($settings['phone'])) ?></a>
+            <a class="tabular whitespace-nowrap font-display text-2xl font-semibold leading-none tracking-[0.02em] text-cream no-underline hover:text-white" href="<?= e(tel($settings['phone'])) ?>"><?= t(Phone::pretty($settings['phone'])) ?></a>
           </li>
         <?php endif ?>
         <?php if (!empty($settings['whatsapp'])): ?>
           <li>
             <a class="link-quiet inline-flex items-center gap-2.5" href="https://wa.me/<?= e(ltrim((string) $settings['whatsapp'], '+')) ?>" rel="noopener" target="_blank">
-              <?= icon('message-circle', 'size-[1.125rem] text-gold') ?>WhatsApp <?= e(Phone::pretty((string) $settings['whatsapp'])) ?>
+              <?= icon('message-circle', 'size-[1.125rem] text-gold') ?><span><?= t('WhatsApp ' . Phone::pretty((string) $settings['whatsapp'])) ?></span>
             </a>
           </li>
         <?php endif ?>
         <?php if (!empty($settings['email'])): ?>
           <li>
             <a class="link-quiet inline-flex items-center gap-2.5" href="mailto:<?= e($settings['email']) ?>">
-              <?= icon('mail', 'size-[1.125rem] text-gold') ?><?= e($settings['email']) ?>
+              <?= icon('mail', 'size-[1.125rem] text-gold') ?><?= t($settings['email']) ?>
             </a>
           </li>
         <?php endif ?>
         <?php if (!empty($settings['officeAddress'])): ?>
           <li class="flex gap-2.5 text-cream/90">
             <?= icon('map-pin', 'mt-0.5 size-[1.125rem] text-gold') ?>
-            <span>Офис: <?= e($settings['officeAddress']) ?></span>
+            <span><?= t('Офис: ' . $settings['officeAddress']) ?></span>
           </li>
         <?php endif ?>
         <?php if ($hours): ?>
           <li class="flex gap-2.5 text-cream/90">
             <?= icon('clock', 'mt-0.5 size-[1.125rem] text-gold') ?>
-            <span><?= implode('<br>', array_map(static fn (string $h): string => e($h), $hours)) ?></span>
+            <span><?= implode('<br>', array_map(static fn (string $h): string => t($h), $hours)) ?></span>
           </li>
         <?php endif ?>
         <?php if (safe_url($settings['vk'] ?? '') !== '' || safe_url($settings['youtube'] ?? '') !== ''): ?>
@@ -121,7 +122,7 @@ $heading = 'mb-5 font-display text-[0.875rem] font-semibold uppercase tracking-[
       <p>© Детский лагерь «Гроза», <?= e((string) $year) ?></p>
       <ul class="flex flex-wrap gap-x-6 gap-y-2" role="list">
         <?php foreach (Nav::legal() as $link): ?>
-          <li><a class="link-quiet text-sage" href="<?= e($link['href']) ?>"><?= e($link['label']) ?></a></li>
+          <li><a class="link-quiet text-sage" href="<?= e($link['href']) ?>"><?= t($link['label']) ?></a></li>
         <?php endforeach ?>
       </ul>
     </div>

@@ -20,6 +20,7 @@ use Groza\Support\Phone;
 
 use function Groza\View\e;
 use function Groza\View\icon;
+use function Groza\View\t;
 use function Groza\View\tel;
 
 $this->layout('layout', ['page' => 'booking']);
@@ -35,7 +36,7 @@ $hours = array_values(array_filter([$settings['hoursWeekdays'] ?? '', $settings[
     <div>
       <?= $this->partial('partials/breadcrumbs', ['items' => [['label' => 'Главная', 'href' => '/'], ['label' => 'Купить путёвку']], 'tone' => 'dark', 'class' => 'mb-8']) ?>
       <h1 class="font-display text-[clamp(2.25rem,1.5rem+3vw,4rem)] font-bold uppercase leading-[1.05] tracking-[0.01em] text-[#f4efe3]" id="booking-title">Купить путёвку</h1>
-      <p class="mt-5 max-w-[34rem] text-[1.0625rem] leading-relaxed text-cream/90 sm:text-lg">Выберите смену и оставьте заявку: офис перезвонит в рабочее время и ответит на вопросы. Если удобнее, позвоните или напишите сами.</p>
+      <p class="mt-5 max-w-[34rem] text-[1.0625rem] leading-relaxed text-cream/90 sm:text-lg"><?= t('Выберите смену и оставьте заявку: офис перезвонит в рабочее время и ответит на вопросы. Если удобнее, позвоните или напишите сами.') ?></p>
       <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <?= $this->partial('components/button', ['label' => 'Выбрать смену', 'href' => '#smeny', 'size' => 'lg']) ?>
         <?= $this->partial('components/button', ['label' => 'Сразу к заявке', 'href' => '#zayavka', 'size' => 'lg', 'variant' => 'outline-light']) ?>
@@ -43,12 +44,12 @@ $hours = array_values(array_filter([$settings['hoursWeekdays'] ?? '', $settings[
     </div>
 
     <div class="border-t border-dashed border-sage/40 pt-8 lg:border-l lg:border-t-0 lg:pb-1 lg:pl-10 lg:pt-0">
-      <p class="text-[1.0625rem] font-semibold text-cream/90">Быстрее всего — по телефону</p>
+      <p class="text-[1.0625rem] font-semibold text-cream/90"><?= t('Быстрее всего — по телефону') ?></p>
       <?php if ($phone !== ''): ?>
-        <a class="tabular mt-3 inline-block font-display text-[clamp(1.875rem,1.5rem+1.4vw,2.5rem)] font-semibold leading-none tracking-[0.02em] text-cream no-underline hover:text-white" href="<?= e(tel($phone)) ?>"><?= e(Phone::pretty($phone)) ?></a>
+        <a class="tabular mt-3 inline-block whitespace-nowrap font-display text-[clamp(1.875rem,1.5rem+1.4vw,2.5rem)] font-semibold leading-none tracking-[0.02em] text-cream no-underline hover:text-white" href="<?= e(tel($phone)) ?>"><?= t(Phone::pretty($phone)) ?></a>
       <?php endif ?>
       <?php if ($hours !== []): ?>
-        <p class="mt-3 flex items-center gap-2 text-[0.9375rem] text-sage"><?= icon('clock', 'size-4 text-gold') ?><?= e(implode(', ', $hours)) ?></p>
+        <p class="mt-3 flex items-center gap-2 text-[0.9375rem] text-sage"><?= icon('clock', 'size-4 text-gold') ?><span><?= t(implode(', ', $hours)) ?></span></p>
       <?php endif ?>
       <div class="mt-6 flex flex-col gap-3 sm:flex-row">
         <?php if ($phone !== ''): ?>
@@ -87,7 +88,7 @@ $hours = array_values(array_filter([$settings['hoursWeekdays'] ?? '', $settings[
       </div>
     <?php else: ?>
       <div class="mt-10 flex flex-col items-start gap-5 rounded-card border-2 border-dashed border-moss/45 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
-        <p class="max-w-[48ch] text-lg font-semibold leading-snug text-ink">Даты скоро. Оставьте заявку — позвоним первыми.</p>
+        <p class="max-w-[48ch] text-lg font-semibold leading-snug text-ink"><?= t('Даты скоро. Оставьте заявку — позвоним первыми.') ?></p>
         <?= $this->partial('components/button', ['label' => 'Оставить заявку', 'href' => '#zayavka', 'class' => 'shrink-0']) ?>
       </div>
     <?php endif ?>
@@ -103,9 +104,9 @@ $hours = array_values(array_filter([$settings['hoursWeekdays'] ?? '', $settings[
           'id' => 'zayavka-title',
       ]) ?>
       <ul class="mt-8 space-y-4 border-t border-dashed border-moss/50 pt-6 text-ink" role="list">
-        <li class="flex gap-3.5 leading-snug"><?= icon('check', 'mt-0.5 size-5 shrink-0 text-moss') ?><span>Смену можно не выбирать: отметьте «Пока не знаю», подберём вместе.</span></li>
+        <li class="flex gap-3.5 leading-snug"><?= icon('check', 'mt-0.5 size-5 shrink-0 text-moss') ?><span><?= t('Смену можно не выбирать: отметьте «Пока не знаю», подберём вместе.') ?></span></li>
         <?php if ($phone !== ''): ?>
-          <li class="flex gap-3.5 leading-snug"><?= icon('phone', 'mt-0.5 size-5 shrink-0 text-moss') ?><span>Не хотите ждать звонка? Наберите <a class="tabular whitespace-nowrap font-semibold text-rust-deep underline decoration-rust-deep/40 hover:decoration-rust-deep" href="<?= e(tel($phone)) ?>"><?= e(Phone::pretty($phone)) ?></a>.</span></li>
+          <li class="flex gap-3.5 leading-snug"><?= icon('phone', 'mt-0.5 size-5 shrink-0 text-moss') ?><span><?= t('Не хотите ждать звонка? Наберите') ?> <a class="tabular whitespace-nowrap font-semibold text-rust-deep underline decoration-rust-deep/40 hover:decoration-rust-deep" href="<?= e(tel($phone)) ?>"><?= t(Phone::pretty($phone)) ?></a>.</span></li>
         <?php endif ?>
       </ul>
     </div>

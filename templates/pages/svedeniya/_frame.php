@@ -12,6 +12,7 @@ declare(strict_types=1);
  * @var string $updatedText     «20 ноября 2026»
  */
 use function Groza\View\e;
+use function Groza\View\t;
 
 $this->layout('layout', ['page' => 'svedeniya', 'title' => $title, 'description' => $description]);
 $withToc = ($toc ?? []) !== [];
@@ -20,9 +21,9 @@ $withToc = ($toc ?? []) !== [];
   <?= $this->partial('components/topo', ['class' => 'pointer-events-none absolute inset-0 -z-10 h-full w-full text-sand opacity-[0.14]']) ?>
   <div class="wrap pb-12 pt-8 desk:pb-16 desk:pt-12">
     <?= $this->partial('partials/breadcrumbs', ['items' => $crumbs, 'tone' => 'dark', 'class' => 'mb-8']) ?>
-    <h1 class="max-w-[52rem] font-display text-[clamp(1.875rem,1.3rem+2.4vw,3.25rem)] font-bold uppercase leading-[1.08] tracking-[0.01em] text-[#f4efe3]" id="sved-title"><?= e($title) ?></h1>
+    <h1 class="max-w-[52rem] font-display text-[clamp(1.875rem,1.3rem+2.4vw,3.25rem)] font-bold uppercase leading-[1.08] tracking-[0.01em] text-[#f4efe3]" id="sved-title"><?= t($title) ?></h1>
     <?php if (($updated ?? null) !== null): ?>
-      <p class="mt-5 text-[0.9375rem] text-sage">Обновлено: <time datetime="<?= e($updated) ?>"><?= e($updatedText) ?></time></p>
+      <p class="mt-5 text-[0.9375rem] text-sage">Обновлено: <time datetime="<?= e($updated) ?>"><?= t($updatedText) ?></time></p>
     <?php endif ?>
   </div>
 </section>

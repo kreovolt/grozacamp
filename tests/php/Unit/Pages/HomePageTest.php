@@ -11,6 +11,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 use function Groza\View\photo;
+use function Groza\View\t;
 
 /** Главная (спека §7.1): 12 блоков из данных seed/demo, часы приложения — 2027-01-15. */
 final class HomePageTest extends TestCase
@@ -90,16 +91,16 @@ final class HomePageTest extends TestCase
         $card = $this->card($shifts, 'spasatel-2027');
 
         $this->assertStringContainsString('Спасатель', $card);
-        $this->assertStringContainsString('2–22 июля 2027', $card);
-        $this->assertStringContainsString('21 день', $card);
-        $this->assertStringContainsString('8–17 лет', $card);
+        $this->assertStringContainsString(t('2–22 июля 2027'), $card);
+        $this->assertStringContainsString(t('21 день'), $card);
+        $this->assertStringContainsString(t('8–17 лет'), $card);
         $this->assertStringContainsString("60\u{00A0}000\u{00A0}₽", $card, 'разряды и знак рубля — неразрывными пробелами');
         $this->assertStringContainsString('Идёт набор', $card);
         $this->assertStringContainsString('ДЗОЛ «Солнышко»', $card);
         $this->assertStringContainsString('href="/booking/?smena=spasatel-2027#zayavka"', $card);
 
-        $this->assertStringContainsString('14 дней', $this->card($shifts, 'pogranichnik-2027'));
-        $this->assertStringContainsString('Ранняя цена до 1 марта (пример)', $this->card($shifts, 'shturmovik-2027'));
+        $this->assertStringContainsString(t('14 дней'), $this->card($shifts, 'pogranichnik-2027'));
+        $this->assertStringContainsString(t('Ранняя цена до 1 марта (пример)'), $this->card($shifts, 'shturmovik-2027'));
         $this->assertStringContainsString('Мало мест', $this->card($shifts, 'shturmovik-2027'));
     }
 
@@ -121,7 +122,7 @@ final class HomePageTest extends TestCase
         $app->store()->write('shifts', ['items' => $items], 'test');
         $card = $this->card($this->block(TestApp::get($app, '/')->body(), 'shifts'), 'spasatel-2027');
 
-        $this->assertStringContainsString('Стоимость уточняйте в офисе', $card);
+        $this->assertStringContainsString(t('Стоимость уточняйте в офисе'), $card);
         $this->assertStringNotContainsString('₽', $card);
     }
 
@@ -130,7 +131,7 @@ final class HomePageTest extends TestCase
         $stats = $this->block(TestApp::get(TestApp::make(), '/')->body(), 'stats');
 
         $this->assertSame(4, substr_count($stats, '<li'));
-        $this->assertStringContainsString('до 24', $stats);
+        $this->assertStringContainsString("до\u{00A0}24", $stats);
         $this->assertStringNotContainsString('24/7', $stats);
     }
 
@@ -235,14 +236,14 @@ final class HomePageTest extends TestCase
     {
         $app = TestApp::make();
         $quotes = $this->block(TestApp::get($app, '/')->body(), 'reviews');
-        $this->assertStringContainsString('Ещё отзывы во ВКонтакте', $quotes);
+        $this->assertStringContainsString(t('Ещё отзывы во ВКонтакте'), $quotes);
 
         // ссылка на обсуждение не задана — ведём в группу, и подпись не обещает «отзывы»
         $app->store()->write('settings', ['vkReviewsUrl' => ''] + $app->store()->read('settings'), 'test');
         $quotes = $this->block(TestApp::get($app, '/')->body(), 'reviews');
         $this->assertStringContainsString('href="https://vk.com/grozacamp"', $quotes);
         $this->assertStringNotContainsString('Ещё отзывы', $quotes);
-        $this->assertStringContainsString('Мы во ВКонтакте', $quotes);
+        $this->assertStringContainsString(t('Мы во ВКонтакте'), $quotes);
 
         $app->store()->write('reviews', ['items' => []], 'test');
         $empty = $this->block(TestApp::get($app, '/')->body(), 'reviews');
@@ -282,7 +283,7 @@ final class HomePageTest extends TestCase
         $included = $this->block($html, 'included');
         $steps = $this->block($html, 'steps');
 
-        $this->assertStringContainsString('Трансфер из Перми в лагерь и обратно', $included);
+        $this->assertStringContainsString(t('Трансфер из Перми в лагерь и обратно'), $included);
         $this->assertStringContainsString('Принимаем сертификаты', $included);
         $this->assertMatchesRegularExpression('#<details[^>]*>\s*<summary[^>]*>.*Распорядок дня#su', $steps, 'распорядок раскрывается без JS');
         $this->assertStringContainsString('22:20–22:50', $steps);
@@ -293,7 +294,7 @@ final class HomePageTest extends TestCase
     {
         $cta = $this->block(TestApp::get(TestApp::make(), '/')->body(), 'cta');
 
-        $this->assertStringContainsString('Готовы к приключению?', $cta);
+        $this->assertStringContainsString(t('Готовы к приключению?'), $cta);
         $this->assertStringContainsString('href="/booking/"', $cta);
         $this->assertStringContainsString('href="tel:+73422474347"', $cta);
         $this->assertStringContainsString('href="https://wa.me/79991239300"', $cta);

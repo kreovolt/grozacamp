@@ -14,6 +14,7 @@ declare(strict_types=1);
  * @var array<string,mixed> $settings
  */
 use function Groza\View\e;
+use function Groza\View\t;
 ?>
 <?php if ($guard === null): /* защита не настроена — вместо формы телефон и WhatsApp */ ?>
 <div class="rounded-card border-2 border-rust-deep bg-paper px-6 py-6">
@@ -28,14 +29,14 @@ use function Groza\View\e;
     <div class="absolute -left-[9999px] h-px w-px overflow-hidden" aria-hidden="true">
       <label>Не заполняйте это поле <input type="text" name="<?= e(\Groza\Forms\FormGuard::HONEYPOT) ?>" value="" tabindex="-1" autocomplete="new-password" data-lpignore="true" data-1p-ignore></label>
     </div>
-    <p class="rounded-btn border-2 border-rust-deep bg-paper px-4 py-3 font-semibold text-rust-deep" role="alert" data-form-error<?= empty($errors['_form']) ? ' hidden' : '' ?>><?= e($errors['_form'] ?? '') ?></p>
+    <p class="rounded-btn border-2 border-rust-deep bg-paper px-4 py-3 font-semibold text-rust-deep" role="alert" data-form-error<?= empty($errors['_form']) ? ' hidden' : '' ?>><?= t($errors['_form'] ?? '') ?></p>
 <?php $fieldErrors = array_diff_key($errors, ['_form' => true]); ?>
 <?php if ($fieldErrors !== []): /* без JS страница показана заново после отправки: сводка в начале формы, ссылки на поля */ ?>
     <div class="rounded-btn border-2 border-rust-deep bg-paper px-4 py-3 text-rust-deep" role="alert" data-form-summary>
-      <p class="font-semibold"><?= $formId === 'vacancy' ? 'Анкета' : 'Заявка' ?> не отправлена. Проверьте:</p>
+      <p class="font-semibold"><?= t(($formId === 'vacancy' ? 'Анкета' : 'Заявка') . ' не отправлена. Проверьте:') ?></p>
       <ul class="mt-2 list-disc pl-5">
 <?php foreach ($fieldErrors as $name => $message): ?>
-        <li><a class="underline" href="#<?= e($formId . '-' . $name) ?>"><?= e($labels[$name] ?? $name) ?></a> — <?= e($message) ?></li>
+        <li><a class="underline" href="#<?= e($formId . '-' . $name) ?>"><?= t($labels[$name] ?? $name) ?></a>&nbsp;— <?= t($message) ?></li>
 <?php endforeach ?>
       </ul>
     </div>
@@ -45,7 +46,7 @@ use function Groza\View\e;
       <?= $this->partial('components/button', ['label' => $submitLabel, 'type' => 'submit', 'size' => 'lg', 'class' => 'w-full sm:w-auto']) ?>
     </div>
   </form>
-  <p class="rounded-card bg-forest px-6 py-8 font-display text-2xl font-semibold uppercase leading-tight text-cream" role="status" tabindex="-1" data-form-success hidden><?= e($success) ?></p>
+  <p class="rounded-card bg-forest px-6 py-8 font-display text-2xl font-semibold uppercase leading-tight text-cream" role="status" tabindex="-1" data-form-success hidden><?= t($success) ?></p>
   <div class="rounded-card border-2 border-rust-deep bg-paper px-6 py-6" role="alert" tabindex="-1" data-form-fallback hidden>
     <?= $this->partial('partials/contact-fallback', ['intro' => 'Не получилось отправить форму.']) ?>
   </div>

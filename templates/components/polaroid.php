@@ -10,6 +10,7 @@ declare(strict_types=1);
  * @var string|null $class
  */
 use function Groza\View\e;
+use function Groza\View\t;
 
 $tilts = [
     'left' => '-rotate-2',
@@ -35,6 +36,6 @@ $classes = implode(' ', array_filter([
     <?= $media ?>
   </div>
   <?php if (!empty($caption)): ?>
-    <figcaption class="px-1 pb-1 pt-2.5 text-[0.9375rem] leading-snug text-ink-soft"><?= e($caption) ?></figcaption>
+    <figcaption class="px-1 pb-1 pt-2.5 text-[0.9375rem] leading-snug text-ink-soft"><?= t($caption) ?></figcaption>
   <?php endif ?>
 </figure>

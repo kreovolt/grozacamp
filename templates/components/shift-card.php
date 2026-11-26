@@ -17,6 +17,7 @@ use function Groza\View\e;
 use function Groza\View\icon;
 use function Groza\View\image;
 use function Groza\View\picture;
+use function Groza\View\t;
 
 $plural = static function (int $n, string $one, string $few, string $many): string {
     $n = abs($n) % 100;
@@ -79,31 +80,31 @@ $detailsHref = '/program/' . rawurlencode($slug) . '/';
       <?= picture($img, (string) ($img['alt'] ?? 'Смена «' . $title . '»'), $sizes ?? '(min-width: 1024px) 26rem, (min-width: 768px) 50vw, 100vw', false, 'h-full w-full object-cover transition-transform duration-500 ease-out motion-safe:group-hover/card:scale-[1.03]') ?>
     <?php endif ?>
     <?php if ($label !== ''): ?>
-      <p class="absolute left-4 top-4 rounded-[4px] px-2.5 py-1.5 font-display text-[0.8125rem] font-semibold uppercase leading-none tracking-[0.12em] shadow-sm <?= $badges[$status] ?? $badges['open'] ?>"><?= e($label) ?></p>
+      <p class="absolute left-4 top-4 rounded-[4px] px-2.5 py-1.5 font-display text-[0.8125rem] font-semibold uppercase leading-none tracking-[0.12em] shadow-sm <?= $badges[$status] ?? $badges['open'] ?>"><?= t($label) ?></p>
     <?php endif ?>
   </div>
 
   <div class="flex flex-1 flex-col px-5 pb-6 pt-5 sm:px-6">
-    <<?= $tag ?> class="font-display text-[1.75rem] font-bold uppercase leading-none tracking-[0.02em] text-ink"><?= e($title) ?></<?= $tag ?>>
+    <<?= $tag ?> class="font-display text-[1.75rem] font-bold uppercase leading-none tracking-[0.02em] text-ink"><?= t($title) ?></<?= $tag ?>>
 
     <?php if ($start !== '' && $end !== ''): ?>
       <p class="mt-3.5 flex items-center gap-2 font-semibold text-ink">
         <?= icon('calendar', 'size-[1.125rem] text-moss') ?>
-        <span class="tabular"><?= e(Dates::range($start, $end)) ?></span>
+        <span class="tabular"><?= t(Dates::range($start, $end)) ?></span>
       </p>
     <?php endif ?>
     <?php if ($facts !== []): ?>
-      <p class="mt-1 pl-[1.625rem] text-[0.9375rem] text-ink-soft"><?= e(implode(' · ', $facts)) ?></p>
+      <p class="mt-1 pl-[1.625rem] text-[0.9375rem] text-ink-soft"><?= t(implode(' · ', $facts)) ?></p>
     <?php endif ?>
 
     <?php if (!empty($shift['lead'])): ?>
-      <p class="mt-4 line-clamp-4 text-[0.9375rem] leading-relaxed text-ink-soft"><?= e((string) $shift['lead']) ?></p>
+      <p class="mt-4 line-clamp-4 text-[0.9375rem] leading-relaxed text-ink-soft"><?= t((string) $shift['lead']) ?></p>
     <?php endif ?>
 
     <?php if (!empty($venue['name'])): ?>
       <p class="mt-4 flex items-start gap-2 text-[0.9375rem] text-ink-soft">
         <?= icon('map-pin', 'mt-0.5 size-[1.125rem] text-moss') ?>
-        <span><?= e((string) $venue['name']) ?></span>
+        <span><?= t((string) $venue['name']) ?></span>
       </p>
     <?php endif ?>
 
@@ -111,12 +112,12 @@ $detailsHref = '/program/' . rawurlencode($slug) . '/';
       <?php /* высота под цену с пояснением: у соседних карточек линия и кнопки на одном уровне */ ?>
       <div class="min-h-[4.75rem] border-t border-dashed border-moss/40 pt-4">
         <?php if ($priceText !== null): ?>
-          <p class="tabular font-display text-[1.75rem] font-semibold leading-none text-ink"><?= e($priceText) ?></p>
+          <p class="tabular font-display text-[1.75rem] font-semibold leading-none text-ink"><?= t($priceText) ?></p>
           <?php if ($priceNote !== ''): ?>
-            <p class="mt-1.5 text-[0.875rem] leading-snug text-ink-soft"><?= e($priceNote) ?></p>
+            <p class="mt-1.5 text-[0.875rem] leading-snug text-ink-soft"><?= t($priceNote) ?></p>
           <?php endif ?>
         <?php else: ?>
-          <p class="font-semibold leading-snug text-ink">Стоимость уточняйте в офисе</p>
+          <p class="font-semibold leading-snug text-ink"><?= t('Стоимость уточняйте в офисе') ?></p>
         <?php endif ?>
       </div>
 

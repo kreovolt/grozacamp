@@ -22,9 +22,19 @@ function e(?string $s): string
  */
 function t(?string $s): string
 {
+    static $cache = []; // подписи меню, телефон и часы повторяются на странице по нескольку раз
     $s = (string) $s;
+    if ($s === '') {
+        return '';
+    }
+    if (!isset($cache[$s])) {
+        if (count($cache) > 2000) {
+            $cache = [];
+        }
+        $cache[$s] = nobr(\Groza\Support\Typograph::apply($s));
+    }
 
-    return $s === '' ? '' : nobr(\Groza\Support\Typograph::apply($s));
+    return $cache[$s];
 }
 
 /** Текст, уже прошедший типограф, → HTML: экранирование как в e() и <span class="nobr"> вокруг кусков, которые нельзя переносить. */

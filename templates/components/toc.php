@@ -11,6 +11,7 @@ declare(strict_types=1);
  */
 use function Groza\View\e;
 use function Groza\View\icon;
+use function Groza\View\t;
 
 if (($items ?? []) === []) {
     return;
@@ -21,7 +22,7 @@ $list = static function () use ($items): string {
     $html = '';
     foreach ($items as $item) {
         $html .= '<li class="border-b border-dashed border-moss/45"><a class="block py-2.5 leading-snug text-ink-soft no-underline transition-colors hover:text-rust-deep" href="#'
-            . e($item['id']) . '">' . e($item['label']) . '</a></li>';
+            . e($item['id']) . '">' . t($item['label']) . '</a></li>';
     }
 
     return $html;
@@ -30,13 +31,13 @@ $list = static function () use ($items): string {
 <nav data-toc class="<?= e(trim('self-start lg:sticky lg:top-24 desk:top-28' . ($class ?? ''))) ?>" aria-label="<?= e($caption) ?>">
   <details class="group rounded-card bg-paper p-5 shadow-card lg:hidden"<?= $long ? '' : ' open' ?>>
     <summary class="flex cursor-pointer list-none items-center justify-between font-display text-[1.125rem] font-semibold uppercase tracking-[0.04em] text-ink [&::-webkit-details-marker]:hidden">
-      <span><?= e($caption) ?></span>
+      <span><?= t($caption) ?></span>
       <?= icon('chevron-down', 'size-5 text-rust-dark transition-transform duration-200 group-open:rotate-180') ?>
     </summary>
     <ol class="mt-3 border-t border-dashed border-moss/45" role="list"><?= $list() ?></ol>
   </details>
   <div class="hidden lg:block">
-    <p class="font-display text-[1.125rem] font-semibold uppercase tracking-[0.04em] text-ink"><?= e($caption) ?></p>
+    <p class="font-display text-[1.125rem] font-semibold uppercase tracking-[0.04em] text-ink"><?= t($caption) ?></p>
     <ol class="mt-4 border-t border-dashed border-moss/45" role="list"><?= $list() ?></ol>
   </div>
 </nav>

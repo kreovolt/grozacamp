@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace Groza\Pages;
 
 use DateTimeImmutable;
-use Groza\Support\Sanitizer;
 use Groza\App;
 use Groza\Content\Nav;
 use Groza\Content\PageData;
@@ -18,6 +17,8 @@ use Groza\Support\Phone;
 
 use function Groza\View\e;
 use function Groza\View\pending;
+use function Groza\View\richtext;
+use function Groza\View\t;
 use function Groza\View\tel;
 
 /**
@@ -26,7 +27,7 @@ use function Groza\View\tel;
  * пустое обязательное — «Информация обновляется»; пустой необязательный («при наличии») пункт на странице не выводится
  * (о нём предупреждает Readiness).
  * Смены, цены и базы берутся из данных смен и баз, не из текстов. HTML значений собирают только этот класс
- * и components/*: пользовательские строки экранируются, richtext уже очищен админкой.
+ * и components/*: пользовательские строки проходят t() (типограф и экранирование), richtext — richtext() (очистка и типограф).
  */
 final class SvedeniyaPage
 {
@@ -129,9 +130,9 @@ final class SvedeniyaPage
             $this->row($c, 'osnovnye.e', self::rich($texts['sved.mode'] ?? null)),
         ]);
 
-        $subDocs = fn (string $section, string $label): string => '<p class="font-semibold text-ink">' . e($label) . '</p>'
+        $subDocs = fn (string $section, string $label): string => '<p class="font-semibold text-ink">' . t($label) . '</p>'
             . ($this->docList($c['documents'], [$section]) ?: '<p>' . pending('') . '</p>');
-        $rulesPage = Readiness::filled($texts['rules'] ?? null) ? '<p><a href="/pravila/">Правила пребывания в лагере</a> (страница сайта)</p>' : '';
+        $rulesPage = Readiness::filled($texts['rules'] ?? null) ? '<p><a href="/pravila/">' . t('Правила пребывания в лагере') . '</a> (страница сайта)</p>' : '';
         $dokumenty = $this->rows([
             $this->row($c, 'dokumenty.a', $this->docList($c['documents'], ['uchreditelnye'])),
             $this->row($c, 'dokumenty.b', ($this->docList($c['documents'], ['pravila']) ?: '<p>' . pending('') . '</p>') . $rulesPage),
@@ -147,7 +148,7 @@ final class SvedeniyaPage
         foreach (['phone' => '', 'whatsapp' => ' (WhatsApp)'] as $key => $note) {
             $number = self::str($settings[$key] ?? null);
             if ($number !== '') {
-                $phones .= '<li><a class="tabular whitespace-nowrap" href="' . e(tel($number)) . '">' . e(Phone::pretty($number)) . '</a>' . e($note) . '</li>';
+                $phones .= '<li><a class="tabular whitespace-nowrap" href="' . e(tel($number)) . '">' . t(Phone::pretty($number)) . '</a>' . t($note) . '</li>';
             }
         }
         $hours = array_filter([self::str($settings['hoursWeekdays'] ?? null), self::str($settings['hoursWeekend'] ?? null)]);
@@ -162,7 +163,7 @@ final class SvedeniyaPage
                 $this->row($c, 'sostav.b', $this->staffTable($ovz, 'short'), true),
             ])],
             ['id' => 'kontakty', 'title' => 'Контакты', 'rows' => $this->rows([
-                $this->row($c, 'kontakty.a', $phones === '' ? '' : '<ul>' . $phones . '</ul>' . ($hours !== [] ? '<p class="text-ink-soft">Звонки в офис: ' . e(implode(', ', $hours)) . '</p>' : '')),
+                $this->row($c, 'kontakty.a', $phones === '' ? '' : '<ul>' . $phones . '</ul>' . ($hours !== [] ? '<p class="text-ink-soft">' . t('Звонки в офис: ' . implode(', ', $hours)) . '</p>' : '')),
                 $this->row($c, 'kontakty.b', $email === '' ? '' : '<a href="mailto:' . e($email) . '">' . e($email) . '</a>'),
                 $this->row($c, 'kontakty.v', self::plain($settings['postalAddress'] ?? null)),
             ])],
@@ -396,7 +397,7 @@ final class SvedeniyaPage
         }
         $avg = Shifts::costPerDay((int) array_sum(array_column($priced, 'price')), (int) array_sum(array_column($priced, 'days')));
 
-        return '<p class="mt-4">В среднем по сменам: ' . e(self::perDay((int) $avg)) . '</p>';
+        return '<p class="mt-4">' . t('В среднем по сменам: ' . self::perDay((int) $avg)) . '</p>';
     }
 
     /** «2027 год» / «2027 и 2028 годы» @param list<array<string,mixed>> $shifts */
@@ -468,23 +469,23 @@ final class SvedeniyaPage
         return ['label' => self::PAGES['hub'][0], 'href' => '/svedeniya/', 'children' => []];
     }
 
-    // ------------------------------------------------------------------ HTML значений (пользовательское экранируется)
+    // ------------------------------------------------------------------ HTML значений (пользовательское — через типограф и экранирование)
 
     private static function str(mixed $v): string
     {
         return is_string($v) ? trim($v) : '';
     }
 
-    /** Строка из админки → экранированный текст ('' если пусто). */
+    /** Строка из админки → текст через t(): типограф и экранирование ('' если пусто). */
     private static function plain(mixed $v): string
     {
-        return e(self::str($v));
+        return t(self::str($v));
     }
 
-    /** Richtext из админки (очищен при сохранении) как есть; пустая разметка → ''. */
+    /** Richtext из админки: ещё раз очистка и типограф (richtext()); пустая разметка → ''. */
     private static function rich(mixed $v): string
     {
-        return is_string($v) && Readiness::filled($v) ? Sanitizer::clean($v) : '';
+        return is_string($v) && Readiness::filled($v) ? richtext($v) : '';
     }
 
     /** Текст многострочного поля: абзацы по пустой строке, переносы внутри абзаца. */
@@ -496,13 +497,13 @@ final class SvedeniyaPage
         }
         $paras = preg_split('/\R{2,}/u', $text) ?: [];
 
-        return implode('', array_map(static fn (string $p): string => '<p>' . nl2br(e(trim($p)), false) . '</p>', $paras));
+        return implode('', array_map(static fn (string $p): string => '<p>' . nl2br(t(trim($p)), false) . '</p>', $paras));
     }
 
     /** @param list<string> $lines */
     private static function bullets(array $lines): string
     {
-        return $lines === [] ? '' : '<ul>' . implode('', array_map(static fn (string $l): string => '<li>' . e($l) . '</li>', $lines)) . '</ul>';
+        return $lines === [] ? '' : '<ul>' . implode('', array_map(static fn (string $l): string => '<li>' . t($l) . '</li>', $lines)) . '</ul>';
     }
 
     /** «PDF, 1,2 МБ»: тип по расширению файла, размер в КБ или МБ. */

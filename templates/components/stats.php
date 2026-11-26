@@ -8,6 +8,7 @@ declare(strict_types=1);
  * @var string|null $class
  */
 use function Groza\View\e;
+use function Groza\View\t;
 
 $rows = [];
 foreach ($items as $item) {
@@ -30,8 +31,8 @@ $columns = [1 => 'lg:grid-cols-1', 2 => 'lg:grid-cols-2', 3 => 'lg:grid-cols-3',
     <ul class="grid grid-cols-2 gap-x-6 gap-y-7 py-8 sm:gap-x-10 sm:py-10 lg:gap-x-12 <?= $columns[min(count($rows), 5)] ?>" role="list">
       <?php foreach ($rows as $row): ?>
         <li class="flex flex-col gap-2 odd:last:col-span-2 lg:odd:last:col-span-1">
-          <span class="tabular font-display text-[clamp(2rem,1.55rem+1.6vw,2.75rem)] font-bold leading-none text-gold"><?= e($row['value']) ?></span>
-          <span class="text-[0.9375rem] leading-snug text-sage"><?= e($row['label'] ?? '') ?></span>
+          <span class="tabular font-display text-[clamp(2rem,1.55rem+1.6vw,2.75rem)] font-bold leading-none text-gold"><?= t($row['value']) ?></span>
+          <span class="text-[0.9375rem] leading-snug text-sage"><?= t($row['label'] ?? '') ?></span>
         </li>
       <?php endforeach ?>
     </ul>

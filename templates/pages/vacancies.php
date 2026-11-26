@@ -18,6 +18,7 @@ use function Groza\View\e;
 use function Groza\View\richtext;
 use function Groza\View\photo;
 use function Groza\View\picture;
+use function Groza\View\t;
 
 $this->layout('layout', ['page' => 'vacancies']);
 
@@ -34,7 +35,7 @@ $shot = static function (string $key, string $sizes): string {
     <div>
       <?= $this->partial('partials/breadcrumbs', ['items' => [['label' => 'Главная', 'href' => '/'], ['label' => 'Вакансии']], 'tone' => 'dark', 'class' => 'mb-8']) ?>
       <h1 class="font-display text-[clamp(2.25rem,1.5rem+3vw,4rem)] font-bold uppercase leading-[1.05] tracking-[0.01em] text-[#f4efe3]" id="vac-title">Вакансии</h1>
-      <p class="mt-5 max-w-[34rem] text-[1.0625rem] leading-relaxed text-cream/90 sm:text-lg">Мы собираем команду вожатых, педагогов и инструкторов на смены. Расскажите о себе в анкете, и мы перезвоним.</p>
+      <p class="mt-5 max-w-[34rem] text-[1.0625rem] leading-relaxed text-cream/90 sm:text-lg"><?= t('Мы собираем команду вожатых, педагогов и инструкторов на смены. Расскажите о себе в анкете, и мы перезвоним.') ?></p>
       <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <?= $this->partial('components/button', ['label' => 'Заполнить анкету', 'href' => '#anketa', 'size' => 'lg']) ?>
         <?php if ($vacancies !== []): ?>
@@ -77,12 +78,12 @@ $shot = static function (string $key, string $sizes): string {
           $conditions = trim((string) ($v['conditions'] ?? ''));
           ?>
           <li class="flex flex-col rounded-card bg-paper p-6 shadow-card sm:p-8" data-vacancy>
-            <h3 class="font-display text-[1.5rem] font-bold uppercase leading-tight tracking-[0.02em] text-ink"><?= e($title) ?></h3>
+            <h3 class="font-display text-[1.5rem] font-bold uppercase leading-tight tracking-[0.02em] text-ink"><?= t($title) ?></h3>
             <?php if ($summary !== ''): ?>
-              <p class="mt-3 leading-relaxed text-ink-soft"><?= e($summary) ?></p>
+              <p class="mt-3 leading-relaxed text-ink-soft"><?= t($summary) ?></p>
             <?php endif ?>
             <?php if ($conditions !== ''): ?>
-              <p class="mt-5 font-display text-[0.875rem] font-medium uppercase leading-snug tracking-[0.08em] text-rust-deep">Условия и требования</p>
+              <p class="mt-5 font-display text-[0.875rem] font-medium uppercase leading-snug tracking-[0.08em] text-rust-deep"><?= t('Условия и требования') ?></p>
               <div class="richtext mt-2 leading-relaxed text-ink-soft"><?= richtext($conditions) ?></div>
             <?php endif ?>
             <div class="mt-auto pt-6">
@@ -98,7 +99,7 @@ $shot = static function (string $key, string $sizes): string {
       </ul>
     <?php else: ?>
       <div class="mt-10 flex flex-col items-start gap-5 rounded-card border-2 border-dashed border-moss/45 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
-        <p class="max-w-[48ch] text-lg font-semibold leading-snug text-ink">Сейчас набор закрыт, оставьте анкету на следующий сезон</p>
+        <p class="max-w-[48ch] text-lg font-semibold leading-snug text-ink"><?= t('Сейчас набор закрыт, оставьте анкету на следующий сезон') ?></p>
         <?= $this->partial('components/button', ['label' => 'Заполнить анкету', 'href' => '#anketa', 'class' => 'shrink-0']) ?>
       </div>
     <?php endif ?>

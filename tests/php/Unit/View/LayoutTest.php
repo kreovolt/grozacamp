@@ -6,6 +6,8 @@ namespace Groza\Tests\Unit\View;
 use Groza\Tests\Support\TestApp;
 use PHPUnit\Framework\TestCase;
 
+use function Groza\View\t;
+
 /** Макет сайта целиком: шапка, меню, подвал, контакты из настроек. */
 final class LayoutTest extends TestCase
 {
@@ -27,7 +29,7 @@ final class LayoutTest extends TestCase
         $nav = $this->between($html, 'aria-label="Основное меню"', '</nav>');
 
         $positions = array_map(
-            static fn (string $label): int|false => mb_strpos($nav, $label),
+            static fn (string $label): int|false => mb_strpos($nav, t($label)),
             ['Купить путёвку', 'Информация для родителей', 'Вакансии', 'Сведения об организации отдыха детей и их оздоровления']
         );
         $this->assertNotContains(false, $positions);
@@ -43,11 +45,11 @@ final class LayoutTest extends TestCase
         $html = TestApp::get(TestApp::make(), '/')->body();
 
         $this->assertStringContainsString('href="tel:+73422474347"', $html);
-        $this->assertStringContainsString('+7 (342) 247-43-47', $html);
+        $this->assertStringContainsString("+7\u{00A0}(342)\u{00A0}247-43-47", $html);
         $this->assertStringContainsString('https://wa.me/79991239300', $html);
         $this->assertStringContainsString('mailto:2474347@bk.ru', $html);
-        $this->assertStringContainsString('ул. Милиционера Власова, 37', $html);
-        $this->assertStringContainsString('Пн–Пт 10:00–19:00', $html);
+        $this->assertStringContainsString("ул.\u{00A0}Милиционера Власова,\u{00A0}37", $html);
+        $this->assertStringContainsString("<span class=\"nobr\">Пн–Пт</span>\u{00A0}<span class=\"nobr\">10:00–19:00</span>", $html);
         $this->assertStringContainsString('https://vk.com/grozacamp', $html);
         $this->assertStringContainsString('https://www.youtube.com/channel/UCfKD7JRX5wEmFvLhp5KWawQ', $html);
     }
@@ -58,9 +60,10 @@ final class LayoutTest extends TestCase
         $app->store()->write('settings', ['phone' => '+79990001122', 'youtube' => ''], 'test');
         $html = TestApp::get($app, '/')->body();
 
-        $this->assertStringContainsString('+7 (999) 000-11-22', $html);
+        $this->assertStringContainsString("+7\u{00A0}(999)\u{00A0}000-11-22", $html);
         $this->assertStringContainsString('href="tel:+79990001122"', $html);
         $this->assertStringNotContainsString('+7 (342) 247-43-47', $html);
+        $this->assertStringNotContainsString("+7\u{00A0}(342)\u{00A0}247-43-47", $html, 'и в тексте страницы старого номера нет');
         $this->assertStringNotContainsString('youtube.com', $html, 'пустая ссылка не выводится');
         $this->assertStringContainsString('2474347@bk.ru', $html, 'остальное берётся из умолчаний');
     }
@@ -71,7 +74,7 @@ final class LayoutTest extends TestCase
         $footer = $this->between($html, '<footer', '</footer>');
 
         foreach (['Лагерю', 'Сведения', 'Контакты', 'Смены', 'Команда', 'Педагогический и вожатский состав', 'Доступная среда', 'Политика обработки персональных данных', 'Правила пребывания'] as $text) {
-            $this->assertStringContainsString($text, $footer, $text);
+            $this->assertStringContainsString(t($text), $footer, $text);
         }
         $this->assertSame(11, preg_match_all('#href="/svedeniya/[a-z-]+/(\#[a-z-]+)?"#', $footer), '6 разделов + 5 подразделов');
         $this->assertMatchesRegularExpression('#© [^<]*«Гроза»[^<]*2027#u', $footer, 'год из часов приложения');
@@ -94,7 +97,7 @@ final class LayoutTest extends TestCase
 
         $this->assertStringContainsString('href="/"', $crumbs);
         $this->assertStringContainsString('href="/svedeniya/"', $crumbs);
-        $this->assertMatchesRegularExpression('#aria-current="page"[^>]*>\s*Материально-техническое обеспечение и оснащённость#u', $crumbs);
+        $this->assertMatchesRegularExpression('#aria-current="page"[^>]*>\s*Материально-техническое обеспечение и\x{00A0}оснащённость#u', $crumbs);
     }
 
     public function test_every_main_nav_href_resolves(): void

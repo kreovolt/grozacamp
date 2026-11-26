@@ -18,6 +18,8 @@ declare(strict_types=1);
  * @var string|null $labelHtml   для checkbox: готовая разметка подписи (со ссылкой)
  */
 use function Groza\View\e;
+use function Groza\View\t;
+use function Groza\View\typeset;
 
 $type ??= 'text';
 $id = $formId . '-' . $name;
@@ -40,10 +42,10 @@ $attrs = ' id="' . e($id) . '" name="' . e($name) . '"'
 <?php if ($type === 'checkbox'): ?>
   <div class="flex items-start gap-3">
     <input class="mt-1 size-5 shrink-0 accent-rust-dark" type="checkbox" value="yes"<?= $attrs ?><?= $value === 'yes' ? ' checked' : '' ?>>
-    <label class="text-[0.9375rem] leading-snug text-ink" for="<?= e($id) ?>"><?= $labelHtml ?? e($label) ?></label>
+    <label class="text-[0.9375rem] leading-snug text-ink" for="<?= e($id) ?>"><?= isset($labelHtml) ? typeset($labelHtml) : t($label) ?></label>
   </div>
 <?php else: ?>
-  <label class="block font-semibold text-ink" for="<?= e($id) ?>"><?= e($label) ?><?php if (empty($required)): ?> <span class="font-normal text-ink-soft">(необязательно)</span><?php endif ?></label>
+  <label class="block font-semibold text-ink" for="<?= e($id) ?>"><?= t($label) ?><?php if (empty($required)): ?> <span class="font-normal text-ink-soft">(необязательно)</span><?php endif ?></label>
   <div class="mt-1.5">
   <?php if ($type === 'textarea'): ?>
     <textarea class="<?= e($control) ?>" rows="4"<?= $attrs ?>><?= e($value) ?></textarea>
@@ -59,7 +61,7 @@ $attrs = ' id="' . e($id) . '" name="' . e($name) . '"'
   </div>
 <?php endif ?>
 <?php if (!empty($hint)): ?>
-  <p class="mt-1.5 text-sm text-ink-soft" id="<?= e($hintId) ?>"><?= e($hint) ?></p>
+  <p class="mt-1.5 text-sm text-ink-soft" id="<?= e($hintId) ?>"><?= t($hint) ?></p>
 <?php endif ?>
-  <p class="mt-1.5 text-sm font-semibold text-rust-deep" id="<?= e($errorId) ?>" data-error<?= $error === '' ? ' hidden' : '' ?>><?= e($error) ?></p>
+  <p class="mt-1.5 text-sm font-semibold text-rust-deep" id="<?= e($errorId) ?>" data-error<?= $error === '' ? ' hidden' : '' ?>><?= t($error) ?></p>
 </div>

@@ -28,7 +28,9 @@ use function Groza\View\image;
 use function Groza\View\photo;
 use function Groza\View\picture;
 use function Groza\View\safe_url;
+use function Groza\View\t;
 use function Groza\View\tel;
+use function Groza\View\typeset;
 
 $this->layout('layout', ['page' => 'home']);
 
@@ -60,15 +62,16 @@ $kids = [
 
 // Блок 5 — для родителей. Факты из FAQ и спеки §7.1 п. 5.
 $vk = safe_url($settings['vk'] ?? '');
+// Тексты — готовый HTML через типограф: t() для простого текста, typeset() — когда внутри ссылка (предлог перед ней не отрывается)
 $care = [
-    ['До 24 детей в отряде', e('С отрядом работают двое вожатых, а у младших отрядов есть ещё помощники.')],
-    ['Медик на смене', e('На смене работает дежурный медик, это входит в стоимость путёвки.')],
-    ['Связь каждый день', e('Телефон у ребёнка в тихий час и после вечерних мероприятий: позвонить домой можно каждый день.')],
-    ['Фото и видео каждый день', e('Пресс-центр лагеря выкладывает их в ')
-        . ($vk !== '' ? '<a class="font-semibold text-cream underline decoration-gold/60 underline-offset-4 hover:decoration-gold" href="' . e($vk) . '" rel="noopener" target="_blank">группе ВКонтакте</a>' : e('группе ВКонтакте'))
-        . e(', так что видно, чем ребёнок занят.')],
-    ['Проверенная территория', e('База проходит проверку Роспотребнадзора, территорию регулярно обрабатывают от клещей.')],
-    ['Тир под присмотром', e('Пневматика — только в огороженном тире. Занятие ведёт спортсмен-стрелок, с ним помощник на каждые два рубежа.')],
+    ['До 24 детей в отряде', t('С отрядом работают двое вожатых, а у младших отрядов есть ещё помощники.')],
+    ['Медик на смене', t('На смене работает дежурный медик, это входит в стоимость путёвки.')],
+    ['Связь каждый день', t('Телефон у ребёнка в тихий час и после вечерних мероприятий: позвонить домой можно каждый день.')],
+    ['Фото и видео каждый день', typeset('Пресс-центр лагеря выкладывает их в '
+        . ($vk !== '' ? '<a class="font-semibold text-cream underline decoration-gold/60 underline-offset-4 hover:decoration-gold" href="' . e($vk) . '" rel="noopener" target="_blank">группе ВКонтакте</a>' : 'группе ВКонтакте')
+        . ', так что видно, чем ребёнок занят.')],
+    ['Проверенная территория', t('База проходит проверку Роспотребнадзора, территорию регулярно обрабатывают от клещей.')],
+    ['Тир под присмотром', t('Пневматика — только в огороженном тире. Занятие ведёт спортсмен-стрелок, с ним помощник на каждые два рубежа.')],
 ];
 
 // Блок 6 — маршрут смены (старый сайт: выезд на автобусе из Перми, миссия «в завершающей части программы»)
@@ -88,10 +91,10 @@ $steps = [
 
     <div class="hero-copy">
       <div class="max-w-[34rem]">
-        <p class="kicker !leading-[1.5] text-gold"><?= e($hero['kicker']) ?></p>
-        <h1 class="mt-4 font-display text-[clamp(2.5rem,1.3rem+4.8vw,4rem)] font-bold uppercase leading-[1.08] tracking-[0.01em] text-[#f4efe3] lg:text-[clamp(3rem,0.25rem+4.4vw,4.25rem)]" id="hero-title" data-hero-title><?= e($hero['title']) ?></h1>
+        <p class="kicker !leading-[1.5] text-gold"><?= t($hero['kicker']) ?></p>
+        <h1 class="mt-4 font-display text-[clamp(2.5rem,1.3rem+4.8vw,4rem)] font-bold uppercase leading-[1.08] tracking-[0.01em] text-[#f4efe3] lg:text-[clamp(3rem,0.25rem+4.4vw,4.25rem)]" id="hero-title" data-hero-title><?= t($hero['title']) ?></h1>
         <?php if ($hero['lead'] !== ''): ?>
-          <p class="mt-5 max-w-[32rem] text-[1.0625rem] leading-relaxed text-cream/90 sm:text-lg"><?= e($hero['lead']) ?></p>
+          <p class="mt-5 max-w-[32rem] text-[1.0625rem] leading-relaxed text-cream/90 sm:text-lg"><?= t($hero['lead']) ?></p>
         <?php endif ?>
         <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <?= $this->partial('components/button', ['label' => 'Выбрать смену', 'href' => '/booking/', 'size' => 'lg']) ?>
@@ -117,7 +120,7 @@ $steps = [
           'id' => 'shifts-title',
       ]) ?>
       <?php if ($shifts !== []): ?>
-        <a class="<?= $moreLink ?> shrink-0 lg:mb-1.5" href="/booking/">Все смены и бронирование<?= $moreArrow ?></a>
+        <a class="<?= $moreLink ?> shrink-0 lg:mb-1.5" href="/booking/"><?= t('Все смены и бронирование') ?><?= $moreArrow ?></a>
       <?php endif ?>
     </div>
 
@@ -133,7 +136,7 @@ $steps = [
       </div>
     <?php else: ?>
       <div class="mt-10 flex flex-col items-start gap-5 rounded-card border-2 border-dashed border-moss/45 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
-        <p class="max-w-[48ch] text-lg font-semibold leading-snug text-ink">Даты новых смен скоро появятся. Оставьте заявку — позвоним первыми.</p>
+        <p class="max-w-[48ch] text-lg font-semibold leading-snug text-ink"><?= t('Даты новых смен скоро появятся. Оставьте заявку — позвоним первыми.') ?></p>
         <?= $this->partial('components/button', ['label' => 'Оставить заявку', 'href' => '/booking/', 'class' => 'shrink-0']) ?>
       </div>
     <?php endif ?>
@@ -152,8 +155,8 @@ $steps = [
       <ul class="mt-10 grid gap-x-10 sm:grid-cols-2" role="list" data-reveal>
         <?php foreach ($kids as [$title, $text]): ?>
           <li class="border-t border-dashed border-moss/50 py-5">
-            <h3 class="font-display text-[1.1875rem] font-semibold uppercase leading-tight tracking-[0.04em] text-ink"><?= e($title) ?></h3>
-            <p class="mt-1.5 text-[0.9375rem] leading-relaxed text-ink-soft"><?= e($text) ?></p>
+            <h3 class="font-display text-[1.1875rem] font-semibold uppercase leading-tight tracking-[0.04em] text-ink"><?= t($title) ?></h3>
+            <p class="mt-1.5 text-[0.9375rem] leading-relaxed text-ink-soft"><?= t($text) ?></p>
           </li>
         <?php endforeach ?>
       </ul>
@@ -219,12 +222,12 @@ $steps = [
       <ul class="grid gap-x-10 sm:grid-cols-2" role="list" data-reveal>
         <?php foreach ($care as [$title, $html]): ?>
           <li class="border-t border-dashed border-sage/35 py-6">
-            <h3 class="font-display text-xl font-semibold uppercase leading-tight tracking-[0.03em] text-gold"><?= e($title) ?></h3>
+            <h3 class="font-display text-xl font-semibold uppercase leading-tight tracking-[0.03em] text-gold"><?= t($title) ?></h3>
             <p class="mt-2 leading-relaxed text-cream/85"><?= $html ?></p>
           </li>
         <?php endforeach ?>
       </ul>
-      <a class="group/more mt-6 inline-block font-display text-[0.9375rem] font-semibold uppercase leading-snug tracking-btn text-gold no-underline hover:text-cream" href="/info/">Памятка для родителей<?= $moreArrow ?></a>
+      <a class="group/more mt-6 inline-block font-display text-[0.9375rem] font-semibold uppercase leading-snug tracking-btn text-gold no-underline hover:text-cream" href="/info/"><?= t('Памятка для родителей') ?><?= $moreArrow ?></a>
     </div>
   </div>
 </section>
@@ -262,7 +265,7 @@ $steps = [
         <summary class="flex items-center justify-between gap-6 rounded-card px-6 py-5 transition-colors hover:bg-paper/60 sm:px-8 sm:py-6">
           <span>
             <span class="block font-display text-[1.375rem] font-semibold uppercase leading-tight tracking-[0.03em] text-ink">Распорядок дня</span>
-            <span class="mt-1 block text-[0.9375rem] text-ink-soft">Как устроен обычный день на смене — от подъёма до отбоя</span>
+            <span class="mt-1 block text-[0.9375rem] text-ink-soft"><?= t('Как устроен обычный день на смене — от подъёма до отбоя') ?></span>
           </span>
           <span class="grid size-11 shrink-0 place-items-center rounded-full border-2 border-dashed border-moss text-forest transition-transform duration-200 group-open:rotate-180" aria-hidden="true">
             <?= icon('chevron-down', 'size-5') ?>
@@ -272,8 +275,8 @@ $steps = [
           <dl class="sm:columns-2 sm:gap-14">
             <?php foreach ($schedule as [$time, $what]): ?>
               <div class="flex break-inside-avoid gap-5 border-b border-dashed border-sand-deep py-3">
-                <dt class="tabular w-[7.5rem] shrink-0 font-display text-[1.0625rem] font-medium tracking-[0.02em] text-forest"><?= e($time) ?></dt>
-                <dd class="text-ink"><?= e($what) ?></dd>
+                <dt class="tabular w-[7.5rem] shrink-0 font-display text-[1.0625rem] font-medium tracking-[0.02em] text-forest"><?= t($time) ?></dt>
+                <dd class="text-ink"><?= t($what) ?></dd>
               </div>
             <?php endforeach ?>
           </dl>
@@ -318,12 +321,12 @@ $steps = [
         ?>
         <div class="mt-10 grid gap-8 lg:grid-cols-[minmax(0,19rem)_minmax(0,1fr)] lg:gap-12">
           <div class="lg:pt-2">
-            <h3 class="font-display text-[1.75rem] font-bold uppercase leading-tight tracking-[0.02em] text-ink"><?= e((string) ($venue['name'] ?? '')) ?></h3>
+            <h3 class="font-display text-[1.75rem] font-bold uppercase leading-tight tracking-[0.02em] text-ink"><?= t((string) ($venue['name'] ?? '')) ?></h3>
             <?php if (!empty($venue['address'])): ?>
-              <p class="mt-3 flex items-start gap-2 leading-snug text-ink-soft"><?= icon('map-pin', 'mt-0.5 size-[1.125rem] text-moss') ?><span><?= e((string) $venue['address']) ?></span></p>
+              <p class="mt-3 flex items-start gap-2 leading-snug text-ink-soft"><?= icon('map-pin', 'mt-0.5 size-[1.125rem] text-moss') ?><span><?= t((string) $venue['address']) ?></span></p>
             <?php endif ?>
             <p class="mt-5 border-t border-dashed border-moss/45 pt-5 leading-relaxed text-ink">
-              <?= count(array_unique($base['shifts'])) > 1 ? 'Здесь пройдут смены' : 'Здесь пройдёт смена' ?> <?= e($titles) ?>.
+              <?= t((count(array_unique($base['shifts'])) > 1 ? 'Здесь пройдут смены' : 'Здесь пройдёт смена') . ' ' . $titles . '.') ?>
             </p>
             <a class="<?= $moreLink ?> mt-6" href="/svedeniya/mto/">Условия проживания<?= $moreArrow ?></a>
           </div>
@@ -376,11 +379,11 @@ $steps = [
           <?php endif ?>
         </div>
         <?php if ($reviewsUrl !== ''): ?>
-          <a class="<?= $moreLink ?> mt-8" href="<?= e($reviewsUrl) ?>" rel="noopener" target="_blank"><?= $reviewsIsThread ? 'Ещё отзывы во ВКонтакте' : 'Мы во ВКонтакте' ?><?= $moreArrow ?></a>
+          <a class="<?= $moreLink ?> mt-8" href="<?= e($reviewsUrl) ?>" rel="noopener" target="_blank"><?= t($reviewsIsThread ? 'Ещё отзывы во ВКонтакте' : 'Мы во ВКонтакте') ?><?= $moreArrow ?></a>
         <?php endif ?>
       <?php else: ?>
         <div class="mt-8 flex flex-col items-start gap-5 rounded-card border-2 border-dashed border-moss/45 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
-          <p class="max-w-[52ch] text-lg leading-snug text-ink">Родители рассказывают о сменах в обсуждении в нашей группе ВКонтакте. Почитайте, как ребятам у нас.</p>
+          <p class="max-w-[52ch] text-lg leading-snug text-ink"><?= t('Родители рассказывают о сменах в обсуждении в нашей группе ВКонтакте. Почитайте, как ребятам у нас.') ?></p>
           <?= $this->partial('components/button', [
               'label' => $reviewsIsThread ? 'Читать отзывы' : 'Группа ВКонтакте',
               'href' => $reviewsUrl,
@@ -405,11 +408,11 @@ $steps = [
             'lead' => 'Коротко о главном. Остальные ответы — на странице для родителей.',
             'id' => 'faq-title',
         ]) ?>
-        <a class="<?= $moreLink ?> mt-6" href="/info/#faq">Все вопросы и ответы<?= $moreArrow ?></a>
+        <a class="<?= $moreLink ?> mt-6" href="/info/#faq"><?= t('Все вопросы и ответы') ?><?= $moreArrow ?></a>
         <?php if (!empty($settings['phone'])): ?>
           <p class="mt-8 max-w-[30ch] leading-relaxed text-ink-soft">
-            Не нашли ответа? Позвоните:
-            <a class="tabular whitespace-nowrap font-semibold text-rust-deep underline decoration-rust-deep/40 underline-offset-4 hover:decoration-rust-deep" href="<?= e(tel((string) $settings['phone'])) ?>"><?= e(Phone::pretty((string) $settings['phone'])) ?></a>
+            <?= t('Не нашли ответа? Позвоните:') ?>
+            <a class="tabular whitespace-nowrap font-semibold text-rust-deep underline decoration-rust-deep/40 underline-offset-4 hover:decoration-rust-deep" href="<?= e(tel((string) $settings['phone'])) ?>"><?= t(Phone::pretty((string) $settings['phone'])) ?></a>
           </p>
         <?php endif ?>
       </div>

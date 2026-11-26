@@ -6,6 +6,8 @@ namespace Groza\Tests\Unit\Pages;
 use Groza\Tests\Support\TestApp;
 use PHPUnit\Framework\TestCase;
 
+use function Groza\View\t;
+
 final class ShiftPageTest extends TestCase
 {
     public function test_shift_page_renders(): void
@@ -14,7 +16,7 @@ final class ShiftPageTest extends TestCase
         $this->assertSame(200, $res->status());
         $this->assertMatchesRegularExpression('#<h1[^>]*>\s*Спасатель\s*</h1>#u', $res->body());
         $this->assertStringContainsString('href="/booking/?smena=spasatel-2027#zayavka"', $res->body());
-        $this->assertStringContainsString('Поиск пострадавших вместе с сотрудниками МЧС', $res->body());
+        $this->assertStringContainsString(t('Поиск пострадавших вместе с сотрудниками МЧС'), $res->body());
         $this->assertStringNotContainsString('noindex', $res->body());
     }
 
@@ -54,7 +56,7 @@ final class ShiftPageTest extends TestCase
         $items[0]['price'] = null;
         $app->store()->write('shifts', ['items' => $items], 'test');
         $body = TestApp::get($app, '/program/spasatel-2027/')->body();
-        $this->assertStringContainsString('Стоимость уточняйте в офисе', $body);
+        $this->assertStringContainsString(t('Стоимость уточняйте в офисе'), $body);
         $this->assertStringContainsString('href="tel:+73422474347"', $body);
     }
 
@@ -62,8 +64,8 @@ final class ShiftPageTest extends TestCase
     {
         $body = TestApp::get(TestApp::make(), '/program/spasatel-2027/')->body();
         $this->assertStringContainsString('ДЗОЛ «Солнышко»', $body);
-        $this->assertStringContainsString('Что входит в стоимость', $body);
-        $this->assertStringContainsString('Трансфер из Перми в лагерь и обратно', $body);
+        $this->assertStringContainsString(t('Что входит в стоимость'), $body);
+        $this->assertStringContainsString(t('Трансфер из Перми в лагерь и обратно'), $body);
         $this->assertStringContainsString('60', $body);
     }
 

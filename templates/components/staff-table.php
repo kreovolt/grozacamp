@@ -10,6 +10,7 @@ declare(strict_types=1);
  */
 use function Groza\View\e;
 use function Groza\View\pending;
+use function Groza\View\t;
 
 $full = ($columns ?? 'full') === 'full';
 $cols = [['name', 'ФИО'], ['role', 'Должность']];
@@ -21,7 +22,7 @@ if ($full) {
   <thead class="max-md:sr-only">
     <tr class="border-b-2 border-forest/70 align-bottom">
       <?php foreach ($cols as [, $label]): ?>
-        <th scope="col" class="px-3 pb-2 pt-1 font-display text-[0.8125rem] font-semibold uppercase tracking-[0.08em] text-ink first:pl-0"><?= e($label) ?></th>
+        <th scope="col" class="px-3 pb-2 pt-1 font-display text-[0.8125rem] font-semibold uppercase tracking-[0.08em] text-ink first:pl-0"><?= t($label) ?></th>
       <?php endforeach ?>
     </tr>
   </thead>

@@ -153,7 +153,7 @@ final class SettingsControllerTest extends TestCase
     {
         $this->save(['officeAddress' => 'г. Пермь, ул. Новая, 1', 'phone' => '+7 (342) 111-22-33']);
         $home = TestApp::get($this->app, '/contacts/')->body();
-        $this->assertStringContainsString('ул. Новая, 1', $home);
+        $this->assertStringContainsString("ул.\u{00A0}Новая,\u{00A0}1", $home, 'адрес показан (через типограф: неразрывные пробелы)');
         $this->assertStringContainsString('tel:+73421112233', $home);
     }
 

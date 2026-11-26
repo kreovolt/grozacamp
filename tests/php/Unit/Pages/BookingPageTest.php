@@ -58,7 +58,7 @@ final class BookingPageTest extends TestCase
         $app->store()->write('shifts', ['items' => []], 'test');
         $body = TestApp::get($app, '/booking/')->body();
 
-        $this->assertStringContainsString('Даты скоро. Оставьте заявку — позвоним первыми', $body);
+        $this->assertStringContainsString("Даты скоро. Оставьте заявку\u{00A0}— позвоним первыми", $body);
         $this->assertSame(0, substr_count($body, 'class="shift-card'));
         $this->assertSame(['any'], $this->optionValues($body));
     }
@@ -68,7 +68,7 @@ final class BookingPageTest extends TestCase
         $body = TestApp::get(TestApp::make(), '/booking/')->body();
         $this->assertStringContainsString('href="tel:+73422474347"', $body);
         $this->assertStringContainsString('href="https://wa.me/79991239300"', $body);
-        $this->assertStringContainsString('Что входит в стоимость', $body);
+        $this->assertStringContainsString("Что входит в\u{00A0}стоимость", $body);
         $this->assertStringContainsString('href="/svedeniya/uslugi/"', $body);
     }
 

@@ -9,6 +9,7 @@ declare(strict_types=1);
  */
 use function Groza\View\e;
 use function Groza\View\icon;
+use function Groza\View\t;
 
 if (empty($items)) {
     return;
@@ -24,9 +25,9 @@ $last = count($items) - 1;
           <?= icon('chevron-right', 'size-3.5 ' . ($dark ? 'text-gold' : 'text-moss')) ?>
         <?php endif ?>
         <?php if ($i < $last && !empty($item['href'])): ?>
-          <a class="underline underline-offset-4 transition-colors <?= $dark ? 'decoration-sage/40 hover:text-cream hover:decoration-cream' : 'decoration-ink-soft/35 hover:text-ink hover:decoration-ink' ?>" href="<?= e($item['href']) ?>"><?= e($item['label']) ?></a>
+          <a class="underline underline-offset-4 transition-colors <?= $dark ? 'decoration-sage/40 hover:text-cream hover:decoration-cream' : 'decoration-ink-soft/35 hover:text-ink hover:decoration-ink' ?>" href="<?= e($item['href']) ?>"><?= t($item['label']) ?></a>
         <?php else: ?>
-          <span class="font-semibold <?= $dark ? 'text-cream' : 'text-ink' ?>" aria-current="page"><?= e($item['label']) ?></span>
+          <span class="font-semibold <?= $dark ? 'text-cream' : 'text-ink' ?>" aria-current="page"><?= t($item['label']) ?></span>
         <?php endif ?>
       </li>
     <?php endforeach ?>

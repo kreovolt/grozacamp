@@ -13,6 +13,7 @@ use Groza\Support\Phone;
 use function Groza\View\e;
 use function Groza\View\icon;
 use function Groza\View\safe_url;
+use function Groza\View\t;
 use function Groza\View\tel;
 
 $current = static fn (string $href): string => $href === $currentPath ? ' aria-current="page"' : '';
@@ -46,7 +47,7 @@ $hours = array_values(array_filter([$settings['hoursWeekdays'] ?? '', $settings[
         <?php elseif ($item['kind'] === 'link'): ?>
           <li class="border-b border-cream/15">
             <a class="flex items-center justify-between gap-4 py-4 font-display text-xl font-medium uppercase tracking-nav text-cream no-underline aria-[current=page]:text-gold" href="<?= e($item['href']) ?>"<?= $current($item['href']) ?>>
-              <?= e($item['label']) ?>
+              <?= t($item['label']) ?>
               <?= icon('chevron-right', 'size-5 text-gold') ?>
             </a>
           </li>
@@ -54,18 +55,18 @@ $hours = array_values(array_filter([$settings['hoursWeekdays'] ?? '', $settings[
           <?php $listId = 'm-' . trim(str_replace('/', '-', $item['href']), '-'); ?>
           <li class="border-b border-cream/15">
             <button class="group flex w-full items-center justify-between gap-4 py-4 text-left font-display text-lg font-medium uppercase leading-snug tracking-nav text-cream" type="button" aria-expanded="false" aria-controls="<?= e($listId) ?>" data-accordion>
-              <?= e($item['label']) ?>
+              <?= t($item['label']) ?>
               <?= icon('chevron-down', 'size-5 text-gold transition-transform duration-200 group-aria-expanded:rotate-180') ?>
             </button>
             <div class="pb-5" id="<?= e($listId) ?>" hidden>
               <ul role="list" data-menu-list>
                 <?php foreach ($item['children'] as $section): ?>
                   <li>
-                    <a class="block py-2.5 font-semibold leading-snug text-cream no-underline aria-[current=page]:text-gold" href="<?= e($section['href']) ?>"<?= $current($section['href']) ?>><?= e($section['label']) ?></a>
+                    <a class="block py-2.5 font-semibold leading-snug text-cream no-underline aria-[current=page]:text-gold" href="<?= e($section['href']) ?>"<?= $current($section['href']) ?>><?= t($section['label']) ?></a>
                     <?php if (!empty($section['children'])): ?>
                       <ul class="mb-2 ml-1.5 border-l border-dashed border-sage/50 pl-4" role="list">
                         <?php foreach ($section['children'] as $sub): ?>
-                          <li><a class="block py-2 leading-snug text-sage no-underline hover:text-cream" href="<?= e($sub['href']) ?>"><?= e($sub['label']) ?></a></li>
+                          <li><a class="block py-2 leading-snug text-sage no-underline hover:text-cream" href="<?= e($sub['href']) ?>"><?= t($sub['label']) ?></a></li>
                         <?php endforeach ?>
                       </ul>
                     <?php endif ?>
@@ -83,10 +84,10 @@ $hours = array_values(array_filter([$settings['hoursWeekdays'] ?? '', $settings[
 
     <div class="mt-auto pt-10">
       <?php if (!empty($settings['phone'])): ?>
-        <a class="tabular font-display text-[1.75rem] font-semibold leading-none tracking-[0.02em] text-cream no-underline" href="<?= e(tel($settings['phone'])) ?>"><?= e(Phone::pretty($settings['phone'])) ?></a>
+        <a class="tabular whitespace-nowrap font-display text-[1.75rem] font-semibold leading-none tracking-[0.02em] text-cream no-underline" href="<?= e(tel($settings['phone'])) ?>"><?= t(Phone::pretty($settings['phone'])) ?></a>
       <?php endif ?>
       <?php if ($hours): ?>
-        <p class="mt-2 text-[0.9375rem] text-sage">Офис в Перми: <?= e(implode(', ', $hours)) ?></p>
+        <p class="mt-2 text-[0.9375rem] text-sage"><?= t('Офис в Перми: ' . implode(', ', $hours)) ?></p>
       <?php endif ?>
       <div class="mt-5 flex flex-wrap gap-3">
         <?php if (!empty($settings['whatsapp'])): ?>
@@ -109,7 +110,7 @@ $hours = array_values(array_filter([$settings['hoursWeekdays'] ?? '', $settings[
         <?php endif ?>
       </div>
       <a class="mt-7 inline-flex items-center gap-2 py-1 font-semibold text-sage no-underline hover:text-cream" href="/admin/" rel="nofollow">
-        <?= icon('log-in', 'size-4 text-gold') ?>Вход для сотрудников
+        <?= icon('log-in', 'size-4 text-gold') ?><?= t('Вход для сотрудников') ?>
       </a>
     </div>
   </nav>

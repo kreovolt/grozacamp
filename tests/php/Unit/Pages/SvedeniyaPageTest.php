@@ -9,6 +9,8 @@ use Groza\Tests\Support\TestApp;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
+use function Groza\View\t;
+
 /** Раздел сведений (спека §7.6, Приказ № 201). Данные — seed/demo, часы — 2027-01-15. */
 final class SvedeniyaPageTest extends TestCase
 {
@@ -78,7 +80,8 @@ final class SvedeniyaPageTest extends TestCase
 
         $this->assertSame(200, $res->status());
         $this->assertSame(1, preg_match_all('#<h1[^>]*>\s*(.*?)\s*</h1>#us', $res->body(), $m));
-        $this->assertSame($h1, html_entity_decode($m[1][0], ENT_QUOTES | ENT_HTML5));
+        $this->assertSame(t($h1), $m[1][0], 'формулировка приказа дословно (пробелы — через типограф)');
+        $this->assertSame($h1, $this->plain($m[1][0]));
         $this->assertStringContainsString('<title>' . $h1, html_entity_decode($res->body(), ENT_QUOTES | ENT_HTML5));
     }
 
@@ -117,7 +120,7 @@ final class SvedeniyaPageTest extends TestCase
             $this->assertStringContainsString('href="#' . $id . '"', $body, "оглавление: #$id");
         }
         foreach (['Основные сведения', 'Документы', 'Руководство', 'Педагогический и вожатский состав', 'Контакты'] as $i => $h2) {
-            $this->assertStringContainsString('>' . $h2 . '<', $this->section($body, $m[1][$i]));
+            $this->assertStringContainsString('>' . t($h2) . '<', $this->section($body, $m[1][$i]));
         }
     }
 
@@ -260,7 +263,7 @@ final class SvedeniyaPageTest extends TestCase
         $this->assertStringContainsString('href="tel:+73422474347"', $this->row($part, 'kontakty.a'));
         $this->assertStringContainsString('+7 (342) 247-43-47', $this->plain($this->row($part, 'kontakty.a')));
         $this->assertStringContainsString('href="mailto:2474347@bk.ru"', $this->row($part, 'kontakty.b'));
-        $this->assertStringContainsString('614065, г. Пермь', $this->row($part, 'kontakty.v'));
+        $this->assertStringContainsString("614065, г.\u{00A0}Пермь", $this->row($part, 'kontakty.v'));
 
         $app = TestApp::make();
         $app->store()->write('settings', ['postalAddress' => ''] + $app->store()->read('settings'), 'test');
@@ -296,13 +299,13 @@ final class SvedeniyaPageTest extends TestCase
 
         $this->assertStringNotContainsString('ДЗОЛ «Восток»', $body, 'база без смен сезона не показывается');
         $this->assertStringContainsString('>ДЗОЛ «Солнышко»<', $venue);
-        $this->assertStringContainsString('дер. Коляды', $venue);
+        $this->assertStringContainsString("дер.\u{00A0}Коляды", $venue);
         preg_match_all('#\sdata-item="([a-z. ]+)"#', $venue, $m);
         $this->assertSame(['mto.a', 'mto.b', 'mto.v', 'mto.g', 'mto.d'], $m[1], 'по одному полю на пункт 9 а–д');
         $this->assertStringContainsString('1985', $this->row($venue, 'mto.a'));
-        $this->assertStringContainsString('Деревянные корпуса с санузлом', $this->row($venue, 'mto.b'));
-        $this->assertStringContainsString('питание пять раз в день', $this->row($venue, 'mto.v'));
-        $this->assertStringContainsString('Корпуса для занятий', $this->row($venue, 'mto.g'));
+        $this->assertStringContainsString(t('Деревянные корпуса с санузлом'), $this->row($venue, 'mto.b'));
+        $this->assertStringContainsString(t('питание пять раз в день'), $this->row($venue, 'mto.v'));
+        $this->assertStringContainsString(t('Корпуса для занятий'), $this->row($venue, 'mto.g'));
         $this->assertStringContainsString('библиотеки нет', $this->row($venue, 'mto.g'));
         $this->assertStringContainsString('Медицинский пункт', $this->row($venue, 'mto.d'));
     }
@@ -395,10 +398,10 @@ final class SvedeniyaPageTest extends TestCase
         $body = TestApp::get($app, '/svedeniya/uslugi/')->body();
 
         foreach ($texts['lists.documents'] as $item) {
-            $this->assertStringContainsString(htmlspecialchars($item, ENT_QUOTES), $this->row($body, 'uslugi.g'));
+            $this->assertStringContainsString(t($item), $this->row($body, 'uslugi.g'));
         }
         foreach ($texts['lists.packing'] as $item) {
-            $this->assertStringContainsString(htmlspecialchars($item, ENT_QUOTES), $this->row($body, 'uslugi.d'));
+            $this->assertStringContainsString(t($item), $this->row($body, 'uslugi.d'));
         }
         $this->assertStringContainsString('Информация обновляется', $this->row(TestApp::get($this->withTexts(['lists.packing' => []]), '/svedeniya/uslugi/')->body(), 'uslugi.d'));
     }
@@ -422,7 +425,7 @@ final class SvedeniyaPageTest extends TestCase
     {
         $body = TestApp::get(TestApp::make(), '/svedeniya/inaya-informaciya/')->body();
 
-        $this->assertStringContainsString('Номер в реестре организаций отдыха', $body);
+        $this->assertStringContainsString(t('Номер в реестре организаций отдыха'), $body);
         $this->assertStringContainsString('href="/policy/"', $body);
         $this->assertStringContainsString('href="/pravila/"', $body);
     }

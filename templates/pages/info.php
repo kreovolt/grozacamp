@@ -14,6 +14,7 @@ use function Groza\View\icon;
 use function Groza\View\pending;
 use function Groza\View\photo;
 use function Groza\View\picture;
+use function Groza\View\t;
 
 $this->layout('layout', ['page' => 'info']);
 
@@ -29,8 +30,8 @@ $h2 = 'font-display text-[clamp(1.5rem,1.2rem+1.1vw,2.125rem)] font-bold upperca
   <div class="wrap grid gap-10 pb-14 pt-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:items-center lg:gap-16 desk:pb-20 desk:pt-12">
     <div>
       <?= $this->partial('partials/breadcrumbs', ['items' => [['label' => 'Главная', 'href' => '/'], ['label' => 'Информация для родителей']], 'tone' => 'dark', 'class' => 'mb-8']) ?>
-      <h1 class="font-display text-[clamp(2.25rem,1.5rem+3vw,4rem)] font-bold uppercase leading-[1.05] tracking-[0.01em] text-[#f4efe3]" id="info-title">Информация для родителей</h1>
-      <p class="mt-5 max-w-[34rem] text-[1.0625rem] leading-relaxed text-cream/90 sm:text-lg">Что собрать, какие документы взять, как передать лекарства и как быть на связи с ребёнком. Не нашли ответ, позвоните в офис.</p>
+      <h1 class="font-display text-[clamp(2.25rem,1.5rem+3vw,4rem)] font-bold uppercase leading-[1.05] tracking-[0.01em] text-[#f4efe3]" id="info-title"><?= t('Информация для родителей') ?></h1>
+      <p class="mt-5 max-w-[34rem] text-[1.0625rem] leading-relaxed text-cream/90 sm:text-lg"><?= t('Что собрать, какие документы взять, как передать лекарства и как быть на связи с ребёнком. Не нашли ответ, позвоните в офис.') ?></p>
     </div>
     <div class="hidden items-start lg:flex">
       <?= $this->partial('components/polaroid', [
@@ -57,9 +58,9 @@ $h2 = 'font-display text-[clamp(1.5rem,1.2rem+1.1vw,2.125rem)] font-bold upperca
   <div class="min-w-0 max-w-[48rem]">
     <?php foreach ($sections as $i => $s): ?>
       <section data-reveal class="scroll-mt-6 border-t border-dashed border-moss/45 py-9 first:border-t-0 first:pt-0 last:pb-0" id="<?= e($s['id']) ?>" aria-labelledby="<?= e($s['id']) ?>-title">
-        <h2 class="<?= $h2 ?>" id="<?= e($s['id']) ?>-title"><?= e($s['label']) ?></h2>
+        <h2 class="<?= $h2 ?>" id="<?= e($s['id']) ?>-title"><?= t($s['label']) ?></h2>
         <?php if (!empty($s['subtitle'])): ?>
-          <p class="mt-2 text-ink-soft"><?= e($s['subtitle']) ?></p>
+          <p class="mt-2 text-ink-soft"><?= t($s['subtitle']) ?></p>
         <?php endif ?>
 
         <?php if ($s['kind'] === 'html' || $s['kind'] === 'rules'): ?>
@@ -80,7 +81,7 @@ $h2 = 'font-display text-[clamp(1.5rem,1.2rem+1.1vw,2.125rem)] font-bold upperca
               <?php foreach ($s['items'] as $item): ?>
                 <li class="flex gap-3.5 border-b border-dashed border-moss/45 py-3.5 leading-snug">
                   <?= icon('check', 'mt-0.5 size-5 shrink-0 text-moss') ?>
-                  <span class="text-ink"><?= e($item) ?></span>
+                  <span class="text-ink"><?= t($item) ?></span>
                 </li>
               <?php endforeach ?>
             </ul>

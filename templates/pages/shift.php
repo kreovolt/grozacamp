@@ -22,6 +22,7 @@ use function Groza\View\richtext;
 use function Groza\View\icon;
 use function Groza\View\image;
 use function Groza\View\picture;
+use function Groza\View\t;
 use function Groza\View\tel;
 
 $plural = static function (int $n, string $one, string $few, string $many): string {
@@ -83,7 +84,7 @@ $this->layout('layout', [
 
 $section = 'py-16 sm:py-20 desk:py-24';
 $badges = ['open' => 'bg-moss text-white', 'few' => 'bg-gold text-ink', 'soon' => 'bg-paper text-forest', 'closed' => 'bg-ink text-cream'];
-$fact = static fn (string $name, string $value): string => '<div class="border-t border-dashed border-sage/40 pt-3"><dt class="text-[0.8125rem] uppercase tracking-[0.1em] text-sage">' . e($name) . '</dt><dd class="tabular mt-1 font-display text-[1.25rem] font-semibold leading-tight tracking-[0.02em] text-cream">' . e($value) . '</dd></div>';
+$fact = static fn (string $name, string $value): string => '<div class="border-t border-dashed border-sage/40 pt-3"><dt class="text-[0.8125rem] uppercase tracking-[0.1em] text-sage">' . t($name) . '</dt><dd class="tabular mt-1 font-display text-[1.25rem] font-semibold leading-tight tracking-[0.02em] text-cream">' . t($value) . '</dd></div>';
 ?>
 <section class="on-dark relative isolate overflow-hidden bg-forest text-cream" data-block="hero" aria-labelledby="shift-title">
   <?= $this->partial('components/topo', ['class' => 'pointer-events-none absolute inset-0 -z-10 h-full w-full text-sand opacity-[0.14]']) ?>
@@ -93,11 +94,11 @@ $fact = static fn (string $name, string $value): string => '<div class="border-t
       <?php if ($past): ?>
         <p class="inline-block rounded-[4px] bg-ink px-2.5 py-1.5 font-display text-[0.8125rem] font-semibold uppercase leading-none tracking-[0.12em] text-cream">Смена завершена</p>
       <?php elseif ($label !== ''): ?>
-        <p class="inline-block rounded-[4px] px-2.5 py-1.5 font-display text-[0.8125rem] font-semibold uppercase leading-none tracking-[0.12em] <?= $badges[$status] ?? $badges['open'] ?>"><?= e($label) ?></p>
+        <p class="inline-block rounded-[4px] px-2.5 py-1.5 font-display text-[0.8125rem] font-semibold uppercase leading-none tracking-[0.12em] <?= $badges[$status] ?? $badges['open'] ?>"><?= t($label) ?></p>
       <?php endif ?>
-      <h1 class="mt-4 font-display text-[clamp(2.5rem,1.3rem+4.8vw,4rem)] font-bold uppercase leading-[1.05] tracking-[0.01em] text-[#f4efe3]" id="shift-title"><?= e($title) ?></h1>
+      <h1 class="mt-4 font-display text-[clamp(2.5rem,1.3rem+4.8vw,4rem)] font-bold uppercase leading-[1.05] tracking-[0.01em] text-[#f4efe3]" id="shift-title"><?= t($title) ?></h1>
       <?php if ($desc !== ''): ?>
-        <p class="mt-5 max-w-[34rem] text-[1.0625rem] leading-relaxed text-cream/90 sm:text-lg"><?= e($desc) ?></p>
+        <p class="mt-5 max-w-[34rem] text-[1.0625rem] leading-relaxed text-cream/90 sm:text-lg"><?= t($desc) ?></p>
       <?php endif ?>
 
       <dl class="mt-8 grid max-w-[34rem] grid-cols-2 gap-x-6 gap-y-5" data-block="facts">
@@ -115,9 +116,9 @@ $fact = static fn (string $name, string $value): string => '<div class="border-t
         <?php endif ?>
       </dl>
       <?php if ($priceText !== null && $priceNote !== ''): ?>
-        <p class="mt-3 max-w-[34rem] text-[0.9375rem] text-sage"><?= e($priceNote) ?></p>
+        <p class="mt-3 max-w-[34rem] text-[0.9375rem] text-sage"><?= t($priceNote) ?></p>
       <?php elseif ($priceText === null): ?>
-        <p class="mt-5 max-w-[34rem] font-semibold text-cream">Стоимость уточняйте в офисе<?php if ($phone !== ''): ?>: <a class="tabular whitespace-nowrap underline decoration-gold/60 underline-offset-4 hover:decoration-gold" href="<?= e(tel($phone)) ?>"><?= e(Phone::pretty($phone)) ?></a><?php endif ?></p>
+        <p class="mt-5 max-w-[34rem] font-semibold text-cream"><?= t('Стоимость уточняйте в офисе') ?><?php if ($phone !== ''): ?>: <a class="tabular whitespace-nowrap underline decoration-gold/60 underline-offset-4 hover:decoration-gold" href="<?= e(tel($phone)) ?>"><?= t(Phone::pretty($phone)) ?></a><?php endif ?></p>
       <?php endif ?>
 
       <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -140,7 +141,7 @@ $fact = static fn (string $name, string $value): string => '<div class="border-t
 <?php if ($past): ?>
   <div class="bg-sand-deep" data-block="past">
     <div class="wrap flex flex-col items-start gap-4 py-8 sm:flex-row sm:items-center sm:justify-between">
-      <p class="max-w-[52ch] text-lg font-semibold leading-snug text-ink">Эта смена уже прошла. Посмотрите смены, на которые идёт набор.</p>
+      <p class="max-w-[52ch] text-lg font-semibold leading-snug text-ink"><?= t('Эта смена уже прошла. Посмотрите смены, на которые идёт набор.') ?></p>
       <?= $this->partial('components/button', ['label' => 'Текущие смены', 'href' => '/booking/', 'class' => 'shrink-0']) ?>
     </div>
   </div>
@@ -156,7 +157,7 @@ $fact = static fn (string $name, string $value): string => '<div class="border-t
             <?php foreach ($activities as $a): ?>
               <li class="flex gap-3.5 border-b border-dashed border-moss/50 py-4 leading-snug">
                 <?= icon('check', 'mt-0.5 size-5 shrink-0 text-moss') ?>
-                <span class="text-[1.0625rem] text-ink"><?= e($a) ?></span>
+                <span class="text-[1.0625rem] text-ink"><?= t($a) ?></span>
               </li>
             <?php endforeach ?>
           </ul>
@@ -164,7 +165,7 @@ $fact = static fn (string $name, string $value): string => '<div class="border-t
       <?php endif ?>
       <div<?= $activities === [] ? ' class="lg:col-span-2"' : '' ?>>
         <?php if ($activities === []): ?>
-          <h2 class="sr-only" id="program-title">О смене</h2>
+          <h2 class="sr-only" id="program-title"><?= t('О смене') ?></h2>
         <?php endif ?>
         <?php if ($body !== ''): ?>
           <div class="richtext max-w-[62ch] leading-relaxed text-ink-soft"><?= richtext($body) ?></div>
@@ -175,8 +176,8 @@ $fact = static fn (string $name, string $value): string => '<div class="border-t
             <ul class="mt-4 grid grid-cols-3 gap-2 sm:gap-3" role="list">
               <?php foreach ($groups as [$range, $name]): ?>
                 <li class="rounded-card bg-paper px-3 py-3.5 shadow-card sm:px-4 sm:py-4">
-                  <p class="tabular font-display text-[1.125rem] font-semibold leading-none text-ink sm:text-[1.5rem]"><?= e($range) ?></p>
-                  <p class="mt-1.5 text-[0.9375rem] text-ink-soft"><?= e($name) ?></p>
+                  <p class="tabular font-display text-[1.125rem] font-semibold leading-none text-ink sm:text-[1.5rem]"><?= t($range) ?></p>
+                  <p class="mt-1.5 text-[0.9375rem] text-ink-soft"><?= t($name) ?></p>
                 </li>
               <?php endforeach ?>
             </ul>
@@ -192,9 +193,9 @@ $fact = static fn (string $name, string $value): string => '<div class="border-t
     <div class="wrap grid gap-8 lg:grid-cols-[minmax(0,19rem)_minmax(0,1fr)] lg:gap-12">
       <div>
         <?= $this->partial('components/section-head', ['title' => 'Где проходит', 'id' => 'venue-title']) ?>
-        <p class="mt-6 font-display text-[1.5rem] font-bold uppercase leading-tight tracking-[0.02em] text-ink"><?= e((string) $venue['name']) ?></p>
+        <p class="mt-6 font-display text-[1.5rem] font-bold uppercase leading-tight tracking-[0.02em] text-ink"><?= t((string) $venue['name']) ?></p>
         <?php if (!empty($venue['address'])): ?>
-          <p class="mt-3 flex items-start gap-2 leading-snug text-ink-soft"><?= icon('map-pin', 'mt-0.5 size-[1.125rem] shrink-0 text-moss') ?><span><?= e((string) $venue['address']) ?></span></p>
+          <p class="mt-3 flex items-start gap-2 leading-snug text-ink-soft"><?= icon('map-pin', 'mt-0.5 size-[1.125rem] shrink-0 text-moss') ?><span><?= t((string) $venue['address']) ?></span></p>
         <?php endif ?>
         <a class="group/more mt-6 inline-block font-display text-[0.9375rem] font-semibold uppercase leading-snug tracking-btn text-rust-deep no-underline hover:text-rust-dark" href="/svedeniya/mto/">Условия проживания&nbsp;<?= icon('arrow-right', 'inline-block size-4 align-[-0.2em] transition-transform group-hover/more:translate-x-0.5') ?></a>
       </div>
