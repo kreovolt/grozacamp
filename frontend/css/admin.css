@@ -18,7 +18,10 @@
 @layer base {
   :root { color-scheme: light; accent-color: theme('colors.rust.dark'); }
   html { -webkit-text-size-adjust: 100%; }
-  body { @apply bg-sand font-sans text-base leading-relaxed text-ink; }
+  /* overflow-wrap: длинный адрес или имя файла на телефоне переносится, а не вылезает за край */
+  body { @apply bg-sand font-sans text-base leading-relaxed text-ink; overflow-wrap: break-word; }
+  h1, h2, h3, h4 { text-wrap: balance; }
+  p, li, dd, figcaption, blockquote { text-wrap: pretty; }
   :focus { outline: none; }
   :focus-visible { outline: 2px solid theme('colors.rust.dark'); outline-offset: 3px; }
   [tabindex='-1']:focus-visible { outline: none; }

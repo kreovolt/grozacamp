@@ -50,6 +50,8 @@
     @apply bg-sand font-sans text-base leading-relaxed text-ink;
     font-kerning: normal;
     caret-color: theme('colors.rust.dark');
+    /* Длинное слово или адрес на узком телефоне переносится, а не вылезает за край */
+    overflow-wrap: break-word;
   }
   html.menu-open { overflow: hidden; }
 
@@ -72,12 +74,14 @@
   /* hidden сильнее утилит display (flex, grid…), иначе скрытые панели меню видны */
   [hidden] { display: none !important; }
 
-  h1, h2, h3 { text-wrap: balance; }
+  /* Переносы строк (вместе с неразрывными пробелами типографа, Groza\View\t()): заголовки — строками ровной длины,
+     текст — без одинокого слова в последней строке. Браузеры без поддержки просто переносят как обычно. */
+  h1, h2, h3, h4 { text-wrap: balance; }
+  p, li, dd, figcaption, blockquote { text-wrap: pretty; }
 
   /* Раскрывающиеся блоки (<details>): свой значок вместо системного треугольника */
   summary { list-style: none; cursor: pointer; }
   summary::-webkit-details-marker { display: none; }
-  p { text-wrap: pretty; }
 }
 
 @layer components {
@@ -263,6 +267,8 @@
   html:not(.js) #mobile-menu:target { display: flex !important; }
   html:not(.js) #mobile-menu [data-accordion] + [hidden] { display: block !important; }
   .tabular { font-variant-numeric: tabular-nums lining-nums; }
+  /* Диапазоны и телефоны без пробелов («10:00–19:00», «247-43-47»): браузер иначе переносит после тире и дефиса (t(), richtext()) */
+  .nobr { white-space: nowrap; }
 }
 
 @media (prefers-reduced-motion: reduce) {

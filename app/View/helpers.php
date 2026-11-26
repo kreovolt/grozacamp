@@ -14,14 +14,44 @@ function e(?string $s): string
     return htmlspecialchars((string) $s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
-/** Значение обязательного поля: пустое → «Информация обновляется» (спека §7.6), иначе экранированный текст. */
+/**
+ * Текст для вывода на публичной странице: типограф (неразрывные пробелы, Groza\Support\Typograph) и экранирование как в e();
+ * диапазоны, время и телефоны без пробелов («10:00–19:00», «247-43-47») — в <span class="nobr">, чтобы браузер не переносил
+ * их после дефиса или тире. Только для текста между тегами: в атрибутах, <title>, meta, <option>, <textarea> и value — e().
+ * Хранимые данные не меняются: типограф работает только при выводе.
+ */
+function t(?string $s): string
+{
+    $s = (string) $s;
+
+    return $s === '' ? '' : nobr(\Groza\Support\Typograph::apply($s));
+}
+
+/** Текст, уже прошедший типограф, → HTML: экранирование как в e() и <span class="nobr"> вокруг кусков, которые нельзя переносить. */
+function nobr(string $text): string
+{
+    $out = '';
+    foreach (\Groza\Support\Typograph::segments($text) as [$piece, $whole]) {
+        $out .= $whole ? '<span class="nobr">' . e($piece) . '</span>' : e($piece);
+    }
+
+    return $out;
+}
+
+/** Типограф в текстовых узлах готового безопасного HTML (разметка и атрибуты не меняются); результат так же безопасен. */
+function typeset(string $safeHtml): string
+{
+    return HtmlTypograph::apply($safeHtml);
+}
+
+/** Значение обязательного поля: пустое → «Информация обновляется» (спека §7.6), иначе текст через t(). */
 function pending(?string $value): string
 {
     if ($value === null || trim($value) === '') {
         return '<span class="pending">Информация обновляется</span>';
     }
 
-    return e($value);
+    return t($value);
 }
 
 /** Путь к собранному файлу с версией из public/assets/manifest.json: /assets/css/app.css?v=1a2b3c4d5e. */
@@ -58,8 +88,9 @@ function tel(string $e164): string
 }
 
 /**
- * Текст с оформлением для вывода на публичной странице: ещё раз через Sanitizer (в JSON могло оказаться что угодно).
- * Результат безопасен для вставки в HTML без экранирования. Повтор того же текста за запрос — из кэша.
+ * Текст с оформлением для вывода на публичной странице: ещё раз через Sanitizer (в JSON могло оказаться что угодно),
+ * затем типограф в текстовых узлах (typeset). Результат безопасен для вставки в HTML без экранирования.
+ * Повтор того же текста за запрос — из кэша.
  */
 function richtext(?string $html): string
 {
@@ -73,7 +104,7 @@ function richtext(?string $html): string
         if (count($cache) > 200) {
             $cache = [];
         }
-        $cache[$key] = \Groza\Support\Sanitizer::clean($html);
+        $cache[$key] = typeset(\Groza\Support\Sanitizer::clean($html));
     }
 
     return $cache[$key];
