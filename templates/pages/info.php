@@ -55,7 +55,7 @@ $h2 = 'font-display text-[clamp(1.5rem,1.2rem+1.1vw,2.125rem)] font-bold upperca
 <div class="wrap grid grid-cols-1 gap-8 py-12 sm:py-16 lg:grid-cols-[minmax(0,17rem)_minmax(0,1fr)] lg:gap-16 desk:py-20" data-block="content">
   <?= $this->partial('components/toc', ['items' => $toc]) ?>
 
-  <div class="min-w-0 max-w-[48rem]">
+  <div class="min-w-0 max-w-[44rem]">
     <?php foreach ($sections as $i => $s): ?>
       <section data-reveal class="scroll-mt-[-2.25rem] border-t border-dashed border-moss/45 py-9 first:scroll-mt-0 first:border-t-0 first:pt-0 last:pb-0" id="<?= e($s['id']) ?>" aria-labelledby="<?= e($s['id']) ?>-title">
         <h2 class="<?= $h2 ?>" id="<?= e($s['id']) ?>-title"><?= t($s['label']) ?></h2>
@@ -77,7 +77,7 @@ $h2 = 'font-display text-[clamp(1.5rem,1.2rem+1.1vw,2.125rem)] font-bold upperca
           <?php if ($s['items'] === []): ?>
             <p class="mt-5 leading-relaxed"><?= pending('') ?></p>
           <?php else: ?>
-            <ul class="mt-5 grid grid-cols-1 gap-x-10 border-t border-dashed border-moss/45 sm:grid-cols-2" role="list">
+            <ul class="mt-5 grid grid-cols-1 gap-x-10 border-t border-dashed border-moss/45 sm:grid-cols-2 sm:[&>li:last-child:nth-child(odd)]:col-span-2" role="list">
               <?php foreach ($s['items'] as $item): ?>
                 <li class="flex gap-3.5 border-b border-dashed border-moss/45 py-3.5 leading-snug">
                   <?= icon('check', 'mt-0.5 size-5 shrink-0 text-moss') ?>

@@ -38,7 +38,7 @@ $withToc = count($toc) >= 2;
   <?php if ($withToc): ?>
     <?= $this->partial('components/toc', ['items' => $toc]) ?>
   <?php endif ?>
-  <div class="min-w-0 max-w-[48rem]">
+  <div class="min-w-0 max-w-[44rem]">
     <?php if ($html === ''): ?>
       <p class="text-lg leading-relaxed"><?= pending('') ?></p>
     <?php else: ?>
