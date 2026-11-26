@@ -210,3 +210,10 @@ test.describe('широкие мониторы', () => {
     await expect(hero.locator('svg.topo[viewBox="0 0 1200 500"]')).toBeHidden();
   });
 });
+
+test('320 px: «Позвонить» и бургер в шапке не заходят на правое поле контейнера', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 640 });
+  await page.goto('/');
+  await page.evaluate(() => document.fonts.ready);
+  expect(await gutterOverflow(page, '[data-header] .wrap')).toBeLessThanOrEqual(0);
+});

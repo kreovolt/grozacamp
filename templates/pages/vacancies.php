@@ -130,7 +130,7 @@ $shot = static function (string $key, string $sizes): string {
   <div class="wrap grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16">
     <?php /* рядом с длинной анкетой заголовок едет вместе со страницей, а не оставляет пустой столбец */ ?>
     <?= $this->partial('components/section-head', [
-        'class' => 'lg:sticky lg:top-28 lg:self-start',
+        'class' => 'lg:sticky lg:top-[5.5rem] lg:self-start desk:top-[6.5rem]',
         'title' => 'Анкета',
         'lead' => 'Несколько коротких полей: должность, как с вами связаться и пара слов об опыте.',
         'id' => 'anketa-title',
