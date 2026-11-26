@@ -12,6 +12,7 @@ use Groza\Content\Nav;
 use Groza\Data\AuditLog;
 use Groza\Data\JsonStore;
 use Groza\Data\Seeder;
+use Groza\Http\ErrorPage;
 use Groza\Http\Request;
 use Groza\Http\Response;
 use Groza\Forms\FormGuard;
@@ -96,8 +97,15 @@ final class App
         $this->currentPath = $r->path();
         $this->view = null; // глобальные переменные шаблонов — свежие на каждый запрос
 
-        // сначала адрес (www. → основной, http → https), и только потом пароль тестового адреса: по http он не спрашивается
-        $response = $this->canonicalHost($r) ?? $this->httpsRedirect($r) ?? $this->stagingGate($r) ?? $this->dispatch($r);
+        try {
+            // сначала адрес (www. → основной, http → https), и только потом пароль тестового адреса: по http он не спрашивается
+            $response = $this->canonicalHost($r) ?? $this->httpsRedirect($r) ?? $this->stagingGate($r) ?? $this->dispatch($r);
+        } catch (\Throwable $e) {
+            // любой непойманный сбой (испорченный JSON, гонка записей, нет места для сессий) — не белый экран и не трассировка:
+            // страница с телефоном и WhatsApp, с заголовками безопасности; причина — в журнале ошибок PHP
+            ErrorPage::log($e);
+            $response = ErrorPage::response($this->config['rootDir'] . '/config/settings.defaults.php');
+        }
         if (self::isAdminPath($r->path())) { // и редирект на основной домен, и 401 тестового адреса
             $response = $response
                 ->withHeader('Cache-Control', 'no-store, private')
