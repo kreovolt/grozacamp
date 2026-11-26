@@ -96,7 +96,8 @@ final class App
         $this->currentPath = $r->path();
         $this->view = null; // глобальные переменные шаблонов — свежие на каждый запрос
 
-        $response = $this->canonicalHost($r) ?? $this->stagingGate($r) ?? $this->dispatch($r);
+        // сначала адрес (www. → основной, http → https), и только потом пароль тестового адреса: по http он не спрашивается
+        $response = $this->canonicalHost($r) ?? $this->httpsRedirect($r) ?? $this->stagingGate($r) ?? $this->dispatch($r);
         if (self::isAdminPath($r->path())) { // и редирект на основной домен, и 401 тестового адреса
             $response = $response
                 ->withHeader('Cache-Control', 'no-store, private')
@@ -122,6 +123,10 @@ final class App
     {
         if (!self::isAdminPath($r->path())) {
             return $this->router->dispatch($r);
+        }
+        $problems = $this->configProblems();
+        if ($problems !== []) { // без секрета и адреса сайта вход небезопасен: не выдаём даже сессию
+            return Response::html($this->view()->render('admin/not-configured', ['problems' => $problems]), 503);
         }
         if ($this->exceedsPostLimit($r)) {
             return Response::html($this->view()->render('admin/too-large'), 413);
@@ -222,10 +227,85 @@ final class App
         if ($r->host() !== 'www.' . $canonical) {
             return null;
         }
+
+        return Response::redirect(rtrim($base, '/') . self::pathAndQuery($r), 301);
+    }
+
+    /**
+     * Только HTTPS (спека §10.5): на сайте (staging, prod) запрос по http уходит 301 на https-адрес из baseUrl с тем же путём
+     * и строкой запроса — до пароля тестового адреса и до входа в админку. Адрес берётся из настроек, не из заголовка Host.
+     * Не настроен baseUrl — перенаправлять некуда (админка в этом случае закрыта, формы выключены).
+     */
+    private function httpsRedirect(Request $r): ?Response
+    {
+        if (!in_array($this->config['env'], ['staging', 'prod'], true) || $this->isSecure($r)) {
+            return null;
+        }
+        $base = self::httpsBase((string) $this->config['baseUrl']);
+
+        return $base === null ? null : Response::redirect($base . self::pathAndQuery($r), 301);
+    }
+
+    /**
+     * Пришёл ли запрос по HTTPS: сам сервер (HTTPS, REQUEST_SCHEME) или обратный прокси из trustedProxies,
+     * снявший HTTPS (X-Forwarded-Proto; берётся последнее значение — его поставил ближайший, доверенный прокси).
+     */
+    public function isSecure(Request $r): bool
+    {
+        if ($r->isHttps()) {
+            return true;
+        }
+        $proxies = array_map('strval', (array) ($this->config['trustedProxies'] ?? []));
+        if (!in_array($r->ip(), $proxies, true)) {
+            return false;
+        }
+        $values = explode(',', (string) $r->header('X-Forwarded-Proto'));
+
+        return strtolower(trim((string) end($values))) === 'https';
+    }
+
+    /** Путь (с перекодировкой сегментов) и строка запроса — для переадресаций на основной адрес. */
+    private static function pathAndQuery(Request $r): string
+    {
         $path = implode('/', array_map('rawurlencode', explode('/', $r->path())));
         $query = $r->queryString();
 
-        return Response::redirect(rtrim($base, '/') . $path . ($query !== '' ? '?' . $query : ''), 301);
+        return $path . ($query !== '' ? '?' . $query : '');
+    }
+
+    /** baseUrl как «https://хост[:порт]» — без пути, запроса и учётных данных; иначе null. */
+    private static function httpsBase(string $base): ?string
+    {
+        $p = parse_url(rtrim(trim($base), '/'));
+        if (!is_array($p) || strtolower((string) ($p['scheme'] ?? '')) !== 'https' || (string) ($p['host'] ?? '') === ''
+            || isset($p['user']) || isset($p['pass']) || isset($p['query']) || isset($p['fragment']) || (string) ($p['path'] ?? '') !== '') {
+            return null;
+        }
+
+        return 'https://' . strtolower((string) $p['host']) . (isset($p['port']) ? ':' . $p['port'] : '');
+    }
+
+    /**
+     * Чего не хватает в настройках сайта (staging, prod): адреса сайта с https:// и секрета приложения.
+     * Пусто — всё в порядке; в dev и test не проверяется. Значения в ответ не попадают — только что заполнить.
+     *
+     * @return list<string>
+     */
+    public function configProblems(): array
+    {
+        if (!in_array($this->config['env'], ['staging', 'prod'], true)) {
+            return [];
+        }
+        $problems = [];
+        if (self::httpsBase((string) $this->config['baseUrl']) === null) {
+            $problems[] = 'baseUrl — адрес сайта с https://, без пути (например, https://grozacamp.ru)';
+        }
+        $secret = (string) $this->config['appSecret'];
+        if (strlen($secret) < self::MIN_SECRET_BYTES || $secret === self::EXAMPLE_SECRET) {
+            $problems[] = 'appSecret — длинная случайная строка (от 32 знаков, не из примера)';
+        }
+
+        return $problems;
     }
 
     /** Тестовый адрес закрыт паролем. Логин и пароль не заданы — закрыт для всех. */
@@ -371,9 +451,10 @@ final class App
     {
         $secret = (string) $this->config['appSecret'];
         if (in_array($this->config['env'], ['staging', 'prod'], true)) {
-            // пустой, взятый из config/local.example.php или короткий секрет позволяет подделать подпись формы
-            if (strlen($secret) < self::MIN_SECRET_BYTES || $secret === self::EXAMPLE_SECRET) {
-                throw new \RuntimeException('appSecret в config/local.php не задан или слишком слаб (нужно от 32 байт, не из примера).');
+            // пустой, взятый из config/local.example.php или короткий секрет позволяет подделать подпись формы;
+            // без адреса сайта не проверить, откуда пришла форма
+            if ($this->configProblems() !== []) {
+                throw new \RuntimeException('Сайт не настроен (config/local.php): ' . implode('; ', $this->configProblems()));
             }
         } elseif ($secret === '') {
             $secret = 'dev-only-secret'; // локальная разработка без config/local.php

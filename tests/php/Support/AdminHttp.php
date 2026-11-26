@@ -21,13 +21,13 @@ final class AdminHttp
 
     public static function get(App $app, string $path, array $query = [], string $ip = '127.0.0.1'): Response
     {
-        return $app->handle(Request::create('GET', $path, $query, [], [], [], $ip));
+        return $app->handle(Request::create('GET', $path, $query, [], [], [], $ip, true));
     }
 
     /** @param array<string,mixed> $post */
     public static function post(App $app, string $path, array $post = [], string $ip = '127.0.0.1', string $method = 'POST'): Response
     {
-        return $app->handle(Request::create($method, $path, [], $post, [], [], $ip));
+        return $app->handle(Request::create($method, $path, [], $post, [], [], $ip, true));
     }
 
     /** POST с действующим токеном сессии. @param array<string,mixed> $post */

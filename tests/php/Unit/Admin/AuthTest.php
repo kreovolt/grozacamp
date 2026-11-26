@@ -619,8 +619,8 @@ final class AuthTest extends TestCase
 
     public function test_anonymous_login_page_flood_is_limited_per_address_in_production(): void
     {
-        $app = TestApp::make(['env' => 'prod', 'appSecret' => str_repeat('k', 40), 'fakeNow' => null]);
-        $get = static fn (string $ip) => $app->handle(Request::create('GET', '/admin/login/', [], [], [], [], $ip));
+        $app = TestApp::make(['env' => 'prod', 'baseUrl' => 'https://grozacamp.ru', 'appSecret' => str_repeat('k', 40), 'fakeNow' => null]);
+        $get = static fn (string $ip) => $app->handle(Request::create('GET', '/admin/login/', [], [], [], [], $ip, true));
         for ($i = 0; $i < 20; $i++) {
             $this->assertSame(200, $get('203.0.113.9')->status());
         }

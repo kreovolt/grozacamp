@@ -58,7 +58,7 @@ final class SitemapTest extends TestCase
         $this->assertStringNotContainsString("Disallow: /\n", $res->body());
 
         $staging = TestApp::make(['baseUrl' => self::BASE, 'env' => 'staging', 'staging' => ['user' => 'u', 'pass' => 'p'], 'appSecret' => str_repeat('s', 40)]);
-        $req = Request::create('GET', '/robots.txt', [], [], ['Authorization' => 'Basic ' . base64_encode('u:p')]);
+        $req = Request::create('GET', '/robots.txt', [], [], ['Authorization' => 'Basic ' . base64_encode('u:p')], https: true);
         $body = $staging->handle($req)->body();
         $this->assertStringContainsString("Disallow: /\n", $body . "\n");
         $this->assertStringNotContainsString('Sitemap:', $body);

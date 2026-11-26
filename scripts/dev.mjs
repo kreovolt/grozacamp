@@ -25,7 +25,9 @@ function run(label, cmd, args, opts = {}) {
 
 const host = process.env.HOST ?? '127.0.0.1';
 const port = process.env.PORT ?? '8080';
-run('php', phpBinary(), ['-S', `${host}:${port}`, '-t', 'public', 'public/index.php']);
+// Окружение задаётся явно: без него config.php считает сайт боевым (env=prod) — https, SMTP, закрытая админка
+const env = { ...process.env, GROZA_ENV: process.env.GROZA_ENV || 'dev' };
+run('php', phpBinary(), ['-S', `${host}:${port}`, '-t', 'public', 'public/index.php'], { env });
 
 // Статика: Tailwind и esbuild в режиме наблюдения, хеши в manifest.json (scripts/build-assets.mjs)
 if (existsSync(join(root, 'frontend/css/app.css'))) {

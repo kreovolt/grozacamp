@@ -22,6 +22,7 @@ final class Request
         array $headers,
         private array $files,
         private string $ip,
+        private bool $https = false,
     ) {
         foreach ($headers as $name => $value) {
             $this->headers[strtolower((string) $name)] = (string) $value;
@@ -50,6 +51,9 @@ final class Request
                 $headers['AUTHORIZATION'] = 'Basic ' . base64_encode($_SERVER['PHP_AUTH_USER'] . ':' . ($_SERVER['PHP_AUTH_PW'] ?? ''));
             }
         }
+        // HTTPS у самого сервера; X-Forwarded-Proto от прокси проверяет App::isSecure (только от доверенных адресов)
+        $https = strtolower((string) ($_SERVER['HTTPS'] ?? '')) !== '' && strtolower((string) $_SERVER['HTTPS']) !== 'off'
+            || strtolower((string) ($_SERVER['REQUEST_SCHEME'] ?? '')) === 'https';
         $uri = (string) ($_SERVER['REQUEST_URI'] ?? '/');
         $path = rawurldecode((string) (parse_url($uri, PHP_URL_PATH) ?? '/'));
 
@@ -61,6 +65,7 @@ final class Request
             $headers,
             $_FILES,
             (string) ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'),
+            $https,
         );
     }
 
@@ -78,8 +83,9 @@ final class Request
         array $headers = [],
         array $files = [],
         string $ip = '127.0.0.1',
+        bool $https = false,
     ): Request {
-        return new Request(strtoupper($method), $path, $query, $post, $headers, $files, $ip);
+        return new Request(strtoupper($method), $path, $query, $post, $headers, $files, $ip, $https);
     }
 
     public function method(): string
@@ -128,6 +134,12 @@ final class Request
     public function ip(): string
     {
         return $this->ip;
+    }
+
+    /** Запрос пришёл на сервер по HTTPS (без учёта прокси — см. App::isSecure). */
+    public function isHttps(): bool
+    {
+        return $this->https;
     }
 
     /** Все загруженные файлы запроса по именам полей. @return array<string,array<string,mixed>> */

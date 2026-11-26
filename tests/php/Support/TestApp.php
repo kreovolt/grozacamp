@@ -26,7 +26,8 @@ final class TestApp
         register_shutdown_function(static fn () => self::removeDir($storage));
 
         $config = array_replace_recursive(require $root . '/config/config.php', [
-            'env' => 'test',
+            'env' => 'test', // явно: без настроек config.php считает сайт боевым
+            'baseUrl' => 'http://127.0.0.1:8080',
             'storageDir' => $storage,
             'appSecret' => 'test-secret',
             'fakeNow' => '2027-01-15T12:00:00+05:00',
@@ -38,10 +39,10 @@ final class TestApp
         return App::boot($config);
     }
 
-    /** @param array<string,string> $query */
+    /** Тестовый «браузер» ходит по HTTPS: на staging и prod запрос по http получил бы 301. @param array<string,string> $query */
     public static function get(App $app, string $path, array $query = []): Response
     {
-        return $app->handle(Request::create('GET', $path, $query));
+        return $app->handle(Request::create('GET', $path, $query, https: true));
     }
 
     /**
@@ -50,7 +51,7 @@ final class TestApp
      */
     public static function post(App $app, string $path, array $post, array $headers = []): Response
     {
-        return $app->handle(Request::create('POST', $path, [], $post, $headers));
+        return $app->handle(Request::create('POST', $path, [], $post, $headers, https: true));
     }
 
     private static function removeDir(string $dir): void

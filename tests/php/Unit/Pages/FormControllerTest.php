@@ -355,7 +355,7 @@ final class FormControllerTest extends TestCase
 
     public function test_valid_long_secret_in_prod_is_accepted(): void
     {
-        $app = TestApp::make(['env' => 'prod', 'appSecret' => str_repeat('k', 40), 'fakeNow' => null]);
+        $app = TestApp::make(['env' => 'prod', 'baseUrl' => 'https://grozacamp.ru', 'appSecret' => str_repeat('k', 40), 'fakeNow' => null]);
         $this->assertSame(['_ts', '_sig'], array_keys($app->guard()->fields('booking')));
     }
 
