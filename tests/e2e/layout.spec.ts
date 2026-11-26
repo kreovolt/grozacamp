@@ -58,3 +58,12 @@ test('1024 px: таблица состава в Сведениях помеща�
   const fits = await page.locator('#sostav .table-scroll').evaluate((el) => el.scrollWidth <= el.clientWidth);
   expect(fits).toBe(true);
 });
+
+test('телефон боком 844×390: фото героя — полоса, заголовок виден на первом экране', async ({ page }) => {
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.goto('/');
+  const photo = await page.locator('[data-block="hero"] .hero-photo').boundingBox();
+  const title = await page.getByRole('heading', { level: 1 }).boundingBox();
+  expect(photo!.height).toBeLessThanOrEqual(390 * 0.45);
+  expect(title!.y).toBeLessThan(390);
+});

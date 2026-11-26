@@ -148,6 +148,16 @@
     margin-inline: calc(-1 * var(--gutter));
   }
   .hero-copy { padding-block: 2rem 2.75rem; }
+  /* Телефон боком (низкий экран): снимок 16 : 9 во всю ширину выше самого экрана, заголовок и кнопки уезжали на 2–3 экрана вниз.
+     Здесь фото — полоса около 40 % высоты экрана, заголовок виден сразу под ней. */
+  @media (orientation: landscape) and (max-height: 540px) and (max-width: 1023.98px) {
+    .hero-photo {
+      aspect-ratio: auto;
+      height: max(9rem, 40svh);
+    }
+    .hero-copy { padding-block: 1.5rem 2.25rem; }
+    .hero-copy [data-hero-title] { font-size: 2.75rem; } /* вместо ~61 px от ширины экрана: заголовок в две строки */
+  }
   /* Топо-линии гаснут к заголовку: гуще в нижней трети блока, под кнопками, и растворяются у самого края
      (иначе линии обрываются о границу с полосой цифр) */
   .hero-topo {
