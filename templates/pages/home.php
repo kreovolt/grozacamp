@@ -125,7 +125,7 @@ $steps = [
     </div>
 
     <?php if ($shifts !== []): ?>
-      <div class="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 desk:gap-8" data-reveal>
+      <div class="shift-grid mt-10 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 desk:gap-8" data-reveal>
         <?php foreach ($shifts as $shift): ?>
           <?= $this->partial('components/shift-card', [
               'shift' => $shift,

@@ -67,3 +67,34 @@ test('телефон боком 844×390: фото героя — полоса, 
   expect(photo!.height).toBeLessThanOrEqual(390 * 0.45);
   expect(title!.y).toBeLessThan(390);
 });
+
+test.describe('карточки смен', () => {
+  for (const path of ['/', '/booking/']) {
+    test(`768 px: нечётная последняя карточка на весь ряд, фото слева (${path})`, async ({ page }) => {
+      await page.setViewportSize({ width: 768, height: 1024 });
+      await page.goto(path);
+      const cards = page.locator('[data-block="shifts"] .shift-card');
+      await expect(cards).toHaveCount(3);
+      const first = await cards.nth(0).boundingBox();
+      const second = await cards.nth(1).boundingBox();
+      const last = await cards.nth(2).boundingBox();
+      expect(Math.round(last!.x)).toBe(Math.round(first!.x));
+      expect(Math.round(last!.x + last!.width)).toBe(Math.round(second!.x + second!.width));
+      const photo = await cards.nth(2).locator('[data-card="photo"]').boundingBox();
+      const info = await cards.nth(2).locator('[data-card="info"]').boundingBox();
+      expect(photo!.x + photo!.width).toBeLessThanOrEqual(info!.x + 1);
+    });
+  }
+
+  test('1024 px: линия цены и кнопки у карточек одного ряда на одном уровне', async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 900 });
+    await page.goto('/booking/');
+    const tops = async (part: string) => page.locator(`[data-block="shifts"] .shift-card [data-card="${part}"]`)
+      .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().top)));
+    for (const part of ['price', 'actions']) {
+      const values = await tops(part);
+      expect(values).toHaveLength(3);
+      expect(new Set(values).size, part).toBe(1);
+    }
+  });
+});

@@ -213,6 +213,41 @@
     .ticket-stub::after { top: auto; right: auto; bottom: -0.75rem; left: -0.8125rem; }
   }
 
+  /* Карточки смен (components/shift-card) в сетке .shift-grid (главная, «Купить путёвку»).
+     Четыре части карточки — фото, описание, цена, кнопки — строки общей сетки (subgrid): в одном ряду линия цены и кнопки
+     на одном уровне, даже когда у соседних карточек кнопки переносятся на две строки или у цены нет пояснения.
+     Без subgrid (старые браузеры) карточка остаётся колонкой flex, цену прижимает к низу mt-auto. */
+  @supports (grid-template-rows: subgrid) {
+    .shift-grid > .shift-card {
+      display: grid;
+      grid-row: span 4;
+      grid-template-rows: subgrid;
+      row-gap: 0;
+    }
+    .shift-card > [data-card='price'] { margin-top: 0; }
+
+    /* Нечётная последняя карточка на две колонки (768–1023 px) не остаётся одна в половине ряда:
+       растягивается на весь ряд, фото слева, текст справа */
+    @media (min-width: 768px) and (max-width: 1023.98px) {
+      .shift-grid > .shift-card:last-child:nth-child(odd) {
+        grid-column: 1 / -1;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      }
+      .shift-grid > .shift-card:last-child:nth-child(odd) > [data-card='photo'] {
+        grid-column: 1;
+        grid-row: 1 / -1;
+        aspect-ratio: auto;
+        min-height: 100%;
+      }
+      .shift-grid > .shift-card:last-child:nth-child(odd) > :not([data-card='photo']) { grid-column: 2; }
+      .shift-grid > .shift-card:last-child:nth-child(odd) > [data-card='info'] { padding-top: 1.75rem; }
+    }
+  }
+  /* На три колонки одна карточка в последнем ряду — по центру, а не в левом углу */
+  @screen lg {
+    .shift-grid > .shift-card:last-child:nth-child(3n + 1) { grid-column: 2; }
+  }
+
   /* Таблицы Сведений: если реальные данные шире колонки (рядом с оглавлением она узкая), прокручивается таблица, а не страница */
   .table-scroll {
     overflow-x: auto;

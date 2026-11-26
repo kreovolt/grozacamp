@@ -74,8 +74,10 @@ $label = Shifts::STATUS_LABELS[$status] ?? '';
 $tag = 'h' . max(2, min(4, (int) ($level ?? 3)));
 $detailsHref = '/program/' . rawurlencode($slug) . '/';
 ?>
+<?php /* Четыре части карточки — строки общей сетки .shift-grid (subgrid, app.css): у карточек одного ряда
+   цена с пунктиром и кнопки стоят на одном уровне, даже если у соседей кнопки переносятся или нет пояснения к цене. */ ?>
 <article class="shift-card group/card flex flex-col overflow-hidden rounded-card bg-paper shadow-card">
-  <div class="relative aspect-[3/2] overflow-hidden bg-sand-deep">
+  <div class="relative aspect-[3/2] overflow-hidden bg-sand-deep" data-card="photo">
     <?php if ($img !== null): ?>
       <?= picture($img, (string) ($img['alt'] ?? 'Смена «' . $title . '»'), $sizes ?? '(min-width: 1024px) 26rem, (min-width: 768px) 50vw, 100vw', false, 'h-full w-full object-cover transition-transform duration-500 ease-out motion-safe:group-hover/card:scale-[1.03]') ?>
     <?php endif ?>
@@ -84,7 +86,7 @@ $detailsHref = '/program/' . rawurlencode($slug) . '/';
     <?php endif ?>
   </div>
 
-  <div class="flex flex-1 flex-col px-5 pb-6 pt-5 sm:px-6">
+  <div class="flex flex-col px-5 pt-5 sm:px-6" data-card="info">
     <<?= $tag ?> class="font-display text-[1.75rem] font-bold uppercase leading-none tracking-[0.02em] text-ink"><?= t($title) ?></<?= $tag ?>>
 
     <?php if ($start !== '' && $end !== ''): ?>
@@ -107,39 +109,38 @@ $detailsHref = '/program/' . rawurlencode($slug) . '/';
         <span><?= t((string) $venue['name']) ?></span>
       </p>
     <?php endif ?>
+  </div>
 
-    <div class="mt-auto pt-5">
-      <?php /* высота под цену с пояснением: у соседних карточек линия и кнопки на одном уровне */ ?>
-      <div class="min-h-[4.75rem] border-t border-dashed border-moss/40 pt-4">
-        <?php if ($priceText !== null): ?>
-          <p class="tabular font-display text-[1.75rem] font-semibold leading-none text-ink"><?= t($priceText) ?></p>
-          <?php if ($priceNote !== ''): ?>
-            <p class="mt-1.5 text-[0.875rem] leading-snug text-ink-soft"><?= t($priceNote) ?></p>
-          <?php endif ?>
-        <?php else: ?>
-          <p class="font-semibold leading-snug text-ink"><?= t('Стоимость уточняйте в офисе') ?></p>
+  <div class="mt-auto px-5 pt-5 sm:px-6" data-card="price">
+    <div class="border-t border-dashed border-moss/40 pt-4 md:min-h-[4.75rem]">
+      <?php if ($priceText !== null): ?>
+        <p class="tabular font-display text-[1.75rem] font-semibold leading-none text-ink"><?= t($priceText) ?></p>
+        <?php if ($priceNote !== ''): ?>
+          <p class="mt-1.5 text-[0.875rem] leading-snug text-ink-soft"><?= t($priceNote) ?></p>
         <?php endif ?>
-      </div>
-
-      <div class="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3">
-        <?php if (!$closed): ?>
-          <?= $this->partial('components/button', [
-              'label' => $status === 'soon' ? 'Оставить заявку' : 'Забронировать',
-              'href' => $bookingHref,
-              'attrs' => ['aria-label' => ($status === 'soon' ? 'Оставить заявку на смену «' : 'Забронировать смену «') . $title . '»'],
-          ]) ?>
-          <a class="group/more inline-flex min-h-11 items-center gap-1.5 font-display text-[0.9375rem] font-semibold uppercase tracking-btn text-rust-deep no-underline hover:text-rust-dark" href="<?= e($detailsHref) ?>" aria-label="<?= e('Подробнее о смене «' . $title . '»') ?>">
-            Подробнее <?= icon('arrow-right', 'size-4 transition-transform group-hover/more:translate-x-0.5') ?>
-          </a>
-        <?php else: ?>
-          <?= $this->partial('components/button', [
-              'label' => 'Подробнее о смене',
-              'href' => $detailsHref,
-              'variant' => 'outline',
-              'attrs' => ['aria-label' => 'Подробнее о смене «' . $title . '»'],
-          ]) ?>
-        <?php endif ?>
-      </div>
+      <?php else: ?>
+        <p class="font-semibold leading-snug text-ink"><?= t('Стоимость уточняйте в офисе') ?></p>
+      <?php endif ?>
     </div>
+  </div>
+
+  <div class="flex flex-wrap content-start items-center gap-x-5 gap-y-3 px-5 pb-6 pt-5 sm:px-6" data-card="actions">
+    <?php if (!$closed): ?>
+      <?= $this->partial('components/button', [
+          'label' => $status === 'soon' ? 'Оставить заявку' : 'Забронировать',
+          'href' => $bookingHref,
+          'attrs' => ['aria-label' => ($status === 'soon' ? 'Оставить заявку на смену «' : 'Забронировать смену «') . $title . '»'],
+      ]) ?>
+      <a class="group/more inline-flex min-h-11 items-center gap-1.5 font-display text-[0.9375rem] font-semibold uppercase tracking-btn text-rust-deep no-underline hover:text-rust-dark" href="<?= e($detailsHref) ?>" aria-label="<?= e('Подробнее о смене «' . $title . '»') ?>">
+        Подробнее <?= icon('arrow-right', 'size-4 transition-transform group-hover/more:translate-x-0.5') ?>
+      </a>
+    <?php else: ?>
+      <?= $this->partial('components/button', [
+          'label' => 'Подробнее о смене',
+          'href' => $detailsHref,
+          'variant' => 'outline',
+          'attrs' => ['aria-label' => 'Подробнее о смене «' . $title . '»'],
+      ]) ?>
+    <?php endif ?>
   </div>
 </article>
