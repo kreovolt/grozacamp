@@ -29,6 +29,43 @@ final class UsersTest extends TestCase
         @rmdir($this->dir);
     }
 
+    public function test_concurrent_changes_do_not_overwrite_each_other(): void
+    {
+        $users = new Users($this->store);
+        $users->add('olga', 'Ольга', 'long-enough-pass');
+        $raced = false;
+        // пока меняем пароль Ольги, в консоли добавили пользователя (одна гонка — потом запись проходит)
+        $racing = new Users($this->store, function () use (&$raced, $users): void {
+            if (!$raced) {
+                $raced = true;
+                $users->add('ivan', 'Иван', 'another-long-pass');
+            }
+        });
+        $racing->setPassword('olga', 'brand-new-password');
+
+        $this->assertTrue($raced);
+        $this->assertNotNull($users->find('ivan'), 'добавленный из консоли не потерян');
+        $this->assertTrue(password_verify('brand-new-password', (string) $users->find('olga')['hash']), 'и смена пароля записана');
+    }
+
+    public function test_writer_gives_up_after_repeated_conflicts(): void
+    {
+        $users = new Users($this->store);
+        $users->add('olga', 'Ольга', 'long-enough-pass');
+        $n = 0;
+        $always = new Users($this->store, function () use (&$n): void {
+            $n++;
+            $this->store->write('users', array_replace($this->store->read('users'), ['touch' => $n]), 'test'); // кто-то пишет каждый раз
+        });
+
+        $this->expectException(\Groza\Data\ConflictException::class);
+        try {
+            $always->updateHash('olga', 'x');
+        } finally {
+            $this->assertSame(3, $n);
+        }
+    }
+
     public function test_add_stores_hash_not_password_in_documented_shape(): void
     {
         (new Users($this->store))->add('Olga.Office', 'Ольга', 'long-enough-pass');

@@ -3,16 +3,23 @@ declare(strict_types=1);
 
 namespace Groza\Admin;
 
+use Groza\Data\ConflictException;
 use Groza\Data\JsonStore;
 
-/** Учётные записи админки: storage/data/users.json → {"items":[{login,name,hash,createdAt}]}. Пароль хранится только как password_hash. */
+/**
+ * Учётные записи админки: storage/data/users.json → {"items":[{login,name,hash,createdAt}]}. Пароль хранится только как password_hash.
+ * Каждое изменение — чтение, правка и запись с проверкой хеша файла (повтор при гонке): одновременные смена пароля,
+ * перехеширование при входе и «user add» из консоли не затирают друг друга.
+ */
 final class Users
 {
+    private const RETRIES = 3;
     public const MIN_PASSWORD = 10;
     public const MAX_PASSWORD_BYTES = 1024;
     private const LOGIN = '/^[a-z0-9._-]{3,32}$/D';
 
-    public function __construct(private JsonStore $store)
+    /** @param (\Closure():void)|null $beforeWrite только для тестов: вызывается между чтением и записью (имитация гонки) */
+    public function __construct(private JsonStore $store, private ?\Closure $beforeWrite = null)
     {
     }
 
@@ -59,18 +66,18 @@ final class Users
             throw new \InvalidArgumentException('Имя: от 1 до 80 символов.');
         }
         self::assertPassword($password);
+        $hash = password_hash($password, PASSWORD_DEFAULT); // долго — один раз, не на каждую попытку записи
 
-        $items = $this->all();
-        if ($this->find($login) !== null) {
-            throw new \InvalidArgumentException("Пользователь «{$login}» уже есть.");
-        }
-        $items[] = [
-            'login' => $login,
-            'name' => $name,
-            'hash' => password_hash($password, PASSWORD_DEFAULT),
-            'createdAt' => date('c'),
-        ];
-        $this->save($items, $actor);
+        $this->mutate(static function (array $items) use ($login, $name, $hash): array {
+            foreach ($items as $item) {
+                if (($item['login'] ?? null) === $login) {
+                    throw new \InvalidArgumentException("Пользователь «{$login}» уже есть.");
+                }
+            }
+            $items[] = ['login' => $login, 'name' => $name, 'hash' => $hash, 'createdAt' => date('c')];
+
+            return $items;
+        }, $actor);
     }
 
     public function setPassword(string $login, string $password, string $actor = 'system'): void
@@ -83,29 +90,34 @@ final class Users
     public function updateHash(string $login, string $hash, string $actor = 'system'): void
     {
         $login = self::normalize($login);
-        $items = $this->all();
-        $found = false;
-        foreach ($items as &$item) {
-            if ($item['login'] === $login) {
-                $item['hash'] = $hash;
-                $found = true;
+        $this->mutate(static function (array $items) use ($login, $hash): array {
+            $found = false;
+            foreach ($items as &$item) {
+                if (($item['login'] ?? null) === $login) {
+                    $item['hash'] = $hash;
+                    $found = true;
+                }
             }
-        }
-        unset($item);
-        if (!$found) {
-            throw new \InvalidArgumentException("Пользователя «{$login}» нет.");
-        }
-        $this->save($items, $actor);
+            unset($item);
+            if (!$found) {
+                throw new \InvalidArgumentException("Пользователя «{$login}» нет.");
+            }
+
+            return $items;
+        }, $actor);
     }
 
     public function remove(string $login, string $actor = 'system'): void
     {
         $login = self::normalize($login);
-        $items = array_values(array_filter($this->all(), static fn (array $i): bool => $i['login'] !== $login));
-        if (count($items) === count($this->all())) {
-            throw new \InvalidArgumentException("Пользователя «{$login}» нет.");
-        }
-        $this->save($items, $actor);
+        $this->mutate(static function (array $items) use ($login): array {
+            $left = array_values(array_filter($items, static fn (array $i): bool => ($i['login'] ?? null) !== $login));
+            if (count($left) === count($items)) {
+                throw new \InvalidArgumentException("Пользователя «{$login}» нет.");
+            }
+
+            return $left;
+        }, $actor);
     }
 
     public static function assertPassword(string $password): void
@@ -118,9 +130,29 @@ final class Users
         }
     }
 
-    /** @param list<array<string,string>> $items */
-    private function save(array $items, string $actor): void
+    /**
+     * Прочитать, изменить, записать с проверкой хеша; при гонке — заново на свежих данных (до RETRIES раз).
+     *
+     * @param callable(list<array<string,mixed>>):list<array<string,mixed>> $change
+     * @throws ConflictException если файл меняют слишком часто
+     */
+    private function mutate(callable $change, string $actor): void
     {
-        $this->store->write('users', ['items' => $items], $actor);
+        for ($try = 1; ; $try++) {
+            $hash = $this->store->hash('users');
+            $items = $change($this->all());
+            if ($this->beforeWrite !== null) {
+                ($this->beforeWrite)();
+            }
+            try {
+                $this->store->write('users', ['items' => array_values($items)], $actor, $hash);
+
+                return;
+            } catch (ConflictException $e) {
+                if ($try >= self::RETRIES) {
+                    throw $e;
+                }
+            }
+        }
     }
 }
