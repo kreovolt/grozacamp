@@ -46,7 +46,7 @@ $hours = array_values(array_filter([$settings['hoursWeekdays'] ?? '', $settings[
     <div class="border-t border-dashed border-sage/40 pt-8 lg:border-l lg:border-t-0 lg:pb-1 lg:pl-10 lg:pt-0">
       <p class="text-[1.0625rem] font-semibold text-cream/90"><?= t('Быстрее всего — по телефону') ?></p>
       <?php if ($phone !== ''): ?>
-        <a class="tabular mt-3 inline-block whitespace-nowrap font-display text-[clamp(1.875rem,1.5rem+1.4vw,2.5rem)] font-semibold leading-none tracking-[0.02em] text-cream no-underline hover:text-white" href="<?= e(tel($phone)) ?>"><?= t(Phone::pretty($phone)) ?></a>
+        <a class="tap tabular mt-3 inline-block whitespace-nowrap font-display text-[clamp(1.875rem,1.5rem+1.4vw,2.5rem)] font-semibold leading-none tracking-[0.02em] text-cream no-underline hover:text-white" href="<?= e(tel($phone)) ?>"><?= t(Phone::pretty($phone)) ?></a>
       <?php endif ?>
       <?php if ($hours !== []): ?>
         <p class="mt-3 flex items-center gap-2 text-[0.9375rem] text-sage"><?= icon('clock', 'size-4 text-gold') ?><span><?= t(implode(', ', $hours)) ?></span></p>

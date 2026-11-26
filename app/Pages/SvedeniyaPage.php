@@ -148,7 +148,7 @@ final class SvedeniyaPage
         foreach (['phone' => '', 'whatsapp' => ' (WhatsApp)'] as $key => $note) {
             $number = self::str($settings[$key] ?? null);
             if ($number !== '') {
-                $phones .= '<li><a class="tabular whitespace-nowrap" href="' . e(tel($number)) . '">' . t(Phone::pretty($number)) . '</a>' . t($note) . '</li>';
+                $phones .= '<li><a class="tap tabular whitespace-nowrap" href="' . e(tel($number)) . '">' . t(Phone::pretty($number)) . '</a>' . t($note) . '</li>';
             }
         }
         $hours = array_filter([self::str($settings['hoursWeekdays'] ?? null), self::str($settings['hoursWeekend'] ?? null)]);
@@ -164,7 +164,7 @@ final class SvedeniyaPage
             ])],
             ['id' => 'kontakty', 'title' => 'Контакты', 'rows' => $this->rows([
                 $this->row($c, 'kontakty.a', $phones === '' ? '' : '<ul>' . $phones . '</ul>' . ($hours !== [] ? '<p class="text-ink-soft">' . t('Звонки в офис: ' . implode(', ', $hours)) . '</p>' : '')),
-                $this->row($c, 'kontakty.b', $email === '' ? '' : '<a href="mailto:' . e($email) . '">' . e($email) . '</a>'),
+                $this->row($c, 'kontakty.b', $email === '' ? '' : '<a class="tap" href="mailto:' . e($email) . '">' . e($email) . '</a>'),
                 $this->row($c, 'kontakty.v', self::plain($settings['postalAddress'] ?? null)),
             ])],
         ]];

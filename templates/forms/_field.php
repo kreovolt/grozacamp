@@ -42,7 +42,7 @@ $attrs = ' id="' . e($id) . '" name="' . e($name) . '"'
 <?php if ($type === 'checkbox'): ?>
   <div class="flex items-start gap-3">
     <input class="mt-1 size-5 shrink-0 accent-rust-dark" type="checkbox" value="yes"<?= $attrs ?><?= $value === 'yes' ? ' checked' : '' ?>>
-    <label class="text-[0.9375rem] leading-snug text-ink" for="<?= e($id) ?>"><?= isset($labelHtml) ? typeset($labelHtml) : t($label) ?></label>
+    <label class="tap text-[0.9375rem] leading-snug text-ink" for="<?= e($id) ?>"><?= isset($labelHtml) ? typeset($labelHtml) : t($label) ?></label>
   </div>
 <?php else: ?>
   <label class="block font-semibold text-ink" for="<?= e($id) ?>"><?= t($label) ?><?php if (empty($required)): ?> <span class="font-normal text-ink-soft">(необязательно)</span><?php endif ?></label>

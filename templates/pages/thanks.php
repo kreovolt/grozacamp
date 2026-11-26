@@ -18,5 +18,5 @@ $this->layout('layout', ['page' => 'thanks', 'noindex' => true]);
   <p class="mt-5 max-w-[56ch] text-lg leading-relaxed text-ink-soft">
     <?= t($isVacancy ? 'Анкета получена, ответим в ближайшие дни.' : 'Заявка получена. Позвоним в рабочее время' . ($hours !== '' ? ' — ' . $hours : '') . '.') ?>
   </p>
-  <p class="mt-8"><a class="font-display text-base font-semibold uppercase tracking-btn text-rust-deep underline decoration-rust-deep/40 hover:decoration-rust-deep" href="/"><?= t('На главную') ?></a></p>
+  <p class="mt-8"><a class="tap inline-block font-display text-base font-semibold uppercase tracking-btn text-rust-deep underline decoration-rust-deep/40 hover:decoration-rust-deep" href="/"><?= t('На главную') ?></a></p>
 </div>

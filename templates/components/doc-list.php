@@ -17,7 +17,7 @@ if (($docs ?? []) === []) {
   <?php foreach ($docs as $doc): ?>
     <li class="!ml-0 flex items-start gap-2.5">
       <?= icon('arrow-right', 'mt-1 size-4 text-rust-deep') ?>
-      <span><a class="font-semibold text-rust-deep underline decoration-rust-deep/40 underline-offset-4 hover:decoration-rust-deep" href="<?= e($doc['url']) ?>" target="_blank" rel="noopener"><?= t($doc['title']) ?></a>
+      <span><a class="tap font-semibold text-rust-deep underline decoration-rust-deep/40 underline-offset-4 hover:decoration-rust-deep" href="<?= e($doc['url']) ?>" target="_blank" rel="noopener"><?= t($doc['title']) ?></a>
         <span class="text-ink-soft">(<?= t($doc['meta']) ?>)</span><?php if ($doc['date'] !== ''): ?><span class="text-ink-soft"><?= t(', от ' . $doc['date']) ?></span><?php endif ?></span>
     </li>
   <?php endforeach ?>

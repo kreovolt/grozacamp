@@ -30,7 +30,7 @@ if ($items === []) {
   <div class="ticket-stub relative flex flex-col items-start gap-4 bg-sand/50 p-6 sm:p-10">
     <p class="font-display text-xl font-semibold uppercase leading-tight tracking-[0.03em] text-ink"><?= t('Сертификаты и компенсация') ?></p>
     <p class="leading-relaxed text-ink-soft"><?= t('Принимаем сертификаты и даём документы для компенсации стоимости путёвки.') ?></p>
-    <a class="inline-flex items-center gap-1.5 font-semibold text-rust-deep underline decoration-rust-deep/40 underline-offset-4 hover:decoration-rust-deep" href="/svedeniya/uslugi/">
+    <a class="tap inline-flex items-center gap-1.5 font-semibold text-rust-deep underline decoration-rust-deep/40 underline-offset-4 hover:decoration-rust-deep" href="/svedeniya/uslugi/">
       <?= t('Подробнее об оплате') ?> <?= icon('arrow-right', 'size-4') ?>
     </a>
     <?php if (!empty($ctaHref)): ?>

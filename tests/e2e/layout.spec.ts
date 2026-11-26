@@ -172,3 +172,16 @@ test.describe('кнопка «Наверх» ничего не закрывае�
     expect(box.height).toBeLessThanOrEqual(812 * 0.2);
   });
 });
+
+test('375 px: у ссылок подвала зона нажатия выше текста (44 px)', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto('/');
+  const link = page.locator('footer a[href="/vacancies/"]').first();
+  await link.scrollIntoViewIfNeeded();
+  const hit = await link.evaluate((a) => {
+    const r = a.getBoundingClientRect();
+    const probe = (dy: number) => { const el = document.elementFromPoint(r.left + 10, r.top + r.height / 2 + dy); return el === a || a.contains(el); };
+    return { above: probe(-(22 - r.height / 2) + 1), below: probe(22 - r.height / 2 - 1) };
+  });
+  expect(hit).toEqual({ above: true, below: true });
+});

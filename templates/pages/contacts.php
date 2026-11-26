@@ -41,7 +41,7 @@ $label = 'text-[0.8125rem] font-semibold uppercase tracking-[0.1em] text-ink-sof
         <?= icon('phone', 'mt-1 size-6 text-moss') ?>
         <div>
           <p class="<?= $label ?>">Телефон</p>
-          <a class="tabular mt-1 inline-block whitespace-nowrap font-display text-[clamp(1.75rem,1.4rem+1.4vw,2.5rem)] font-semibold leading-tight tracking-[0.02em] text-ink no-underline hover:text-rust-deep" href="<?= e(tel($phone)) ?>"><?= t(Phone::pretty($phone)) ?></a>
+          <a class="tap tabular mt-1 inline-block whitespace-nowrap font-display text-[clamp(1.75rem,1.4rem+1.4vw,2.5rem)] font-semibold leading-tight tracking-[0.02em] text-ink no-underline hover:text-rust-deep" href="<?= e(tel($phone)) ?>"><?= t(Phone::pretty($phone)) ?></a>
         </div>
       </li>
     <?php endif ?>
@@ -50,7 +50,7 @@ $label = 'text-[0.8125rem] font-semibold uppercase tracking-[0.1em] text-ink-sof
         <?= icon('message-circle', 'mt-1 size-6 text-moss') ?>
         <div>
           <p class="<?= $label ?>">WhatsApp</p>
-          <a class="tabular mt-1 inline-block whitespace-nowrap text-xl font-semibold text-rust-deep underline decoration-rust-deep/40 underline-offset-4 hover:decoration-rust-deep" href="https://wa.me/<?= e($wa) ?>" target="_blank" rel="noopener"><?= t(Phone::pretty((string) $settings['whatsapp'])) ?></a>
+          <a class="tap tabular mt-1 inline-block whitespace-nowrap text-xl font-semibold text-rust-deep underline decoration-rust-deep/40 underline-offset-4 hover:decoration-rust-deep" href="https://wa.me/<?= e($wa) ?>" target="_blank" rel="noopener"><?= t(Phone::pretty((string) $settings['whatsapp'])) ?></a>
         </div>
       </li>
     <?php endif ?>
@@ -59,7 +59,7 @@ $label = 'text-[0.8125rem] font-semibold uppercase tracking-[0.1em] text-ink-sof
         <?= icon('mail', 'mt-1 size-6 text-moss') ?>
         <div>
           <p class="<?= $label ?>">Почта</p>
-          <a class="mt-1 inline-block break-all text-xl font-semibold text-rust-deep underline decoration-rust-deep/40 underline-offset-4 hover:decoration-rust-deep" href="mailto:<?= e($email) ?>"><?= e($email) ?></a>
+          <a class="tap mt-1 inline-block break-all text-xl font-semibold text-rust-deep underline decoration-rust-deep/40 underline-offset-4 hover:decoration-rust-deep" href="mailto:<?= e($email) ?>"><?= e($email) ?></a>
         </div>
       </li>
     <?php endif ?>
@@ -68,7 +68,7 @@ $label = 'text-[0.8125rem] font-semibold uppercase tracking-[0.1em] text-ink-sof
         <?= icon('vk', 'mt-1 size-6 text-moss') ?>
         <div>
           <p class="<?= $label ?>">ВКонтакте</p>
-          <a class="mt-1 inline-block break-all text-xl font-semibold text-rust-deep underline decoration-rust-deep/40 underline-offset-4 hover:decoration-rust-deep" href="<?= e($vk) ?>" target="_blank" rel="noopener"><?= e(preg_replace('#^https?://#', '', $vk) ?? $vk) ?></a>
+          <a class="tap mt-1 inline-block break-all text-xl font-semibold text-rust-deep underline decoration-rust-deep/40 underline-offset-4 hover:decoration-rust-deep" href="<?= e($vk) ?>" target="_blank" rel="noopener"><?= e(preg_replace('#^https?://#', '', $vk) ?? $vk) ?></a>
           <p class="mt-1 text-[0.9375rem] text-ink-soft"><?= t('Каждый день выкладываем фото и видео со смены.') ?></p>
         </div>
       </li>

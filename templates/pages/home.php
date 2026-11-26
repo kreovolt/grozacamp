@@ -42,7 +42,7 @@ $shot = static function (string $key, string $sizes): string {
     return picture($img, (string) ($img['alt'] ?? ''), $sizes, false, 'h-full w-full object-cover');
 };
 // Ссылка «ещё»: стрелка не отрывается от последнего слова при переносе
-$moreLink = 'group/more inline-block font-display text-[0.9375rem] font-semibold uppercase leading-snug tracking-btn text-rust-deep no-underline hover:text-rust-dark';
+$moreLink = 'tap group/more inline-block font-display text-[0.9375rem] font-semibold uppercase leading-snug tracking-btn text-rust-deep no-underline hover:text-rust-dark';
 $moreArrow = "\u{00A0}" . icon('arrow-right', 'inline-block size-4 align-[-0.2em] transition-transform group-hover/more:translate-x-0.5');
 
 $heroImg = image($hero['photo']);
@@ -230,7 +230,7 @@ $steps = [
           </li>
         <?php endforeach ?>
       </ul>
-      <a class="group/more mt-6 inline-block font-display text-[0.9375rem] font-semibold uppercase leading-snug tracking-btn text-gold no-underline hover:text-cream" href="/info/"><?= t('Памятка для родителей') ?><?= $moreArrow ?></a>
+      <a class="tap group/more mt-6 inline-block font-display text-[0.9375rem] font-semibold uppercase leading-snug tracking-btn text-gold no-underline hover:text-cream" href="/info/"><?= t('Памятка для родителей') ?><?= $moreArrow ?></a>
     </div>
   </div>
 </section>

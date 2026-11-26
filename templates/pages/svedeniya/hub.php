@@ -22,11 +22,11 @@ $this->layout('pages/svedeniya/_frame', compact('title', 'description', 'crumbs'
   <ol class="border-t border-dashed border-moss/45" role="list">
     <?php foreach ($tree as $section): ?>
       <li class="border-b border-dashed border-moss/45 py-4">
-        <a class="inline-flex items-center gap-2 font-display text-[1.25rem] font-semibold uppercase leading-snug tracking-[0.03em] text-ink no-underline hover:text-rust-deep" href="<?= e($section['href']) ?>"><?= t($section['label']) ?><?= icon('arrow-right', 'size-4 text-rust-deep') ?></a>
+        <a class="tap inline-flex items-center gap-2 font-display text-[1.25rem] font-semibold uppercase leading-snug tracking-[0.03em] text-ink no-underline hover:text-rust-deep" href="<?= e($section['href']) ?>"><?= t($section['label']) ?><?= icon('arrow-right', 'size-4 text-rust-deep') ?></a>
         <?php if (!empty($section['children'])): ?>
           <ul class="mt-3 space-y-1.5 pl-5" role="list">
             <?php foreach ($section['children'] as $child): ?>
-              <li><a class="text-ink-soft underline decoration-ink-soft/35 underline-offset-4 hover:text-ink hover:decoration-ink" href="<?= e($child['href']) ?>"><?= t($child['label']) ?></a></li>
+              <li><a class="tap text-ink-soft underline decoration-ink-soft/35 underline-offset-4 hover:text-ink hover:decoration-ink" href="<?= e($child['href']) ?>"><?= t($child['label']) ?></a></li>
             <?php endforeach ?>
           </ul>
         <?php endif ?>

@@ -38,7 +38,7 @@
   .admin-brand { @apply font-display text-lg font-semibold uppercase tracking-brand text-cream no-underline; }
   .admin-bar__user { @apply flex flex-wrap items-center gap-3 text-sm; }
   .admin-bar__name { @apply font-semibold; }
-  .admin-link-light { @apply text-cream underline; }
+  .admin-link-light { @apply inline-flex min-h-11 items-center text-cream underline; }
   .admin-bar :focus-visible { outline-color: theme('colors.gold'); }
 
   .admin-main { @apply mx-auto w-full max-w-4xl px-4 py-8; }
@@ -56,13 +56,15 @@
   .btn { @apply inline-flex items-center justify-center rounded-btn px-5 py-2 font-display text-base font-semibold uppercase tracking-btn no-underline; min-height: 44px; }
   .btn-primary { @apply bg-rust-dark text-paper; }
   .btn-primary:hover { @apply bg-rust-deep; }
-  .btn-light { @apply border border-cream bg-transparent text-cream; min-height: 36px; padding: 0.25rem 0.9rem; }
+  .btn-light { @apply border border-cream bg-transparent text-cream; min-height: 44px; padding: 0.25rem 0.9rem; }
   .btn-light:hover { @apply bg-forest-deep; }
 
   .alert { @apply rounded-btn px-3 py-2 text-sm font-semibold; }
   .alert-error { @apply bg-tint-bad text-rust-deep; }
   .alert-ok { @apply bg-tint-ok text-forest; }
   .back { @apply mt-6 text-sm; }
+  /* «← Разделы», «Сменить пароль», «Посмотреть на сайте»: зона нажатия 44 px на телефоне */
+  .back a, .where a { @apply inline-flex min-h-11 items-center; }
 
   /* ---- Админка: разделы, списки, формы правки ---- */
   .lead { @apply mb-6 text-lg; }

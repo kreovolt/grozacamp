@@ -26,7 +26,7 @@ $phone = trim((string) ($settings['phone'] ?? ''));
       <?= $this->partial('components/button', ['label' => 'На главную', 'href' => '/', 'size' => 'lg', 'variant' => 'outline-light']) ?>
     </div>
     <?php if ($phone !== ''): ?>
-      <p class="mt-8 text-cream/90">Телефон офиса: <a class="tabular whitespace-nowrap font-semibold text-cream underline decoration-gold/60 underline-offset-4 hover:decoration-gold" href="<?= e(tel($phone)) ?>"><?= t(Phone::pretty($phone)) ?></a></p>
+      <p class="mt-8 text-cream/90">Телефон офиса: <a class="tap tabular whitespace-nowrap font-semibold text-cream underline decoration-gold/60 underline-offset-4 hover:decoration-gold" href="<?= e(tel($phone)) ?>"><?= t(Phone::pretty($phone)) ?></a></p>
     <?php endif ?>
   </div>
 </section>

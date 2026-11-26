@@ -197,7 +197,7 @@ $fact = static fn (string $name, string $value): string => '<div class="border-t
         <?php if (!empty($venue['address'])): ?>
           <p class="mt-3 flex items-start gap-2 leading-snug text-ink-soft"><?= icon('map-pin', 'mt-0.5 size-[1.125rem] shrink-0 text-moss') ?><span><?= t((string) $venue['address']) ?></span></p>
         <?php endif ?>
-        <a class="group/more mt-6 inline-block font-display text-[0.9375rem] font-semibold uppercase leading-snug tracking-btn text-rust-deep no-underline hover:text-rust-dark" href="/svedeniya/mto/">Условия проживания&nbsp;<?= icon('arrow-right', 'inline-block size-4 align-[-0.2em] transition-transform group-hover/more:translate-x-0.5') ?></a>
+        <a class="tap group/more mt-6 inline-block font-display text-[0.9375rem] font-semibold uppercase leading-snug tracking-btn text-rust-deep no-underline hover:text-rust-dark" href="/svedeniya/mto/">Условия проживания&nbsp;<?= icon('arrow-right', 'inline-block size-4 align-[-0.2em] transition-transform group-hover/more:translate-x-0.5') ?></a>
       </div>
       <?php
       $photos = [];

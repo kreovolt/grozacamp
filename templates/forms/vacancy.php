@@ -24,7 +24,7 @@ $defs = [
     'vk' => ['label' => 'Страница ВКонтакте', 'type' => 'url', 'inputmode' => 'url', 'maxlength' => 150, 'hint' => 'Например, https://vk.com/ivanov'],
     'consent' => [
         'label' => 'Согласен на обработку персональных данных', 'type' => 'checkbox', 'required' => true,
-        'labelHtml' => 'Согласен на обработку персональных данных — <a class="font-semibold text-rust-deep underline" href="/policy/" target="_blank" rel="noopener">политика обработки</a>',
+        'labelHtml' => 'Согласен на обработку персональных данных — <a class="relative z-10 font-semibold text-rust-deep underline" href="/policy/" target="_blank" rel="noopener">политика обработки</a>',
     ],
 ];
 
