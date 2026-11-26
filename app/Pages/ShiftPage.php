@@ -10,7 +10,8 @@ use Groza\Http\Response;
 
 /**
  * Страница смены /program/{slug}/ (спека §7.3).
- * Неизвестный адрес: старые адреса карточек (config/redirects.php) → 301 на /booking/, остальные → 404.
+ * Неизвестный адрес: прежний адрес смены (её адрес поменяли в админке — formerSlugs) → 301 на нынешний;
+ * старые адреса карточек (config/redirects.php) → 301 на /booking/, остальные → 404.
  * Прошедшая смена (последний день раньше сегодняшнего по часам приложения) — «Смена завершена», без индексации.
  */
 final class ShiftPage
@@ -34,6 +35,12 @@ final class ShiftPage
         }
 
         if ($shift === null) {
+            foreach ($this->items('shifts') as $s) {
+                if (empty($s['hidden']) && is_string($s['slug'] ?? null) && $s['slug'] !== ''
+                    && in_array($slug, (array) ($s['formerSlugs'] ?? []), true)) {
+                    return Response::redirect('/program/' . rawurlencode($s['slug']) . '/', 301);
+                }
+            }
             if (in_array($slug, $this->app->redirects()['legacyShiftSlugs'], true)) {
                 return Response::redirect('/booking/', 301);
             }

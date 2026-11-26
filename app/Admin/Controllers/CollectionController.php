@@ -163,6 +163,11 @@ final class CollectionController
 
         // 1. Проверка всех полей. Файлы пока не загружаем: вместо них подставляем «будет загружено».
         [$input, $pending, $alts, $altErrors] = $this->input($def, $r, $existing);
+        foreach ($def['fields'] as $f) { // поле «задаётся при создании» (адрес базы): у существующей записи из формы не берётся
+            if (!empty($f['locked']) && !$isNew && array_key_exists($f['name'], $existing)) {
+                $input[$f['name']] = $existing[$f['name']];
+            }
+        }
         $errors = [];
         $data = [];
         try {
@@ -204,6 +209,10 @@ final class CollectionController
         $now = $this->app->clock()->now()->format('c');
         $actor = $this->app->actor();
         $record = $data + ['id' => $isNew ? $this->newId($items) : $id, 'updatedAt' => $now, 'updatedBy' => $actor];
+        $former = $this->formerSlugs($name, $existing, $record);
+        if ($former !== []) {
+            $record['formerSlugs'] = $former; // старые ссылки на страницу смены (ВК) ведут на новый адрес
+        }
         if ($isNew) {
             $record = $this->withOrderAtEnd($def, $record, $items);
             $items[] = $record;
@@ -255,6 +264,13 @@ final class CollectionController
         }
         if ($r->post('confirm') !== '1') {
             return $this->deletePage($name, $item);
+        }
+        $users = $this->refUsers($name, $item);
+        if ($users !== []) {
+            return $this->page('admin/not-found', [
+                'heading' => 'Эту запись нельзя удалить',
+                'message' => 'Её выбрали в сменах: «' . implode('», «', $users) . '». Сначала выберите в этих сменах другую базу (или скройте смены) — потом удалите.',
+            ], 422);
         }
         $removed = null;
         $lost = [];
@@ -423,6 +439,13 @@ final class CollectionController
         $isNew = $id === 'new';
         $item = $isNew ? [] : ($this->find($name, $id) ?? []);
         $renderer = new FormRenderer($this->app->view(), $this->refOptions($def));
+        if (!$isNew) {
+            foreach ($def['fields'] as $i => $f) {
+                if (!empty($f['locked'])) {
+                    $def['fields'][$i]['readonly'] = true;
+                }
+            }
+        }
         $summary = [];
         foreach ($def['fields'] as $f) {
             if (isset($errors[$f['name']])) {
@@ -440,7 +463,7 @@ final class CollectionController
             'id' => $id,
             'isNew' => $isNew,
             'heading' => $isNew ? 'Новая запись' : $this->itemTitle($def, $item),
-            'form' => $renderer->render($def, $values, $errors),
+            'form' => $renderer->render($def, $isNew ? $values : $this->lockedValues($def, $values, $item), $errors),
             // 422: тот же _hash, что прислан (чужая правка между отправками должна дать 409); 409 и открытие — свежий
             'hash' => $hash ?? $this->app->store()->hash($name),
             'unsaved' => $status !== 200,
@@ -500,6 +523,70 @@ final class CollectionController
             'lost' => $lost,
             'tail' => self::READINESS_TAIL,
         ], 422);
+    }
+
+    /** У существующей записи поля «задаётся при создании» показываются сохранёнными, а не присланными. @param array<string,mixed> $values @param array<string,mixed> $item @return array<string,mixed> */
+    private function lockedValues(array $def, array $values, array $item): array
+    {
+        foreach ($def['fields'] as $f) {
+            if (!empty($f['locked']) && array_key_exists($f['name'], $item)) {
+                $values[$f['name']] = $item[$f['name']];
+            }
+        }
+
+        return $values;
+    }
+
+    /**
+     * Прежние адреса страницы смены, с которых /program/{старый}/ переадресует на новый: старый адрес плюс накопленные раньше
+     * (без нынешнего). Только у смен.
+     *
+     * @param array<string,mixed> $existing
+     * @param array<string,mixed> $record
+     * @return list<string>
+     */
+    private function formerSlugs(string $name, array $existing, array $record): array
+    {
+        if ($name !== 'shifts') {
+            return [];
+        }
+        $list = array_values(array_filter((array) ($existing['formerSlugs'] ?? []), 'is_string'));
+        $old = is_string($existing['slug'] ?? null) ? $existing['slug'] : '';
+        if ($old !== '' && $old !== ($record['slug'] ?? '')) {
+            $list[] = $old;
+        }
+        $list = array_values(array_unique(array_filter($list, static fn (string $s): bool => preg_match('/^[a-z0-9-]{1,80}$/D', $s) === 1 && $s !== ($record['slug'] ?? ''))));
+
+        return array_slice($list, -10);
+    }
+
+    /**
+     * Записи других коллекций, которые ссылаются на эту (смены → база): названия. Пусто — удалять можно.
+     *
+     * @param array<string,mixed> $item
+     * @return list<string>
+     */
+    private function refUsers(string $name, array $item): array
+    {
+        $slug = $item['slug'] ?? null;
+        if (!is_string($slug) || $slug === '') {
+            return [];
+        }
+        $out = [];
+        foreach (Collections::all() as $other => $def) {
+            foreach ($def['fields'] as $f) {
+                if ($f['type'] !== 'ref' || ($f['ref'] ?? null) !== $name) {
+                    continue;
+                }
+                foreach ($this->app->store()->read($other)['items'] ?? [] as $row) {
+                    if (($row[$f['name']] ?? null) === $slug) {
+                        $out[] = $this->itemTitle($def, $row);
+                    }
+                }
+            }
+        }
+
+        return $out;
     }
 
     private static function confirmedReadiness(Request $r): bool
