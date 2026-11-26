@@ -58,7 +58,7 @@ if ($page === 'home') {
 <script type="application/ld+json"><?= JsonLd::encode($ld) ?></script>
 <?php endforeach ?>
 </head>
-<body class="flex min-h-screen flex-col">
+<body class="flex min-h-screen flex-col" id="top">
 <a class="skip-link" href="#main">Перейти к содержанию</a>
 <?= $this->partial('partials/topbar') ?>
 <?= $this->partial('partials/header') ?>
@@ -66,6 +66,7 @@ if ($page === 'home') {
 <?= $content ?>
 </main>
 <?= $this->partial('partials/footer') ?>
+<?= $this->partial('partials/to-top') ?>
 <?php if ($metrikaId !== ''): ?>
 <?= $this->partial('partials/cookie-notice') ?>
 <noscript><div><img src="https://mc.yandex.ru/watch/<?= e($metrikaId) ?>" width="1" height="1" alt="" class="absolute -left-[9999px]"></div></noscript>

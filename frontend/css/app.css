@@ -36,11 +36,11 @@
     color-scheme: light;
     accent-color: theme('colors.rust.dark');
     scrollbar-color: theme('colors.moss') theme('colors.sand.deep');
-    scroll-padding-top: 5.5rem; /* под липкой шапкой телефона */
+    scroll-padding-top: 5.5rem; /* под липкой шапкой: 4rem высота + 1.5rem воздуха */
     -webkit-tap-highlight-color: transparent;
   }
   @screen desk {
-    :root { scroll-padding-top: 1.5rem; }
+    :root { scroll-padding-top: 6.5rem; } /* шапка 5rem */
   }
   @media (prefers-reduced-motion: no-preference) {
     :root { scroll-behavior: smooth; }
@@ -210,6 +210,32 @@
     transition: transform 150ms ease-out;
   }
   .skip-link:focus-visible { @apply translate-y-0; }
+
+  /* Кнопка «Наверх» (partials/to-top): над контентом, но под шапкой, меню и уведомлением о cookie.
+     Спрятана, пока скрипт не поставит is-visible (без JS её нет — это только удобство);
+     visibility убирает спрятанную кнопку и из порядка Tab. */
+  .to-top {
+    position: fixed;
+    right: max(1rem, env(safe-area-inset-right));
+    bottom: max(1rem, env(safe-area-inset-bottom));
+    z-index: 30;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(0.75rem);
+    transition: opacity 200ms ease-out, transform 200ms ease-out, visibility 0s 200ms, background-color 150ms;
+  }
+  .to-top.is-visible {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition: opacity 200ms ease-out, transform 200ms ease-out, background-color 150ms;
+  }
+  @screen desk {
+    .to-top { right: 1.5rem; bottom: 1.5rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .to-top, .to-top.is-visible { transition: none; }
+  }
 }
 
 @layer utilities {

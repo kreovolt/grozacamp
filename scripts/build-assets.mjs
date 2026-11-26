@@ -63,7 +63,7 @@ const FONTS = [
 ];
 
 // Только используемые иконки (имя в спрайте = имя в lucide-static)
-const LUCIDE = ['phone', 'message-circle', 'menu', 'x', 'chevron-down', 'chevron-right', 'map-pin', 'clock', 'mail', 'arrow-right', 'check', 'calendar'];
+const LUCIDE = ['phone', 'message-circle', 'menu', 'x', 'chevron-down', 'chevron-right', 'map-pin', 'clock', 'mail', 'arrow-right', 'arrow-up', 'log-in', 'check', 'calendar'];
 // Свои глифы в том же стиле (контур 2 px, 24×24): ВКонтакте и YouTube — без пакетов брендовых иконок
 const CUSTOM = {
   vk: '<path d="M3 7.5 6.5 16.5 10 7.5"/><path d="M13.5 7.5v9"/><path d="M20.5 7.5 14 12.5l6.5 4"/>',

@@ -44,6 +44,12 @@ $hours = array_values(array_filter([$settings['hoursWeekdays'] ?? '', $settings[
           </a>
         </li>
       <?php endif ?>
+      <?php /* Вход в админку для офиса — не пункт меню (в меню ровно четыре пункта, спека §5.2) */ ?>
+      <li>
+        <a class="flex items-center gap-2 rounded-btn border border-cream/30 px-3 py-1 font-semibold text-cream no-underline transition-colors hover:border-cream hover:bg-cream/10" href="/admin/" rel="nofollow">
+          <?= icon('log-in', 'size-4 text-gold') ?>Вход для сотрудников
+        </a>
+      </li>
     </ul>
   </div>
 </div>

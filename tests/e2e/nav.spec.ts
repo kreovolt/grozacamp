@@ -46,6 +46,26 @@ test.describe('десктоп 1440×900', () => {
     await expect(bar).toContainText('Пн–Пт 10:00–19:00');
   });
 
+  test('верхняя полоса: «Вход для сотрудников» ведёт в админку, в меню его нет', async ({ page }) => {
+    const bar = page.locator('[data-topbar]');
+    await expect(bar.getByRole('link', { name: 'Вход для сотрудников' })).toHaveAttribute('href', '/admin/');
+    await expect(page.getByRole('navigation', { name: 'Основное меню' }).getByRole('link', { name: 'Вход для сотрудников' })).toHaveCount(0);
+  });
+
+  test('шапка липкая: после прокрутки меню остаётся сверху, верхняя полоса уезжает', async ({ page }) => {
+    await page.goto('/');
+    await page.evaluate(() => window.scrollTo(0, 1500));
+    await expect.poll(async () => (await page.locator('header').boundingBox())?.y).toBe(0);
+    await expect(page.getByRole('navigation', { name: 'Основное меню' })).toBeInViewport();
+    await expect(page.locator('[data-topbar]')).not.toBeInViewport();
+  });
+
+  test('якорь не прячется под шапкой', async ({ page }) => {
+    await page.goto('/booking/#zayavka');
+    const header = await page.locator('header').boundingBox();
+    await expect.poll(async () => (await page.locator('#zayavka').boundingBox())?.y ?? 0).toBeGreaterThanOrEqual(header!.height);
+  });
+
   test('клик по «Сведения…» открывает список разделов, клик мимо закрывает', async ({ page }) => {
     const button = page.getByRole('button', SVEDENIYA_BUTTON);
     const panel = page.locator(`#${await button.getAttribute('aria-controls')}`);
@@ -161,6 +181,19 @@ test.describe('телефон 375×812', () => {
     await expect(items.first()).toBeVisible();
   });
 
+  test('в меню есть «Вход для сотрудников» — ссылка на админку', async ({ page }) => {
+    await page.getByRole('button', { name: 'Меню', exact: true }).click();
+    const link = page.getByRole('dialog', { name: 'Меню' }).getByRole('link', { name: 'Вход для сотрудников' });
+    await expect(link).toBeVisible();
+    await expect(link).toHaveAttribute('href', '/admin/');
+  });
+
+  test('шапка с «Позвонить» и бургером остаётся сверху при прокрутке', async ({ page }) => {
+    await page.evaluate(() => window.scrollTo(0, 1500));
+    await expect.poll(async () => (await page.locator('header').boundingBox())?.y).toBe(0);
+    await expect(page.getByRole('button', { name: 'Меню', exact: true })).toBeInViewport();
+  });
+
   test('Esc закрывает меню и возвращает фокус на бургер', async ({ page }) => {
     const burger = page.getByRole('button', { name: 'Меню', exact: true });
     await burger.click();
@@ -176,4 +209,23 @@ test.describe('телефон 375×812', () => {
     await page.getByRole('dialog', { name: 'Меню' }).getByRole('button', SVEDENIYA_BUTTON).click();
     await axe(page);
   });
+});
+
+test.describe('кнопка «Наверх»', () => {
+  for (const viewport of [{ width: 1440, height: 900 }, { width: 375, height: 812 }]) {
+    test(`${viewport.width} px: спрятана вверху, появляется после прокрутки и возвращает в начало`, async ({ page }) => {
+      await page.setViewportSize(viewport);
+      await page.goto('/');
+      const up = page.getByRole('link', { name: 'Наверх' });
+      await expect(up).toBeHidden();
+
+      await page.evaluate(() => window.scrollTo(0, 3000));
+      await expect(up).toBeVisible();
+      await expect(up).toBeInViewport();
+      await up.click();
+      await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+      await expect(up).toBeHidden();
+      expect(new URL(page.url()).hash).toBe('');
+    });
+  }
 });

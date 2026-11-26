@@ -108,6 +108,9 @@ $hours = array_values(array_filter([$settings['hoursWeekdays'] ?? '', $settings[
           ]) ?>
         <?php endif ?>
       </div>
+      <a class="mt-7 inline-flex items-center gap-2 py-1 font-semibold text-sage no-underline hover:text-cream" href="/admin/" rel="nofollow">
+        <?= icon('log-in', 'size-4 text-gold') ?>Вход для сотрудников
+      </a>
     </div>
   </nav>
 </div>

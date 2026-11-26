@@ -3,13 +3,14 @@ declare(strict_types=1);
 
 /**
  * Шапка: шеврон и название, меню (десктоп) или «Позвонить» + бургер (уже 1200 px).
+ * Липкая на любой ширине; верхняя полоса (partials/topbar) уезжает вместе со страницей. Высота шапки — в scroll-padding-top (app.css).
  * @var array<string,mixed> $settings
  */
 use function Groza\View\e;
 use function Groza\View\icon;
 use function Groza\View\tel;
 ?>
-<header class="on-dark sticky top-0 z-40 bg-forest text-cream desk:static">
+<header class="on-dark sticky top-0 z-40 bg-forest text-cream shadow-[0_10px_24px_-18px_rgb(12_22_16/0.7)]">
   <div class="wrap relative flex h-16 items-center gap-6 desk:h-20">
     <?= $this->partial('partials/brand') ?>
     <?= $this->partial('partials/nav-desktop') ?>
