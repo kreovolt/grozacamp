@@ -96,9 +96,10 @@ $steps = [
         <?php if ($hero['lead'] !== ''): ?>
           <p class="mt-5 max-w-[32rem] text-[1.0625rem] leading-relaxed text-cream/90 sm:text-lg"><?= t($hero['lead']) ?></p>
         <?php endif ?>
-        <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-          <?= $this->partial('components/button', ['label' => 'Выбрать смену', 'href' => '/booking/', 'size' => 'lg']) ?>
-          <?= $this->partial('components/button', ['label' => 'Информация для родителей', 'href' => '/info/', 'size' => 'lg', 'variant' => 'outline-light']) ?>
+        <?php /* С 1024 px колонка узкая: кнопки растягиваются — в один ряд на всю ширину или, если не помещаются, одна под другой одинаковой ширины */ ?>
+        <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap lg:max-w-[32rem] lg:[&>*]:grow">
+          <?= $this->partial('components/button', ['label' => 'Выбрать смену', 'href' => '/booking/', 'size' => 'lg', 'class' => 'max-[359px]:px-5']) ?>
+          <?= $this->partial('components/button', ['label' => 'Информация для родителей', 'href' => '/info/', 'size' => 'lg', 'variant' => 'outline-light', 'class' => 'max-[359px]:px-5']) ?>
         </div>
       </div>
     </div>

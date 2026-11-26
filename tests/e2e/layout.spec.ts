@@ -98,3 +98,22 @@ test.describe('карточки смен', () => {
     }
   });
 });
+
+test.describe('подписи кнопок в одну строку', () => {
+  for (const width of [320, 1024, 1112]) {
+    for (const path of ['/', '/booking/']) {
+      test(`${width} px: ${path}`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 900 });
+        await page.goto(path);
+        await page.evaluate(() => document.fonts.ready);
+        const wrapped = await page.locator('main a.rounded-btn > span, main button.rounded-btn > span').evaluateAll((spans) =>
+          spans.filter((s) => {
+            const r = s.getBoundingClientRect();
+            return r.width > 0 && r.height > parseFloat(getComputedStyle(s).fontSize) * 1.6;
+          }).map((s) => s.textContent?.trim()));
+        expect(wrapped).toEqual([]);
+        expect(await horizontalOverflow(page)).toBe(0);
+      });
+    }
+  }
+});

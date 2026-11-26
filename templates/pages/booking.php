@@ -51,7 +51,8 @@ $hours = array_values(array_filter([$settings['hoursWeekdays'] ?? '', $settings[
       <?php if ($hours !== []): ?>
         <p class="mt-3 flex items-center gap-2 text-[0.9375rem] text-sage"><?= icon('clock', 'size-4 text-gold') ?><span><?= t(implode(', ', $hours)) ?></span></p>
       <?php endif ?>
-      <div class="mt-6 flex flex-col gap-3 sm:flex-row">
+      <?php /* 1024–1199 px: колонка узкая для двух кнопок в ряд — одна под другой, одинаковой ширины */ ?>
+      <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap lg:max-w-[22rem] lg:flex-col desk:max-w-none desk:flex-row">
         <?php if ($phone !== ''): ?>
           <?= $this->partial('components/button', ['label' => 'Позвонить', 'href' => tel($phone), 'icon' => 'phone', 'variant' => 'outline-light']) ?>
         <?php endif ?>

@@ -27,7 +27,8 @@ $sizes = [
     'lg' => 'min-h-14 px-7 text-base',
 ];
 $classes = implode(' ', array_filter([
-    'inline-flex items-center justify-center gap-2.5 rounded-btn font-display font-semibold uppercase leading-none tracking-btn no-underline',
+    // Подпись кнопки в одну строку: перенос «НАПИСАТЬ В / WHATSAPP» выглядит сломанным; раскладку под узкие колонки делают страницы
+    'inline-flex items-center justify-center gap-2.5 whitespace-nowrap rounded-btn font-display font-semibold uppercase leading-none tracking-btn no-underline',
     'transition-[background-color,border-color,color,transform] duration-150 ease-out active:translate-y-px',
     $variants[$variant ?? 'primary'] ?? $variants['primary'],
     $sizes[$size ?? 'md'] ?? $sizes['md'],
