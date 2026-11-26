@@ -42,7 +42,7 @@ $h2 = 'font-display text-[clamp(1.5rem,1.2rem+1.1vw,2.125rem)] font-bold upperca
           'class' => 'relative z-10 w-[58%] shrink-0',
       ]) ?>
       <?= $this->partial('components/polaroid', [
-          'media' => $shot('audience-smiles', '(min-width: 1024px) 16rem, 40vw'),
+          'media' => $shot('audience-smiles', '(min-width: 1024px) 24rem, 60vw'),
           'ratio' => '4/3',
           'tilt' => 'right',
           'caption' => 'Смотрим выступление',

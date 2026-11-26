@@ -52,7 +52,7 @@ $shot = static function (string $key, string $sizes): string {
           'class' => 'relative z-10 w-[58%] shrink-0',
       ]) ?>
       <?= $this->partial('components/polaroid', [
-          'media' => $shot('games-football', '(min-width: 1024px) 16rem, 40vw'),
+          'media' => $shot('games-football', '(min-width: 1024px) 24rem, 60vw'),
           'ratio' => '4/3',
           'tilt' => 'right',
           'caption' => 'Футбол на поляне',

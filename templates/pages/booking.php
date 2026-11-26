@@ -79,11 +79,13 @@ $hours = array_values(array_filter([$settings['hoursWeekdays'] ?? '', $settings[
     ]) ?>
     <?php if ($shifts !== []): ?>
       <div class="shift-grid mt-10 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 desk:gap-8" data-reveal>
-        <?php foreach ($shifts as $shift): ?>
+        <?php foreach (array_values($shifts) as $i => $shift): ?>
+          <?php /* нечётная последняя карточка на 768–1023 px растянута на весь ряд (app.css, .shift-grid): фото выше и шире — sizes больше */ ?>
           <?= $this->partial('components/shift-card', [
               'shift' => $shift,
               'venue' => $venues[(string) ($shift['venue'] ?? '')] ?? null,
               'bookingHref' => HomePage::bookingHref($shift),
+              'sizes' => count($shifts) % 2 === 1 && $i === count($shifts) - 1 ? '(min-width: 1024px) 26rem, (min-width: 768px) 75vw, 100vw' : null,
           ]) ?>
         <?php endforeach ?>
       </div>

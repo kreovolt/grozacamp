@@ -25,7 +25,8 @@ $hours = array_values(array_filter([$settings['hoursWeekdays'] ?? '', $settings[
 <div class="on-dark relative isolate overflow-hidden bg-forest text-cream">
   <?php if (!empty($image)): ?>
     <div class="absolute inset-0 -z-10">
-      <?= picture($image, (string) ($image['alt'] ?? ''), '100vw', false, 'h-full w-full object-cover') ?>
+      <?php /* На телефоне блок выше, чем шире: обрезка cover берёт полосу шириной ~2,4 экрана — sizes с запасом, иначе фото мыльное */ ?>
+      <?= picture($image, (string) ($image['alt'] ?? ''), '(max-width: 767px) 240vw, 100vw', false, 'h-full w-full object-cover') ?>
       <div class="absolute inset-0 bg-forest/[0.86]"></div>
     </div>
   <?php endif ?>

@@ -216,7 +216,7 @@ $fact = static fn (string $name, string $value): string => '<div class="border-t
         <ul class="grid grid-cols-3 gap-3 sm:gap-4" role="list">
           <?php foreach ($photos as $i => $p): ?>
             <li class="aspect-[3/4] overflow-hidden rounded-card bg-sand-deep">
-              <?= picture($p, (string) ($p['alt'] ?? $venue['name'] . ': фото ' . ($i + 1)), '(min-width: 1024px) 14rem, 33vw', false, 'h-full w-full object-cover') ?>
+              <?= picture($p, (string) ($p['alt'] ?? $venue['name'] . ': фото ' . ($i + 1)), '(min-width: 1024px) 32rem, 50vw', false, 'h-full w-full object-cover') ?>
             </li>
           <?php endforeach ?>
         </ul>
