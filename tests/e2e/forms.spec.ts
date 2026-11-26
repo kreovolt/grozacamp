@@ -62,7 +62,7 @@ test.describe('без JavaScript', () => {
     await fill(page);
     await page.waitForTimeout(WAIT_MS);
     await page.getByRole('button', { name: 'Отправить заявку' }).click();
-    await expect(page).toHaveURL(/\/spasibo\/\?f=booking$/);
+    await expect(page).toHaveURL(/\/spasibo\/\?f=booking#main$/);
     await expect(page.getByRole('heading', { name: 'Спасибо! Мы перезвоним' })).toBeVisible();
   });
 
@@ -73,6 +73,9 @@ test.describe('без JavaScript', () => {
     await page.getByRole('button', { name: 'Отправить заявку' }).click();
     await expect(page.getByLabel('Ваше имя')).toHaveValue('Анна Иванова');
     await expect(page.locator('#booking-phone-error')).toBeVisible();
+    // ответ открывается у формы, а не в начале страницы; сводка ошибок — первой в форме
+    await expect(page).toHaveURL(/\/form\/booking\/#zayavka$/);
+    await expect(page.locator('[data-form-summary]')).toContainText('Телефон');
   });
 });
 

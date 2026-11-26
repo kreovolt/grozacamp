@@ -58,7 +58,7 @@ final class FormControllerTest extends TestCase
         $app = $this->app();
         $res = $this->booking($app);
         $this->assertSame(303, $res->status());
-        $this->assertSame('/spasibo/?f=booking', $res->header('Location'));
+        $this->assertSame('/spasibo/?f=booking#main', $res->header('Location'));
         $this->assertCount(1, $this->sent($app));
         $m = $this->sent($app)[0];
         $this->assertSame('Заявка на путёвку: Спасатель — Иванова Анна', $m->subject);
@@ -95,11 +95,11 @@ final class FormControllerTest extends TestCase
     public function test_honeypot_pretends_success(): void
     {
         $app = $this->app();
-        $res = $this->booking($app, ['website' => 'http://spam.example']);
+        $res = $this->booking($app, [FormGuard::HONEYPOT => 'http://spam.example']);
         $this->assertSame(303, $res->status());
         $this->assertStringStartsWith('/spasibo/', (string) $res->header('Location'));
         $this->assertSame([], $this->sent($app));
-        $json = $this->booking($app, ['website' => 'x'], ['Accept' => 'application/json']);
+        $json = $this->booking($app, [FormGuard::HONEYPOT => 'x'], ['Accept' => 'application/json']);
         $this->assertSame('{"ok":true}', $json->body());
         $this->assertSame([], $this->sent($app));
     }
@@ -115,6 +115,23 @@ final class FormControllerTest extends TestCase
         $this->assertStringContainsString('Нужно согласие на обработку данных', $html);
         $this->assertMatchesRegularExpression('/name="_ts" value="\d+"/', $html);
         $this->assertSame([], $this->sent($app));
+    }
+
+    public function test_no_js_error_page_lands_at_the_form_with_a_summary(): void
+    {
+        $app = $this->app();
+        $html = $this->booking($app, ['phone' => '123', 'consent' => ''])->body();
+
+        $this->assertStringContainsString('action="/form/booking/#zayavka"', $html, 'после отправки без JS страница откроется у формы');
+        $this->assertSame(1, preg_match('#<div[^>]*role="alert"[^>]*data-form-summary>(.*?)</div>#s', $html, $m), 'сводка ошибок в начале формы');
+        $this->assertStringContainsString('<a class="underline" href="#booking-phone">Телефон</a>', $m[1]);
+        $this->assertStringContainsString('href="#booking-consent"', $m[1]);
+        $this->assertStringNotContainsString('data-form-summary', TestApp::get($app, '/booking/')->body(), 'без ошибок сводки нет');
+
+        $page = TestApp::get($app, '/vacancies/')->body();
+        $this->assertStringContainsString('action="/form/vacancy/#anketa"', $page);
+        $this->assertStringContainsString('name="' . FormGuard::HONEYPOT . '"', $page);
+        $this->assertStringNotContainsString('name="website"', $page);
     }
 
     public function test_validation_error_json(): void
@@ -168,7 +185,7 @@ final class FormControllerTest extends TestCase
     public function test_rate_limited_page(): void
     {
         $app = $this->app();
-        for ($i = 0; $i < 5; $i++) {
+        for ($i = 0; $i < FormGuard::RATE_MAX; $i++) {
             $this->assertSame(303, $this->booking($app)->status());
         }
         $res = $this->booking($app);
@@ -191,7 +208,7 @@ final class FormControllerTest extends TestCase
         $this->booking($app, ['parentName' => 'Секретная Персона', 'phone' => '9504411299']);        // сбой почты
         $this->booking($app, ['parentName' => 'Секретная Персона', 'phone' => '1']);                  // ошибка проверки
         $this->booking($app, ['parentName' => 'Секретная Персона'], [], 1);                           // слишком быстро
-        $this->booking($app, ['website' => 'Секретная Персона']);                                      // honeypot
+        $this->booking($app, [FormGuard::HONEYPOT => 'Секретная Персона']);                                      // honeypot
 
         $logs = glob($app->config()['storageDir'] . '/logs/*.log') ?: [];
         $this->assertNotEmpty($logs);
@@ -237,7 +254,7 @@ final class FormControllerTest extends TestCase
         ];
         $res = TestApp::post($app, '/form/vacancy/', $post);
         $this->assertSame(303, $res->status());
-        $this->assertSame('/spasibo/?f=vacancy', $res->header('Location'));
+        $this->assertSame('/spasibo/?f=vacancy#main', $res->header('Location'));
         $m = $this->sent($app)[0];
         $this->assertSame('Анкета на вакансию: Вожатый (пример) — Петров Пётр', $m->subject);
         $this->assertSame('p@example.ru', $m->replyTo);

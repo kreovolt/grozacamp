@@ -13,9 +13,14 @@ foreach ($options['positions'] ?? [] as $p) {
     $choices[] = [$p, $p];
 }
 
-$field = fn (string $name, array $vars): string => $this->partial('forms/_field', $vars + [
-    'formId' => 'vacancy', 'name' => $name, 'value' => $values[$name] ?? '', 'error' => $errors[$name] ?? '',
-]);
+$labels = [];
+$field = function (string $name, array $vars) use ($values, $errors, &$labels): string {
+    $labels[$name] = (string) $vars['label'];
+
+    return $this->partial('forms/_field', $vars + [
+        'formId' => 'vacancy', 'name' => $name, 'value' => $values[$name] ?? '', 'error' => $errors[$name] ?? '',
+    ]);
+};
 
 $body = $field('position', ['label' => 'Должность', 'type' => 'select', 'choices' => $choices, 'required' => true])
     . $field('fullName', ['label' => 'ФИО', 'autocomplete' => 'name', 'required' => true, 'maxlength' => 120])
@@ -32,10 +37,11 @@ $body = $field('position', ['label' => 'Должность', 'type' => 'select',
 
 echo $this->partial('forms/_shell', [
     'formId' => 'vacancy',
-    'action' => '/form/vacancy/',
+    'action' => '/form/vacancy/#anketa', // без JS ответ с ошибками откроется сразу у анкеты
     'success' => 'Спасибо! Мы свяжемся с вами',
     'submitLabel' => 'Отправить анкету',
     'body' => $body,
     'guard' => $guard,
     'errors' => $errors,
+    'labels' => $labels,
 ]);

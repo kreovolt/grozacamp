@@ -62,7 +62,7 @@ final class FormGuardTest extends TestCase
 
     public function test_honeypot(): void
     {
-        $this->assertSame('honeypot', $this->guard()->check($this->request($this->post(10, ['website' => 'x'])), 'booking'));
+        $this->assertSame('honeypot', $this->guard()->check($this->request($this->post(10, [FormGuard::HONEYPOT => 'x'])), 'booking'));
     }
 
     public function test_too_fast(): void
@@ -124,10 +124,16 @@ final class FormGuardTest extends TestCase
         $this->assertSame('bad_origin', $this->guard()->check($r, 'booking'));
     }
 
+    public function test_honeypot_name_means_nothing_to_autofill(): void
+    {
+        $this->assertDoesNotMatchRegularExpression('/web|site|url|name|mail|phone|tel|company|org|address/i', FormGuard::HONEYPOT);
+    }
+
     public function test_rate_limit(): void
     {
         $guard = $this->guard();
-        for ($i = 1; $i <= 5; $i++) {
+        $this->assertGreaterThanOrEqual(10, FormGuard::RATE_MAX, 'за одним адресом мобильного оператора — много родителей');
+        for ($i = 1; $i <= FormGuard::RATE_MAX; $i++) {
             $this->assertNull($guard->check($this->request($this->post(10)), 'booking'), "отправка $i");
         }
         $this->assertSame('rate_limited', $guard->check($this->request($this->post(10)), 'booking'));

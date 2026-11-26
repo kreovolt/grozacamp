@@ -14,9 +14,14 @@ foreach ($options['shifts'] ?? [] as $s) {
 }
 $choices[] = ['any', 'Пока не знаю / любая'];
 
-$field = fn (string $name, array $vars): string => $this->partial('forms/_field', $vars + [
-    'formId' => 'booking', 'name' => $name, 'value' => $values[$name] ?? '', 'error' => $errors[$name] ?? '',
-]);
+$labels = [];
+$field = function (string $name, array $vars) use ($values, $errors, &$labels): string {
+    $labels[$name] = (string) $vars['label'];
+
+    return $this->partial('forms/_field', $vars + [
+        'formId' => 'booking', 'name' => $name, 'value' => $values[$name] ?? '', 'error' => $errors[$name] ?? '',
+    ]);
+};
 
 $body = $field('shift', ['label' => 'Смена', 'type' => 'select', 'choices' => $choices, 'required' => true])
     . $field('parentName', ['label' => 'Ваше имя', 'autocomplete' => 'name', 'required' => true, 'maxlength' => 80])
@@ -30,10 +35,11 @@ $body = $field('shift', ['label' => 'Смена', 'type' => 'select', 'choices' 
 
 echo $this->partial('forms/_shell', [
     'formId' => 'booking',
-    'action' => '/form/booking/',
+    'action' => '/form/booking/#zayavka', // без JS ответ с ошибками откроется сразу у формы, а не в начале страницы
     'success' => 'Спасибо! Мы перезвоним',
     'submitLabel' => 'Отправить заявку',
     'body' => $body,
     'guard' => $guard,
     'errors' => $errors,
+    'labels' => $labels,
 ]);

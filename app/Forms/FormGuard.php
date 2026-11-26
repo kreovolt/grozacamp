@@ -13,10 +13,15 @@ use Groza\Support\RateLimiter;
  */
 final class FormGuard
 {
-    public const HONEYPOT = 'website';
+    /**
+     * Поле-ловушка: имя ничего не значит для автозаполнения браузера и расширений (на «website», «url», «company» они
+     * подставляют данные — и настоящий родитель получил бы «Спасибо» без письма). Каждое срабатывание — строка в forms.log.
+     */
+    public const HONEYPOT = 'gz_hp_note';
     public const MIN_SECONDS = 3;
     public const MAX_SECONDS = 7200;
-    public const RATE_MAX = 5;
+    /** Заявок с одного адреса за RATE_WINDOW: родители с мобильного интернета делят адреса (CGNAT), в день открытия записи — тем более. */
+    public const RATE_MAX = 12;
     public const RATE_WINDOW = 600;
 
     private string $baseHost;

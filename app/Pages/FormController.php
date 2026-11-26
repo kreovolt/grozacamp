@@ -167,7 +167,8 @@ final class FormController
     {
         return $r->wantsJson()
             ? Response::json(['ok' => true])
-            : Response::redirect('/spasibo/?f=' . $formId, 303);
+            // своя метка: без неё браузер перенёс бы на /spasibo/ метку адреса формы (#zayavka)
+            : Response::redirect('/spasibo/?f=' . $formId . '#main', 303);
     }
 
     /**

@@ -21,6 +21,10 @@ function setError(form, name, message) {
 
 function clearErrors(form) {
   form.querySelectorAll('[data-field]').forEach((f) => setError(form, f.dataset.field, ''));
+  // сводка ошибок от прошлой отправки без JS больше не верна
+  form.querySelectorAll('[data-form-summary]').forEach((s) => {
+    s.hidden = true;
+  });
   const general = form.querySelector('[data-form-error]');
   if (general) {
     general.textContent = '';

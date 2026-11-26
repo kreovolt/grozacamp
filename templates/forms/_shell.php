@@ -10,6 +10,7 @@ declare(strict_types=1);
  * @var string $body         разметка полей
  * @var array<string,string>|null $guard   null — защита форм не настроена
  * @var array<string,string> $errors
+ * @var array<string,string>|null $labels  подписи полей (для сводки ошибок без JS)
  * @var array<string,mixed> $settings
  */
 use function Groza\View\e;
@@ -25,9 +26,20 @@ use function Groza\View\e;
     <input type="hidden" name="_sig" value="<?= e($guard['_sig'] ?? '') ?>">
     <?php /* Ловушка для ботов: за экраном, без табуляции, не читается скринридером */ ?>
     <div class="absolute -left-[9999px] h-px w-px overflow-hidden" aria-hidden="true">
-      <label>Не заполняйте это поле <input type="text" name="website" value="" tabindex="-1" autocomplete="off"></label>
+      <label>Не заполняйте это поле <input type="text" name="<?= e(\Groza\Forms\FormGuard::HONEYPOT) ?>" value="" tabindex="-1" autocomplete="new-password" data-lpignore="true" data-1p-ignore></label>
     </div>
     <p class="rounded-btn border-2 border-rust-deep bg-paper px-4 py-3 font-semibold text-rust-deep" role="alert" data-form-error<?= empty($errors['_form']) ? ' hidden' : '' ?>><?= e($errors['_form'] ?? '') ?></p>
+<?php $fieldErrors = array_diff_key($errors, ['_form' => true]); ?>
+<?php if ($fieldErrors !== []): /* без JS страница показана заново после отправки: сводка в начале формы, ссылки на поля */ ?>
+    <div class="rounded-btn border-2 border-rust-deep bg-paper px-4 py-3 text-rust-deep" role="alert" data-form-summary>
+      <p class="font-semibold"><?= $formId === 'vacancy' ? 'Анкета' : 'Заявка' ?> не отправлена. Проверьте:</p>
+      <ul class="mt-2 list-disc pl-5">
+<?php foreach ($fieldErrors as $name => $message): ?>
+        <li><a class="underline" href="#<?= e($formId . '-' . $name) ?>"><?= e($labels[$name] ?? $name) ?></a> — <?= e($message) ?></li>
+<?php endforeach ?>
+      </ul>
+    </div>
+<?php endif ?>
     <?= $body ?>
     <div>
       <?= $this->partial('components/button', ['label' => $submitLabel, 'type' => 'submit', 'size' => 'lg', 'class' => 'w-full sm:w-auto']) ?>
