@@ -57,12 +57,15 @@ final class JsonStore
      *
      * @return \Generator<int,string>
      */
-    public function snapshots(): \Generator
+    public function snapshots(bool $withVersions = true): \Generator
     {
         foreach ($this->publicNames() as $name) {
             $raw = @file_get_contents($this->file($name));
             if ($raw !== false) {
                 yield $raw;
+            }
+            if (!$withVersions) {
+                continue;
             }
             foreach (glob($this->versionDir($name) . '/*.json') ?: [] as $path) {
                 $raw = @file_get_contents($path);
@@ -156,6 +159,27 @@ final class JsonStore
         }
 
         return $result;
+    }
+
+    /** Текст хранимой версии как есть (для проверки, какие файлы ей нужны); нет такой версии — null. */
+    public function versionRaw(string $name, string $versionId): ?string
+    {
+        if (preg_match(self::VERSION_ID, $versionId) !== 1) {
+            return null;
+        }
+        $path = $this->versionDir($name) . '/' . $versionId . '.json';
+        $raw = is_file($path) ? @file_get_contents($path) : false;
+
+        return $raw === false ? null : $raw;
+    }
+
+    /** Текст текущего файла данных как есть; файла нет — null. */
+    public function raw(string $name): ?string
+    {
+        $file = $this->file($name);
+        $raw = is_file($file) ? @file_get_contents($file) : false;
+
+        return $raw === false ? null : $raw;
     }
 
     public function restore(string $name, string $versionId, string $actor): void

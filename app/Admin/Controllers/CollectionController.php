@@ -1025,30 +1025,14 @@ final class CollectionController
     }
 
     /**
-     * Удаляет файлы, которые больше никому не нужны: ни текущим данным, ни одной из хранимых версий (иначе «Вернуть эту версию»
-     * вернула бы битые ссылки). Заменённый файл поэтому живёт, пока его версия не выйдет из последних 20; потом его уберёт scripts/uploads-gc.php.
-     * Отказ или сбой — не причина ломать ответ (файл останется лишним, данные верны).
+     * Файлы, которые убраны из записи: нужен только хранимой версии — уходит с сайта в карантин (откат вернёт),
+     * не нужен никому — удаляется (App::discardUploads). Карантин чистит scripts/uploads-gc.php, когда версия выйдет из последних 20.
      *
      * @param iterable<string> $urls
      */
     private function discard(iterable $urls): void
     {
-        $urls = is_array($urls) ? $urls : iterator_to_array($urls, false);
-        if ($urls === []) {
-            return;
-        }
-        $uploads = $this->app->uploads();
-        $refs = $this->app->keptUploadRefs();
-        foreach ($urls as $url) {
-            if ($uploads->isReferenced($url, $refs)) {
-                continue;
-            }
-            try {
-                $uploads->delete($url);
-            } catch (\Throwable $e) {
-                error_log('Groza uploads cleanup: ' . $e->getMessage());
-            }
-        }
+        $this->app->discardUploads($urls);
     }
 
     // ---------- показ записей ----------

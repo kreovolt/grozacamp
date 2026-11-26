@@ -6,6 +6,10 @@ namespace Groza\Admin;
 /**
  * Приём загруженных файлов: фото (JPEG/PNG/WebP, пересохраняются) и PDF (как есть, после проверки содержимого).
  * Тип определяется по содержимому, а не по имени и не по MIME от браузера. Имена на диске — случайные.
+ *
+ * Карантин ($quarantineDir, вне корня сайта — storage/quarantine/{img|docs}): файл, который убрали с сайта, но на который
+ * ещё ссылается хранимая версия, переезжает туда — по старому адресу его больше не скачать, а «Вернуть эту версию»
+ * возвращает его на место. Без $quarantineDir такие файлы остаются в папке загрузок (как раньше).
  */
 final class Uploads
 {
@@ -29,6 +33,7 @@ final class Uploads
         private int $maxPdfBytes = 20971520,
         ?callable $isUploaded = null,
         ?callable $move = null,
+        private ?string $quarantineDir = null,
     ) {
         $this->baseUrl = rtrim($baseUrl, '/');
         $this->isUploaded = $isUploaded !== null ? \Closure::fromCallable($isUploaded) : static fn (string $f): bool => is_uploaded_file($f);
@@ -100,7 +105,61 @@ final class Uploads
      */
     public function delete(string $url): void
     {
-        $refuse = new UploadException('Нельзя удалить этот файл');
+        foreach ($this->files($this->baseDir, $url, new UploadException('Нельзя удалить этот файл')) as $real) {
+            @unlink($real);
+        }
+    }
+
+    /** Есть ли карантин (папка вне сайта для файлов, нужных только истории). */
+    public function hasQuarantine(): bool
+    {
+        return $this->quarantineDir !== null;
+    }
+
+    /**
+     * Убрать файл с сайта, не удаляя: все его файлы переезжают в карантин (та же папка img|docs). Без карантина — ничего.
+     * Адрес проверяется так же строго, как при удалении.
+     */
+    public function quarantine(string $url): void
+    {
+        if ($this->quarantineDir !== null) {
+            $this->relocate($this->baseDir, $this->quarantineDir, $url);
+        }
+    }
+
+    /** Вернуть файл из карантина на сайт (откат версии, где он нужен). Файлы, которые уже есть на сайте, не трогаются. */
+    public function unquarantine(string $url): void
+    {
+        if ($this->quarantineDir !== null) {
+            $this->relocate($this->quarantineDir, $this->baseDir, $url);
+        }
+    }
+
+    /** Удалить файл из карантина насовсем (на него не ссылается ни одна хранимая версия). */
+    public function purgeQuarantined(string $url): void
+    {
+        if ($this->quarantineDir === null) {
+            return;
+        }
+        foreach ($this->files($this->quarantineDir, $url, new UploadException('Нельзя удалить этот файл')) as $real) {
+            @unlink($real);
+        }
+    }
+
+    /** Файлы в карантине: адрес (для фото — адрес-основа) → время изменения. @return array<string,int> */
+    public function quarantineInventory(): array
+    {
+        return $this->quarantineDir === null ? [] : $this->inventoryOf($this->quarantineDir);
+    }
+
+    /**
+     * Файлы на диске по адресу вида /uploads/docs/x.pdf или /uploads/img/{id} (все ширины и форматы) внутри папки $base.
+     * Всё, что ведёт за пределы папки, отклоняется ($refuse); папки ещё нет — пустой список.
+     *
+     * @return list<string> настоящие пути
+     */
+    private function files(string $base, string $url, UploadException $refuse): array
+    {
         $prefix = $this->baseUrl . '/';
         if (!str_starts_with($url, $prefix) || preg_match('/[\x00-\x1F\x7F\\\\]/', $url) === 1) {
             throw $refuse;
@@ -115,13 +174,13 @@ final class Uploads
                 throw $refuse;
             }
         }
-        $root = realpath($this->baseDir);
+        $root = realpath($base);
         if ($root === false) {
-            return; // загрузок ещё не было
+            return []; // загрузок (или карантина) ещё не было
         }
         $dirReal = realpath($root . '/' . implode('/', array_slice($parts, 0, -1)));
         if ($dirReal === false) {
-            return;
+            return [];
         }
         $this->mustBeInside($root, $dirReal, $refuse);
         $leaf = end($parts);
@@ -135,6 +194,7 @@ final class Uploads
         } elseif (file_exists($dirReal . '/' . $leaf)) {
             $targets[] = $dirReal . '/' . $leaf;
         }
+        $out = [];
         foreach ($targets as $t) {
             $real = realpath($t);
             if ($real === false || is_link($t)) {
@@ -142,7 +202,32 @@ final class Uploads
             }
             $this->mustBeInside($root, $real, $refuse);
             if (is_file($real)) {
-                @unlink($real);
+                $out[] = $real;
+            }
+        }
+
+        return $out;
+    }
+
+    /** Перенести файлы адреса из папки $from в такую же подпапку $to (уже существующие там не заменяются). */
+    private function relocate(string $from, string $to, string $url): void
+    {
+        $refuse = new UploadException('Нельзя перенести этот файл');
+        $kind = explode('/', substr($url, strlen($this->baseUrl . '/')), 2)[0];
+        foreach ($this->files($from, $url, $refuse) as $real) {
+            $dir = rtrim($to, '/\\') . '/' . $kind;
+            if (!is_dir($dir) && !@mkdir($dir, 0755, true) && !is_dir($dir)) {
+                throw new UploadException('Не удалось перенести файл');
+            }
+            $dest = $dir . '/' . basename($real);
+            if (file_exists($dest)) {
+                @unlink($real); // такой уже есть на месте назначения — второй экземпляр не нужен
+
+                continue;
+            }
+            // rename сохраняет время файла; между дисками — копия и удаление
+            if (!@rename($real, $dest) && !(@copy($real, $dest) && @unlink($real))) {
+                throw new UploadException('Не удалось перенести файл');
             }
         }
     }
@@ -227,14 +312,20 @@ final class Uploads
     /** Все загруженные файлы: адрес (для фото — адрес-основа) → время изменения самого свежего файла. @return array<string,int> */
     public function inventory(): array
     {
+        return $this->inventoryOf($this->baseDir);
+    }
+
+    /** @return array<string,int> */
+    private function inventoryOf(string $base): array
+    {
         $found = [];
-        foreach (glob($this->baseDir . '/img/*') ?: [] as $file) {
+        foreach (glob($base . '/img/*') ?: [] as $file) {
             if (is_file($file) && !is_link($file) && preg_match('/^([A-Za-z0-9_][A-Za-z0-9_-]*)-\d{1,5}\.(webp|jpg)$/', basename($file), $m) === 1) {
                 $url = $this->key('img', $m[1]);
                 $found[$url] = max($found[$url] ?? 0, (int) filemtime($file));
             }
         }
-        foreach (glob($this->baseDir . '/docs/*') ?: [] as $file) {
+        foreach (glob($base . '/docs/*') ?: [] as $file) {
             if (is_file($file) && !is_link($file) && preg_match('/^[A-Za-z0-9_][A-Za-z0-9._-]*$/', basename($file)) === 1) {
                 $found[$this->key('docs', basename($file))] = (int) filemtime($file);
             }

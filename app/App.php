@@ -403,13 +403,20 @@ final class App
         return $dir !== '' ? rtrim($dir, '/\\') : Layout::uploadsDir((string) $this->config['rootDir']);
     }
 
-    /** Приём загруженных файлов в uploadsDir(). */
+    /** Карантин загрузок: storage/quarantine (вне корня сайта) — файлы, которые нужны только хранимым версиям. */
+    public function quarantineDir(): string
+    {
+        return rtrim((string) $this->config['storageDir'], '/\\') . '/quarantine';
+    }
+
+    /** Приём загруженных файлов в uploadsDir(), карантин — quarantineDir(). */
     public function uploads(): Uploads
     {
         return $this->uploads ??= new Uploads(
             $this->uploadsDir(),
             '/uploads',
-            new ImageProcessor()
+            new ImageProcessor(),
+            quarantineDir: $this->quarantineDir(),
         );
     }
 
@@ -417,6 +424,57 @@ final class App
     public function keptUploadRefs(): array
     {
         return $this->uploads()->referencedIn($this->store()->snapshots());
+    }
+
+    /** Загруженные файлы, которые показывает сайт: на них ссылаются текущие данные. @return array<string,true> */
+    public function liveUploadRefs(): array
+    {
+        return $this->uploads()->referencedIn($this->store()->snapshots(false));
+    }
+
+    /**
+     * Файлы, которые убрали из данных (заменили, удалили запись, не сохранилось): на сайте нужен — остаётся; нужен только
+     * хранимой версии — в карантин (по старому адресу его больше не скачать, откат вернёт); не нужен никому — удаляется.
+     * Сбой — не причина ломать ответ: файл останется лишним, данные верны (его уберёт scripts/uploads-gc.php).
+     *
+     * @param iterable<string> $urls
+     */
+    public function discardUploads(iterable $urls): void
+    {
+        $urls = is_array($urls) ? $urls : iterator_to_array($urls, false);
+        if ($urls === []) {
+            return;
+        }
+        $uploads = $this->uploads();
+        $live = $this->liveUploadRefs();
+        $kept = $this->keptUploadRefs();
+        foreach (array_unique($urls) as $url) {
+            try {
+                if ($uploads->isReferenced($url, $live)) {
+                    continue;
+                }
+                if ($uploads->isReferenced($url, $kept)) {
+                    $uploads->quarantine($url);
+                } else {
+                    $uploads->delete($url);
+                }
+            } catch (\Throwable $e) {
+                error_log('Groza uploads cleanup: ' . $e->getMessage());
+            }
+        }
+    }
+
+    /** Вернуть из карантина файлы, на которые ссылается текст (версия перед откатом). @param iterable<string> $raws */
+    public function reviveUploads(iterable $raws): void
+    {
+        $uploads = $this->uploads();
+        foreach (array_keys($uploads->referencedIn($raws)) as $url) {
+            try {
+                $uploads->unquarantine((string) $url);
+            } catch (\Throwable $e) {
+                error_log('Groza uploads restore: ' . $e->getMessage());
+            }
+        }
     }
 
     /** Для тестов: подменить приём загрузок. */

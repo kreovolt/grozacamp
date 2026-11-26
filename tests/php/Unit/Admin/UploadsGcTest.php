@@ -141,6 +141,37 @@ final class UploadsGcTest extends TestCase
         $this->assertSame([], glob($this->root . '/storage/data/*') ?: [], 'стартовые данные не подложены');
     }
 
+    public function test_quarantine_keeps_what_history_needs_and_purges_the_rest(): void
+    {
+        $store = new JsonStore($this->root . '/storage/data', $this->root . '/storage/versions');
+        // версия помнит history.pdf и old-public.pdf; текущие данные — только keep.pdf
+        $store->write('documents', ['items' => [['file' => ['url' => '/uploads/docs/history.pdf']], ['file' => ['url' => '/uploads/docs/old-public.pdf']]]], 'test');
+        $store->write('documents', ['items' => [['file' => ['url' => '/uploads/docs/keep.pdf']]]], 'test');
+        $this->doc('keep.pdf');
+        $this->doc('other.pdf');
+        $store->write('texts', ['policy' => '<p><a href="/uploads/docs/other.pdf">PDF</a></p>'], 'test');
+        $this->doc('old-public.pdf'); // остался на сайте с прежних времён, нужен только версии
+        mkdir($this->root . '/storage/quarantine/docs', 0777, true);
+        file_put_contents($this->root . '/storage/quarantine/docs/history.pdf', '%PDF-1.4');
+        file_put_contents($this->root . '/storage/quarantine/docs/gone.pdf', '%PDF-1.4'); // версии с ним уже нет
+
+        [$code, $out] = $this->gc(['--dry-run']);
+        $this->assertSame(0, $code, $out);
+        $this->assertStringContainsString('would quarantine /uploads/docs/old-public.pdf', $out);
+        $this->assertStringContainsString('would purge quarantined /uploads/docs/gone.pdf', $out);
+        $this->assertFileExists($this->uploads . '/docs/old-public.pdf');
+        $this->assertFileExists($this->root . '/storage/quarantine/docs/gone.pdf');
+
+        [$code, $out] = $this->gc();
+        $this->assertSame(0, $code, $out);
+        $this->assertFileDoesNotExist($this->uploads . '/docs/old-public.pdf', 'с сайта убран');
+        $this->assertFileExists($this->root . '/storage/quarantine/docs/old-public.pdf', 'но для отката сохранён');
+        $this->assertFileExists($this->root . '/storage/quarantine/docs/history.pdf');
+        $this->assertFileDoesNotExist($this->root . '/storage/quarantine/docs/gone.pdf');
+        $this->assertFileExists($this->uploads . '/docs/keep.pdf');
+        $this->assertFileExists($this->uploads . '/docs/other.pdf', 'ссылка из текста — тоже ссылка');
+    }
+
     public function test_no_versions_at_all_aborts_unless_forced(): void
     {
         $this->data(0);

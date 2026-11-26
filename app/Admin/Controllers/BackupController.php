@@ -9,7 +9,8 @@ use Groza\Http\Response;
 use Groza\Support\Csrf;
 
 /**
- * «Скачать резервную копию»: zip с data/*.json (без users и auth-meta — хешей паролей) и uploads/img, uploads/docs.
+ * «Скачать резервную копию»: zip с data/*.json (без users и auth-meta — хешей паролей), uploads/img, uploads/docs
+ * и quarantine/img, quarantine/docs (файлы, нужные только истории: без них откат из копии дал бы битые ссылки).
  * Архив собирается во временном файле в storage/tmp, отдаётся потоком и сразу удаляется. Состояния не меняет, поэтому GET.
  */
 final class BackupController
@@ -75,17 +76,18 @@ final class BackupController
                 $zip->addFile($path, 'data/' . $name . '.json');
             }
         }
-        $uploads = $this->app->uploadsDir();
-        foreach (['img', 'docs'] as $kind) {
-            foreach (glob($uploads . '/' . $kind . '/*') ?: [] as $path) {
-                $file = basename($path);
-                // только обычные файлы с «нашими» именами: ни ссылок, ни скрытых, ни путей наружу
-                if (!is_file($path) || is_link($path) || preg_match('/^[A-Za-z0-9_][A-Za-z0-9._-]*$/', $file) !== 1 || str_contains($file, '..')) {
-                    continue;
+        foreach (['uploads' => $this->app->uploadsDir(), 'quarantine' => $this->app->quarantineDir()] as $prefix => $dir) {
+            foreach (['img', 'docs'] as $kind) {
+                foreach (glob($dir . '/' . $kind . '/*') ?: [] as $path) {
+                    $file = basename($path);
+                    // только обычные файлы с «нашими» именами: ни ссылок, ни скрытых, ни путей наружу
+                    if (!is_file($path) || is_link($path) || preg_match('/^[A-Za-z0-9_][A-Za-z0-9._-]*$/', $file) !== 1 || str_contains($file, '..')) {
+                        continue;
+                    }
+                    $entry = $prefix . '/' . $kind . '/' . $file;
+                    $zip->addFile($path, $entry);
+                    $zip->setCompressionName($entry, \ZipArchive::CM_STORE); // фото и PDF уже сжаты
                 }
-                $entry = 'uploads/' . $kind . '/' . $file;
-                $zip->addFile($path, $entry);
-                $zip->setCompressionName($entry, \ZipArchive::CM_STORE); // фото и PDF уже сжаты
             }
         }
     }

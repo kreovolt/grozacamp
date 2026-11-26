@@ -58,10 +58,20 @@ final class HistoryController
         if ($r->post('confirm') !== '1') {
             return $this->render(null, self::MSG_CONFIRM, $version, 422);
         }
+        // Файлы возвращаемой версии, убранные в карантин, — сначала обратно на сайт; файлы нынешнего состояния, которые
+        // после отката не нужны сайту, — в карантин (нынешнее состояние само станет версией, его можно вернуть)
+        $raw = $store->versionRaw($name, $version);
+        $before = $store->raw($name);
+        if ($raw !== null) {
+            $this->app->reviveUploads([$raw]);
+        }
         try {
             $store->restore($name, $version, $this->app->actor());
         } catch (\InvalidArgumentException) {
             return $this->page('admin/not-found', ['heading' => 'Не получилось', 'message' => 'Эту версию вернуть нельзя.'], 400);
+        }
+        if ($before !== null) {
+            $this->app->discardUploads(array_keys($this->app->uploads()->referencedIn([$before])));
         }
         $this->app->audit()->record($this->app->actor(), 'restore', $name . ':' . $version);
 
