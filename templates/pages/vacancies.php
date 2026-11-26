@@ -56,7 +56,7 @@ $shot = static function (string $key, string $sizes): string {
           'ratio' => '4/3',
           'tilt' => 'right',
           'caption' => 'Футбол на поляне',
-          'class' => 'relative z-20 -ml-[10%] mt-14 w-[48%] shrink-0',
+          'class' => 'relative z-20 -ml-[2%] mt-14 w-[48%] shrink-0 desk:-ml-[10%]', // 1024–1199: колонка узкая, при большом нахлёсте снимок закрывал подпись первого
       ]) ?>
     </div>
   </div>
