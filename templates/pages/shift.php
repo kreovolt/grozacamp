@@ -88,7 +88,7 @@ $fact = static fn (string $name, string $value): string => '<div class="border-t
 ?>
 <section class="on-dark relative isolate overflow-hidden bg-forest text-cream" data-block="hero" aria-labelledby="shift-title">
   <?= $this->partial('components/topo', ['class' => 'pointer-events-none absolute inset-0 -z-10 h-full w-full text-sand opacity-[0.14]']) ?>
-  <div class="wrap grid gap-10 pb-14 pt-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-center lg:gap-14 desk:pb-20 desk:pt-12">
+  <div class="wrap grid grid-cols-1 gap-10 pb-14 pt-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-center lg:gap-14 desk:pb-20 desk:pt-12">
     <div>
       <?= $this->partial('partials/breadcrumbs', ['items' => [['label' => 'Главная', 'href' => '/'], ['label' => 'Купить путёвку', 'href' => '/booking/'], ['label' => $title]], 'tone' => 'dark', 'class' => 'mb-8']) ?>
       <?php if ($past): ?>
@@ -149,7 +149,7 @@ $fact = static fn (string $name, string $value): string => '<div class="border-t
 
 <?php if ($activities !== [] || $body !== '' || $groups !== []): ?>
   <section class="<?= $section ?>" data-block="program" aria-labelledby="program-title">
-    <div class="wrap grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-16">
+    <div class="wrap grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-16">
       <?php if ($activities !== []): ?>
         <div>
           <?= $this->partial('components/section-head', ['title' => 'Чем займёмся', 'id' => 'program-title']) ?>
@@ -190,7 +190,7 @@ $fact = static fn (string $name, string $value): string => '<div class="border-t
 
 <?php if (!empty($venue['name'])): ?>
   <section class="bg-sand-deep <?= $section ?>" data-block="venue" aria-labelledby="venue-title">
-    <div class="wrap grid gap-8 lg:grid-cols-[minmax(0,19rem)_minmax(0,1fr)] lg:gap-12">
+    <div class="wrap grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,19rem)_minmax(0,1fr)] lg:gap-12">
       <div>
         <?= $this->partial('components/section-head', ['title' => 'Где проходит', 'id' => 'venue-title']) ?>
         <p class="mt-6 font-display text-[1.5rem] font-bold uppercase leading-tight tracking-[0.02em] text-ink"><?= t((string) $venue['name']) ?></p>
@@ -236,7 +236,7 @@ $fact = static fn (string $name, string $value): string => '<div class="border-t
 
 <?php if ($faq !== []): ?>
   <section class="bg-paper <?= $section ?>" data-block="faq" aria-labelledby="faq-title">
-    <div class="wrap grid gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16">
+    <div class="wrap grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16">
       <?= $this->partial('components/section-head', ['title' => 'Частые вопросы', 'id' => 'faq-title']) ?>
       <?= $this->partial('components/faq-list', ['items' => $faq]) ?>
     </div>

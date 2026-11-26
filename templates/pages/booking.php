@@ -32,7 +32,7 @@ $hours = array_values(array_filter([$settings['hoursWeekdays'] ?? '', $settings[
 ?>
 <section class="on-dark relative isolate overflow-hidden bg-forest text-cream" data-block="hero" aria-labelledby="booking-title">
   <?= $this->partial('components/topo', ['class' => 'pointer-events-none absolute inset-0 -z-10 h-full w-full text-sand opacity-[0.14]']) ?>
-  <div class="wrap grid gap-10 pb-14 pt-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:items-end lg:gap-16 desk:pb-20 desk:pt-12">
+  <div class="wrap grid grid-cols-1 gap-10 pb-14 pt-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:items-end lg:gap-16 desk:pb-20 desk:pt-12">
     <div>
       <?= $this->partial('partials/breadcrumbs', ['items' => [['label' => 'Главная', 'href' => '/'], ['label' => 'Купить путёвку']], 'tone' => 'dark', 'class' => 'mb-8']) ?>
       <h1 class="font-display text-[clamp(2.25rem,1.5rem+3vw,4rem)] font-bold uppercase leading-[1.05] tracking-[0.01em] text-[#f4efe3]" id="booking-title">Купить путёвку</h1>
@@ -77,7 +77,7 @@ $hours = array_values(array_filter([$settings['hoursWeekdays'] ?? '', $settings[
         'id' => 'smeny-title',
     ]) ?>
     <?php if ($shifts !== []): ?>
-      <div class="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3 desk:gap-8" data-reveal>
+      <div class="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 desk:gap-8" data-reveal>
         <?php foreach ($shifts as $shift): ?>
           <?= $this->partial('components/shift-card', [
               'shift' => $shift,
@@ -96,7 +96,7 @@ $hours = array_values(array_filter([$settings['hoursWeekdays'] ?? '', $settings[
 </section>
 
 <section class="bg-sand-deep <?= $section ?> scroll-mt-4" id="zayavka" data-block="request" aria-labelledby="zayavka-title">
-  <div class="wrap grid gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16">
+  <div class="wrap grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16">
     <div>
       <?= $this->partial('components/section-head', [
           'title' => 'Оставьте заявку',
@@ -127,7 +127,7 @@ $hours = array_values(array_filter([$settings['hoursWeekdays'] ?? '', $settings[
 
 <?php if ($faq !== []): ?>
   <section class="bg-paper <?= $section ?>" data-block="faq" aria-labelledby="faq-title">
-    <div class="wrap grid gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16">
+    <div class="wrap grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16">
       <?= $this->partial('components/section-head', ['title' => 'Частые вопросы', 'id' => 'faq-title']) ?>
       <?= $this->partial('components/faq-list', ['items' => $faq]) ?>
     </div>

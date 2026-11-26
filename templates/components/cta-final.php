@@ -31,9 +31,9 @@ $hours = array_values(array_filter([$settings['hoursWeekdays'] ?? '', $settings[
   <?php endif ?>
   <?= $this->partial('components/topo', ['class' => 'pointer-events-none absolute inset-0 -z-10 h-full w-full text-sand opacity-[0.16]']) ?>
 
-  <div class="wrap grid items-end gap-10 py-16 sm:py-20 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] desk:py-28">
+  <div class="wrap grid grid-cols-1 items-end gap-10 py-16 sm:py-20 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] desk:py-28">
     <div>
-      <h2 class="font-display text-[clamp(2.5rem,1.6rem+3.6vw,4.5rem)] font-bold uppercase leading-[1.08] tracking-[0.01em] text-cream"<?= !empty($id) ? ' id="' . e($id) . '"' : '' ?>><?= t($title) ?></h2>
+      <h2 class="font-display text-[clamp(2rem,1.25rem+3.4vw,4.25rem)] font-bold uppercase leading-[1.08] tracking-[0.01em] text-cream"<?= !empty($id) ? ' id="' . e($id) . '"' : '' ?>><?= t($title) ?></h2>
       <?php if (!empty($lead)): ?>
         <p class="mt-5 max-w-[46ch] text-[1.0625rem] leading-relaxed text-cream/85 sm:text-lg"><?= t($lead) ?></p>
       <?php endif ?>

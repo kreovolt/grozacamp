@@ -31,7 +31,7 @@ $shot = static function (string $key, string $sizes): string {
 ?>
 <section class="on-dark relative isolate overflow-hidden bg-forest text-cream" data-block="hero" aria-labelledby="vac-title">
   <?= $this->partial('components/topo', ['class' => 'pointer-events-none absolute inset-0 -z-10 h-full w-full text-sand opacity-[0.14]']) ?>
-  <div class="wrap grid gap-10 pb-14 pt-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:items-center lg:gap-16 desk:pb-20 desk:pt-12">
+  <div class="wrap grid grid-cols-1 gap-10 pb-14 pt-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:items-center lg:gap-16 desk:pb-20 desk:pt-12">
     <div>
       <?= $this->partial('partials/breadcrumbs', ['items' => [['label' => 'Главная', 'href' => '/'], ['label' => 'Вакансии']], 'tone' => 'dark', 'class' => 'mb-8']) ?>
       <h1 class="font-display text-[clamp(2.25rem,1.5rem+3vw,4rem)] font-bold uppercase leading-[1.05] tracking-[0.01em] text-[#f4efe3]" id="vac-title">Вакансии</h1>
@@ -70,7 +70,7 @@ $shot = static function (string $key, string $sizes): string {
     <?php endif ?>
 
     <?php if ($vacancies !== []): ?>
-      <ul class="mt-10 grid gap-6 md:grid-cols-2 desk:gap-8" role="list" data-reveal>
+      <ul class="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2 desk:gap-8" role="list" data-reveal>
         <?php foreach ($vacancies as $v): ?>
           <?php
           $title = Fields::line($v['title'] ?? '');
@@ -108,7 +108,7 @@ $shot = static function (string $key, string $sizes): string {
 
 <?php if ($benefits !== '' || $selection !== ''): ?>
   <section class="bg-sand-deep <?= $section ?>" data-block="offer" aria-label="Что даём и как проходит отбор">
-    <div class="wrap grid gap-12 lg:grid-cols-2 lg:gap-16">
+    <div class="wrap grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-16">
       <?php if ($benefits !== ''): ?>
         <div>
           <?= $this->partial('components/section-head', ['title' => 'Что даём', 'id' => 'benefits-title']) ?>
@@ -126,7 +126,7 @@ $shot = static function (string $key, string $sizes): string {
 <?php endif ?>
 
 <section class="<?= $section ?> scroll-mt-4" id="anketa" data-block="form" aria-labelledby="anketa-title">
-  <div class="wrap grid gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16">
+  <div class="wrap grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16">
     <?= $this->partial('components/section-head', [
         'title' => 'Анкета',
         'lead' => 'Несколько коротких полей: должность, как с вами связаться и пара слов об опыте.',

@@ -125,7 +125,7 @@ $steps = [
     </div>
 
     <?php if ($shifts !== []): ?>
-      <div class="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3 desk:gap-8" data-reveal>
+      <div class="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 desk:gap-8" data-reveal>
         <?php foreach ($shifts as $shift): ?>
           <?= $this->partial('components/shift-card', [
               'shift' => $shift,
@@ -145,14 +145,14 @@ $steps = [
 
 <?php /* 4. Что тебя ждёт — для ребят */ ?>
 <section class="overflow-hidden bg-sand-deep <?= $section ?>" data-block="kids" aria-labelledby="kids-title">
-  <div class="wrap grid items-center gap-14 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-14 desk:gap-20">
+  <div class="wrap grid grid-cols-1 items-center gap-14 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-14 desk:gap-20">
     <div class="lg:order-2">
       <?= $this->partial('components/section-head', [
           'title' => 'Что тебя ждёт',
           'lead' => 'Днём — занятия на природе, вечером — сцена, дискотеки и костёр. И отряд, который к концу смены станет твоей командой.',
           'id' => 'kids-title',
       ]) ?>
-      <ul class="mt-10 grid gap-x-10 sm:grid-cols-2" role="list" data-reveal>
+      <ul class="mt-10 grid grid-cols-1 gap-x-10 sm:grid-cols-2" role="list" data-reveal>
         <?php foreach ($kids as [$title, $text]): ?>
           <li class="border-t border-dashed border-moss/50 py-5">
             <h3 class="font-display text-[1.1875rem] font-semibold uppercase leading-tight tracking-[0.04em] text-ink"><?= t($title) ?></h3>
@@ -191,7 +191,7 @@ $steps = [
 <?php /* 5. Спокойно за ребёнка — для родителей */ ?>
 <section class="on-dark relative overflow-hidden bg-forest text-cream <?= $section ?>" data-block="care" aria-labelledby="care-title">
   <?= $this->partial('components/topo', ['class' => 'pointer-events-none absolute inset-0 h-full w-full text-sand opacity-[0.08]']) ?>
-  <div class="wrap relative grid gap-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-16 desk:gap-24">
+  <div class="wrap relative grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-16 desk:gap-24">
     <div>
       <?= $this->partial('components/section-head', [
           'title' => 'Спокойно за ребёнка',
@@ -219,7 +219,7 @@ $steps = [
     </div>
 
     <div class="lg:pt-2">
-      <ul class="grid gap-x-10 sm:grid-cols-2" role="list" data-reveal>
+      <ul class="grid grid-cols-1 gap-x-10 sm:grid-cols-2" role="list" data-reveal>
         <?php foreach ($care as [$title, $html]): ?>
           <li class="border-t border-dashed border-sage/35 py-6">
             <h3 class="font-display text-xl font-semibold uppercase leading-tight tracking-[0.03em] text-gold"><?= t($title) ?></h3>
@@ -235,7 +235,7 @@ $steps = [
 <?php /* 6. Как проходит смена + распорядок дня */ ?>
 <section class="<?= $section ?>" data-block="steps" aria-labelledby="steps-title">
   <div class="wrap">
-    <div class="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] lg:gap-16">
+    <div class="grid grid-cols-1 items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] lg:gap-16">
       <div>
         <?= $this->partial('components/section-head', ['title' => 'Как проходит смена', 'id' => 'steps-title']) ?>
         <?= $this->partial('components/steps', ['steps' => $steps, 'class' => 'mt-10']) ?>
@@ -322,7 +322,7 @@ $steps = [
         }
         $titles = implode(', ', array_map(static fn (string $t): string => '«' . $t . '»', array_unique($base['shifts'])));
         ?>
-        <div class="mt-10 grid gap-8 lg:grid-cols-[minmax(0,19rem)_minmax(0,1fr)] lg:gap-12">
+        <div class="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,19rem)_minmax(0,1fr)] lg:gap-12">
           <div class="lg:pt-2">
             <h3 class="font-display text-[1.75rem] font-bold uppercase leading-tight tracking-[0.02em] text-ink"><?= t((string) ($venue['name'] ?? '')) ?></h3>
             <?php if (!empty($venue['address'])): ?>
@@ -371,7 +371,7 @@ $steps = [
     <div class="wrap">
       <?= $this->partial('components/section-head', ['title' => 'Что говорят родители', 'id' => 'reviews-title']) ?>
       <?php if ($reviews !== []): ?>
-        <div data-reveal class="mt-10 grid items-start gap-x-14 gap-y-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
+        <div data-reveal class="mt-10 grid grid-cols-1 items-start gap-x-14 gap-y-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
           <?= $this->partial('components/review', ['review' => $reviews[0], 'featured' => true]) ?>
           <?php if (count($reviews) > 1): ?>
             <div class="divide-y divide-dashed divide-moss/45 border-y border-dashed border-moss/45">
@@ -404,7 +404,7 @@ $steps = [
 <?php /* 11. Частые вопросы */ ?>
 <?php if ($faq !== []): ?>
   <section class="bg-paper <?= $section ?>" data-block="faq" aria-labelledby="faq-title">
-    <div class="wrap grid gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16">
+    <div class="wrap grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16">
       <div>
         <?= $this->partial('components/section-head', [
             'title' => 'Частые вопросы',

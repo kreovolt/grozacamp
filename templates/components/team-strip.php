@@ -23,7 +23,7 @@ $initials = static function (string $name): string {
     return implode('', array_reverse($letters));
 };
 ?>
-<ul class="<?= e(trim('grid gap-x-10 sm:grid-cols-2 lg:grid-cols-3 ' . ($class ?? ''))) ?>" role="list">
+<ul class="<?= e(trim('grid grid-cols-1 gap-x-10 sm:grid-cols-2 lg:grid-cols-3 ' . ($class ?? ''))) ?>" role="list">
   <?php foreach (array_values($members) as $i => $member): ?>
     <?php
     $name = (string) ($member['name'] ?? '');

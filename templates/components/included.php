@@ -17,8 +17,8 @@ if ($items === []) {
     return;
 }
 ?>
-<div class="<?= e(trim('grid overflow-hidden rounded-card bg-paper shadow-card lg:grid-cols-[minmax(0,1fr)_22rem] ' . ($class ?? ''))) ?>">
-  <ul class="grid content-center gap-x-10 gap-y-6 p-6 sm:grid-cols-2 sm:p-10" role="list">
+<div class="<?= e(trim('grid grid-cols-1 overflow-hidden rounded-card bg-paper shadow-card lg:grid-cols-[minmax(0,1fr)_22rem] ' . ($class ?? ''))) ?>">
+  <ul class="grid grid-cols-1 content-center gap-x-10 gap-y-6 p-6 sm:grid-cols-2 sm:p-10" role="list">
     <?php foreach ($items as $item): ?>
       <li class="flex gap-3.5 leading-snug">
         <?= icon('check', 'mt-0.5 size-5 text-moss') ?>

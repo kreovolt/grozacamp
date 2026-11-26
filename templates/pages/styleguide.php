@@ -47,7 +47,7 @@ $swatches = [
     '5 раз|питание в день',
 ]]) ?>
 
-<section class="wrap grid items-center gap-12 py-16 lg:grid-cols-[1fr_1.3fr] desk:py-24">
+<section class="wrap grid grid-cols-1 items-center gap-12 py-16 lg:grid-cols-[1fr_1.3fr] desk:py-24">
   <?= $this->partial('components/section-head', [
       'kicker' => 'Маршрут смены',
       'title' => 'Как проходит смена',
@@ -61,7 +61,7 @@ $swatches = [
 </section>
 
 <section class="border-t border-sand-deep bg-paper">
-  <div class="wrap grid gap-12 py-16 lg:grid-cols-2">
+  <div class="wrap grid grid-cols-1 gap-12 py-16 lg:grid-cols-2">
     <div>
       <h2 class="font-display text-2xl font-bold uppercase">Кнопки</h2>
       <div class="mt-6 flex flex-wrap items-center gap-3">

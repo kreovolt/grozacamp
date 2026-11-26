@@ -34,7 +34,7 @@ $label = 'text-[0.8125rem] font-semibold uppercase tracking-[0.1em] text-ink-sof
   </div>
 </section>
 
-<div class="wrap grid gap-10 py-12 sm:py-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:gap-16 desk:py-20" data-block="contacts">
+<div class="wrap grid grid-cols-1 gap-10 py-12 sm:py-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:gap-16 desk:py-20" data-block="contacts">
   <ul class="border-t border-dashed border-moss/45" role="list">
     <?php if ($phone !== ''): ?>
       <li class="<?= $row ?>">

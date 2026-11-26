@@ -27,7 +27,7 @@ $h2 = 'font-display text-[clamp(1.5rem,1.2rem+1.1vw,2.125rem)] font-bold upperca
 ?>
 <section class="on-dark relative isolate overflow-hidden bg-forest text-cream" data-block="hero" aria-labelledby="info-title">
   <?= $this->partial('components/topo', ['class' => 'pointer-events-none absolute inset-0 -z-10 h-full w-full text-sand opacity-[0.14]']) ?>
-  <div class="wrap grid gap-10 pb-14 pt-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:items-center lg:gap-16 desk:pb-20 desk:pt-12">
+  <div class="wrap grid grid-cols-1 gap-10 pb-14 pt-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:items-center lg:gap-16 desk:pb-20 desk:pt-12">
     <div>
       <?= $this->partial('partials/breadcrumbs', ['items' => [['label' => 'Главная', 'href' => '/'], ['label' => 'Информация для родителей']], 'tone' => 'dark', 'class' => 'mb-8']) ?>
       <h1 class="font-display text-[clamp(2.25rem,1.5rem+3vw,4rem)] font-bold uppercase leading-[1.05] tracking-[0.01em] text-[#f4efe3]" id="info-title"><?= t('Информация для родителей') ?></h1>
@@ -52,7 +52,7 @@ $h2 = 'font-display text-[clamp(1.5rem,1.2rem+1.1vw,2.125rem)] font-bold upperca
   </div>
 </section>
 
-<div class="wrap grid gap-8 py-12 sm:py-16 lg:grid-cols-[minmax(0,17rem)_minmax(0,1fr)] lg:gap-16 desk:py-20" data-block="content">
+<div class="wrap grid grid-cols-1 gap-8 py-12 sm:py-16 lg:grid-cols-[minmax(0,17rem)_minmax(0,1fr)] lg:gap-16 desk:py-20" data-block="content">
   <?= $this->partial('components/toc', ['items' => $toc]) ?>
 
   <div class="min-w-0 max-w-[48rem]">
@@ -77,7 +77,7 @@ $h2 = 'font-display text-[clamp(1.5rem,1.2rem+1.1vw,2.125rem)] font-bold upperca
           <?php if ($s['items'] === []): ?>
             <p class="mt-5 leading-relaxed"><?= pending('') ?></p>
           <?php else: ?>
-            <ul class="mt-5 grid gap-x-10 border-t border-dashed border-moss/45 sm:grid-cols-2" role="list">
+            <ul class="mt-5 grid grid-cols-1 gap-x-10 border-t border-dashed border-moss/45 sm:grid-cols-2" role="list">
               <?php foreach ($s['items'] as $item): ?>
                 <li class="flex gap-3.5 border-b border-dashed border-moss/45 py-3.5 leading-snug">
                   <?= icon('check', 'mt-0.5 size-5 shrink-0 text-moss') ?>

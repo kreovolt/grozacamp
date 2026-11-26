@@ -34,7 +34,7 @@ $withToc = count($toc) >= 2;
   </div>
 </section>
 
-<div class="wrap grid gap-8 py-12 sm:py-16 <?= $withToc ? 'lg:grid-cols-[minmax(0,17rem)_minmax(0,1fr)] lg:gap-16' : '' ?> desk:py-20" data-block="text">
+<div class="wrap grid grid-cols-1 gap-8 py-12 sm:py-16 <?= $withToc ? 'lg:grid-cols-[minmax(0,17rem)_minmax(0,1fr)] lg:gap-16' : '' ?> desk:py-20" data-block="text">
   <?php if ($withToc): ?>
     <?= $this->partial('components/toc', ['items' => $toc]) ?>
   <?php endif ?>

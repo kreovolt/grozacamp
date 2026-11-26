@@ -19,7 +19,7 @@ foreach ($sections as $i => $s):
   <?php endif ?>
   <dl class="mt-5 border-t border-dashed border-moss/45">
     <?php foreach ($s['rows'] as $r): ?>
-      <div class="grid gap-x-10 gap-y-2 border-b border-dashed border-moss/45 py-5 <?= $r['wide'] ? '' : 'md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]' ?>" data-item="<?= e($r['item']) ?>">
+      <div class="grid grid-cols-1 gap-x-10 gap-y-2 border-b border-dashed border-moss/45 py-5 <?= $r['wide'] ? '' : 'md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]' ?>" data-item="<?= e($r['item']) ?>">
         <dt class="text-[0.9375rem] leading-relaxed text-ink-soft"><span class="sved-par mr-1.5 whitespace-nowrap font-display text-[0.875rem] font-semibold tracking-[0.08em] text-rust-deep">п. <?= e($r['paragraph']) ?></span><?= t($r['full']) ?></dt>
         <dd class="richtext min-w-0 leading-relaxed text-ink"><?= $r['value'] ?></dd>
       </div>
