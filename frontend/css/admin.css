@@ -235,6 +235,7 @@
   /* Липкая полоса «Сохранить / Закрыть» — всегда одна строка (на телефоне 68 px, а не 133) и непрозрачная: поля формы под ней не просвечивают */
   .actions--sticky { @apply sticky bottom-0 -mx-4 mt-4 flex-nowrap gap-2 border-t border-sand-deep bg-paper px-4 py-2.5 sm:-mx-6 sm:gap-3 sm:px-6 sm:py-3; }
   .actions-delete { @apply mt-3; }
+  .actions-delete .btn { @apply pl-0; } /* текст «Удалить» по левому краю формы, как кнопки над ним */
 }
 
 /* Цвета нажатой кнопки статуса — вне @layer: имена классов собираются в PHP, Tailwind их в шаблонах не увидит и вычистил бы */
