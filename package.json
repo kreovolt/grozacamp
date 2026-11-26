@@ -12,7 +12,8 @@
     "lint:php": "node scripts/php.mjs vendor/bin/phpcs --runtime-set installed_paths vendor/phpcompatibility/php-compatibility,vendor/phpcsstandards/phpcsutils",
     "lint:syntax": "node scripts/lint-syntax.mjs",
     "test:node": "node --test tests/node/scripts.test.mjs",
-    "lint": "npm run lint:syntax && npm run lint:php"
+    "lint": "npm run lint:syntax && npm run lint:php",
+    "export:pages": "node scripts/export-pages.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.1",
