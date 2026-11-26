@@ -65,6 +65,9 @@
   .back { @apply mt-6 text-sm; }
   /* «← Разделы», «Сменить пароль», «Посмотреть на сайте»: зона нажатия 44 px на телефоне */
   .back a, .where a { @apply inline-flex min-h-11 items-center; }
+  /* Название админки и названия записей в списках: зона нажатия 44 px по высоте невидимым ::after, строки не раздвигаются */
+  .admin-brand, .row__title a { position: relative; }
+  .admin-brand::after, .row__title a::after { content: ''; position: absolute; inset: -0.5rem 0; }
 
   /* ---- Админка: разделы, списки, формы правки ---- */
   .lead { @apply mb-6 text-lg; }
