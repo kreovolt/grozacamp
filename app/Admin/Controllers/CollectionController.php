@@ -14,6 +14,7 @@ use Groza\Domain\Validator;
 use Groza\Http\Request;
 use Groza\Http\Response;
 use Groza\Pages\SvedeniyaPage;
+use Groza\Readiness\Readiness;
 use Groza\Support\Csrf;
 
 /**
@@ -40,6 +41,9 @@ final class CollectionController
     /** Не больше стольких новых фото за одно сохранение галереи. */
     private const NEW_PHOTOS_MAX = 20;
     private const PLACEHOLDER = 'pending-upload';
+    /** Коллекции, от которых зависит «Готовность к проверке» (пункты приказа № 201). */
+    private const READINESS_COLLECTIONS = ['shifts', 'venues', 'team', 'documents'];
+    public const READINESS_TAIL = ' — сайт перестанет соответствовать приказу. Сохранить всё равно?';
 
     public function __construct(private App $app)
     {
@@ -174,14 +178,29 @@ final class CollectionController
             return $this->editPage($name, $id, $display, $errors, 422, null, false, $postedHash);
         }
 
-        // 2. Всё верно — только теперь принимаем файлы (описание делает сервер)
+        // 2. Обязательный пункт приказа не должен пропасть с сайта молча (спека §10.4): без отметки «Сохранить всё равно» — вопрос
+        if (!self::confirmedReadiness($r)) {
+            $candidate = $items;
+            $draft = $data + ['id' => $isNew ? 'new' : $id];
+            if ($isNew) {
+                $candidate[] = $draft;
+            } else {
+                $candidate[$index] = $draft;
+            }
+            $lost = $this->readinessLost($name, $items, $candidate);
+            if ($lost !== []) {
+                return $this->editPage($name, $id, $display, [], 422, null, false, $postedHash, null, $lost);
+            }
+        }
+
+        // 3. Всё верно — только теперь принимаем файлы (описание делает сервер)
         $created = [];
         $uploadErrors = $this->storeUploads($def, $pending, $alts, $data, $created);
         if ($uploadErrors) {
             return $this->editPage($name, $id, $display, $uploadErrors, 422, null, false, $postedHash);
         }
 
-        // 3. Запись с проверкой хеша
+        // 4. Запись с проверкой хеша
         $now = $this->app->clock()->now()->format('c');
         $actor = $this->app->actor();
         $record = $data + ['id' => $isNew ? $this->newId($items) : $id, 'updatedAt' => $now, 'updatedBy' => $actor];
@@ -202,7 +221,7 @@ final class CollectionController
             throw $e;
         }
 
-        // 4. Сохранено: старые файлы, которые заменены или убраны, больше не нужны
+        // 5. Сохранено: старые файлы, которые заменены или убраны, больше не нужны
         $this->discard(array_diff($this->fileRefs($def, $existing), $this->fileRefs($def, $record)));
         $this->app->audit()->record($actor, $name . ($isNew ? '.create' : '.update'), $record['id']);
 
@@ -238,15 +257,23 @@ final class CollectionController
             return $this->deletePage($name, $item);
         }
         $removed = null;
-        $this->mutate($name, function (array $items) use ($id, &$removed): array {
+        $lost = [];
+        $confirmed = self::confirmedReadiness($r);
+        $this->mutate($name, function (array $items) use ($name, $id, $confirmed, &$removed, &$lost): ?array {
+            $removed = null;
             foreach ($items as $i) {
                 if (($i['id'] ?? null) === $id) {
                     $removed = $i;
                 }
             }
+            $new = array_values(array_filter($items, static fn (array $i): bool => ($i['id'] ?? null) !== $id));
+            $lost = $confirmed ? [] : $this->readinessLost($name, $items, $new);
 
-            return array_values(array_filter($items, static fn (array $i): bool => ($i['id'] ?? null) !== $id));
+            return $lost === [] ? $new : null;
         });
+        if ($lost !== []) {
+            return $this->readinessPage($name, $item, '/admin/' . $name . '/' . $id . '/delete/', ['confirm' => '1'], 'Удалить всё равно', $lost);
+        }
         if ($removed !== null) {
             $this->discard($this->fileRefs(Collections::get($name), $removed));
             $this->app->audit()->record($this->app->actor(), $name . '.delete', $id);
@@ -356,8 +383,11 @@ final class CollectionController
         $value = $field === 'hidden' ? $state === 'hide' : $state === 'show';
         $actor = $this->app->actor();
         $now = $this->app->clock()->now()->format('c');
-        $changed = $this->mutate($name, function (array $items) use ($id, $field, $value, $actor, $now): ?array {
+        $lost = [];
+        $confirmed = self::confirmedReadiness($r);
+        $changed = $this->mutate($name, function (array $items) use ($name, $id, $field, $value, $actor, $now, $confirmed, &$lost): ?array {
             $hit = false;
+            $before = $items;
             foreach ($items as $i => $item) {
                 if (($item['id'] ?? null) === $id && (($item[$field] ?? null) !== $value)) {
                     $items[$i][$field] = $value;
@@ -366,9 +396,13 @@ final class CollectionController
                     $hit = true;
                 }
             }
+            $lost = $hit && !$confirmed ? $this->readinessLost($name, $before, $items) : [];
 
-            return $hit ? $items : null;
+            return $hit && $lost === [] ? $items : null;
         });
+        if ($lost !== []) {
+            return $this->readinessPage($name, (array) $this->find($name, $id), '/admin/' . $name . '/' . $id . '/visibility/', ['state' => (string) $state], 'Скрыть всё равно', $lost);
+        }
         if ($changed) {
             $this->app->audit()->record($actor, $name . '.visibility', $id);
         }
@@ -382,7 +416,8 @@ final class CollectionController
      * @param array<string,mixed> $values
      * @param array<string,string> $errors
      */
-    private function editPage(string $name, string $id, array $values, array $errors, int $status, ?string $banner = null, bool $saved = false, ?string $hash = null, ?string $basedOn = null): Response
+    /** @param list<string> $readiness пункты приказа, которые перестанут выполняться (нужна отметка «Сохранить всё равно») */
+    private function editPage(string $name, string $id, array $values, array $errors, int $status, ?string $banner = null, bool $saved = false, ?string $hash = null, ?string $basedOn = null, array $readiness = []): Response
     {
         $def = Collections::get($name);
         $isNew = $id === 'new';
@@ -415,6 +450,8 @@ final class CollectionController
             'summary' => $summary,
             'banner' => $banner,
             'saved' => $saved,
+            'readiness' => $readiness,
+            'readinessTail' => self::READINESS_TAIL,
             'hasRichtext' => (bool) array_filter($def['fields'], static fn (array $f): bool => $f['type'] === 'richtext'),
             'hasFiles' => (bool) array_filter($def['fields'], static fn (array $f): bool => in_array($f['type'], ['image', 'file'], true)),
             'siteUrl' => $pattern !== null ? $this->siteUrl($pattern, $item) : null,
@@ -439,6 +476,75 @@ final class CollectionController
             'id' => (string) $item['id'],
             'heading' => $this->itemTitle($def, $item),
         ]);
+    }
+
+    /**
+     * Вопрос перед удалением или скрытием, после которого не будет выполнен пункт приказа: та же отправка ещё раз,
+     * но с отметкой «Сохранить всё равно» (confirm_readiness=1).
+     *
+     * @param array<string,mixed> $item
+     * @param array<string,string> $hidden
+     * @param list<string> $lost
+     */
+    private function readinessPage(string $name, array $item, string $action, array $hidden, string $button, array $lost): Response
+    {
+        $def = Collections::get($name);
+
+        return $this->page('admin/readiness-confirm', [
+            'collection' => $name,
+            'def' => $def,
+            'heading' => $this->itemTitle($def, $item),
+            'action' => $action,
+            'hidden' => $hidden,
+            'button' => $button,
+            'lost' => $lost,
+            'tail' => self::READINESS_TAIL,
+        ], 422);
+    }
+
+    private static function confirmedReadiness(Request $r): bool
+    {
+        return $r->post('confirm_readiness') === '1';
+    }
+
+    /**
+     * Пункты приказа № 201, которые перестанут выполняться, если коллекция станет такой, как $after: обязательные пункты,
+     * которых не было среди невыполненных (был выполнен или пункта не было — например, у смены пропадёт база). Подписи — по-русски:
+     * «п. 9 б) Условия проживания: База „Лесная“». Коллекции, от которых готовность не зависит, не проверяются.
+     *
+     * @param list<array<string,mixed>> $before
+     * @param array<int,array<string,mixed>> $after
+     * @return list<string>
+     */
+    private function readinessLost(string $name, array $before, array $after): array
+    {
+        if (!in_array($name, self::READINESS_COLLECTIONS, true)) {
+            return [];
+        }
+        $data = Readiness::dataFrom($this->app);
+        $now = $this->app->clock()->now();
+        $failing = static function (array $items): array {
+            $out = [];
+            foreach ($items as $i) {
+                if ($i['level'] === 'required' && !$i['ok']) {
+                    $out[$i['id']] = $i;
+                }
+            }
+
+            return $out;
+        };
+        $data[$name] = ['items' => array_values($before)];
+        $was = $failing(Readiness::evaluate($data, $now));
+        $data[$name] = ['items' => array_values($after)];
+        $paragraphs = array_column(Readiness::order(), 'paragraph', 'id');
+        $lost = [];
+        foreach (array_diff_key($failing(Readiness::evaluate($data, $now)), $was) as $id => $i) {
+            $base = explode(':', (string) $id)[0];
+            $paragraph = $paragraphs[$base] ?? ($base === 'mto.venue' ? $paragraphs['mto.a'] : null);
+            $lost[] = ($paragraph !== null ? 'п. ' . $paragraph . ') ' : '') . $i['label'];
+        }
+
+        return $lost;
     }
 
     private function notFound(): Response

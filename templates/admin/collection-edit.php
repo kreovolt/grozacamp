@@ -10,6 +10,8 @@ declare(strict_types=1);
  * @var string $form
  * @var string $hash
  * @var list<array{id:string,label:string,message:string}> $summary
+ * @var list<string> $readiness пункты приказа № 201, которые перестанут выполняться после сохранения (нужно подтверждение)
+ * @var string $readinessTail
  * @var string|null $banner
  * @var bool $saved
  * @var bool $hasFiles
@@ -35,7 +37,7 @@ $action = '/admin/' . $collection . '/' . $id . '/';
 <?php if ($banner !== null): ?>
 <p class="alert alert-error" role="alert" id="form-banner" tabindex="-1"><?= e($banner) ?></p>
 <?php endif ?>
-<?php if ($hasFiles && ($banner !== null || $summary !== [])): ?>
+<?php if ($hasFiles && ($banner !== null || $summary !== [] || $readiness !== [])): ?>
 <p class="hint">Выбирали фото или файл? Выберите файл снова: браузер не хранит выбранные файлы после ошибки.</p>
 <?php endif ?>
 <?php if ($summary !== []): ?>
@@ -47,6 +49,9 @@ $action = '/admin/' . $collection . '/' . $id . '/';
 <?php endforeach ?>
   </ul>
 </div>
+<?php endif ?>
+<?php if ($readiness !== []): ?>
+<?= $this->partial('admin/_readiness-lost', ['lost' => $readiness, 'when' => 'После сохранения', 'tail' => $readinessTail, 'confirmId' => 'readiness-confirm']) ?>
 <?php endif ?>
 <div class="where card-soft">
   <p class="where__title">Где на сайте</p>
@@ -72,6 +77,11 @@ $action = '/admin/' . $collection . '/' . $id . '/';
   <input type="hidden" name="_hash" value="<?= e($hash) ?>">
   <p class="hint"><span class="req" aria-hidden="true">*</span> — обязательное поле</p>
 <?= $form ?>
+<?php if ($readiness !== []): ?>
+  <div class="confirm-empty" id="readiness-confirm">
+    <label class="choice choice--check"><input type="checkbox" name="confirm_readiness" value="1"> Сохранить всё равно</label>
+  </div>
+<?php endif ?>
   <div class="actions actions--sticky">
     <button type="submit" class="btn btn-primary">Сохранить</button>
     <a class="btn btn-ghost" href="/admin/<?= e($collection) ?>/">Закрыть</a>

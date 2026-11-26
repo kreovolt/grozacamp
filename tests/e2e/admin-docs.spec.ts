@@ -86,7 +86,13 @@ test('PDF в «Документы» с разделом «Учредительн
   expect((await page.request.get(url!)).status()).toBe(200);
   expect((await page.request.get(url2!)).status()).toBe(200);
 
-  await removeCurrent(page);
+  // единственные учредительные документы: после удаления п. 4 а не будет выполнен — админка спрашивает, ничего не удаляя
+  await page.getByRole('link', { name: 'Удалить' }).first().click();
+  await page.getByRole('button', { name: 'Да, удалить' }).click();
+  await expect(page.locator('#error-summary')).toContainText('После удаления не будет заполнен п. 4 а) Учредительные документы — сайт перестанет соответствовать приказу.');
+  await page.getByLabel('Сохранить всё равно').check();
+  await page.getByRole('button', { name: 'Удалить всё равно' }).click();
+  await expect(page).toHaveURL(/\?ok=delete$/);
   expect((await page.request.get(url2!)).status()).toBe(200); // запись удалена, но версия с ней — в истории
   await page.goto('/svedeniya/ob-organizacii/');
   await expect(page.locator('#dokumenty')).not.toContainText('Устав e2e');

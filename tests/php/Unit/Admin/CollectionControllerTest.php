@@ -96,10 +96,15 @@ final class CollectionControllerTest extends TestCase
         ];
     }
 
-    /** @param array<string,mixed> $files */
+    /**
+     * Тесты шлют неполную форму (только нужные им поля), а это стёрло бы остальные — вопрос о пунктах приказа здесь снят
+     * отметкой confirm_readiness (сам вопрос проверяет CollectionReadinessTest).
+     *
+     * @param array<string,mixed> $files
+     */
     private function save(string $id, array $post, array $files = [], string $collection = 'shifts'): Response
     {
-        return $this->app->handle(Request::create('POST', "/admin/$collection/$id/", [], ['_csrf' => Csrf::token()] + $post, [], $files));
+        return $this->app->handle(Request::create('POST', "/admin/$collection/$id/", [], ['_csrf' => Csrf::token()] + $post + ['confirm_readiness' => '1'], [], $files));
     }
 
     private function auditActions(): array

@@ -5,7 +5,8 @@ const DRAFT_PREFIX = 'draft:';
 const SAVE_EVERY_MS = 5000;
 const TYPING_PAUSE_MS = 1000;
 const KEEP_DAYS = 30;
-const SKIP = new Set(['_csrf', '_hash']);
+// отметки «сохранить всё равно» — решение на один раз: черновик их не хранит и не возвращает
+const SKIP = new Set(['_csrf', '_hash', 'confirm_readiness']);
 
 // localStorage может быть недоступен (приватное окно, запрет): тогда черновиков просто нет
 function store() {

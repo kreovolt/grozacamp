@@ -72,7 +72,8 @@ final class CollectionFilesTest extends TestCase
     /** @param array<string,mixed> $post @param array<string,mixed> $files */
     private function save(string $collection, string $id, array $post, array $files = []): Response
     {
-        return $this->app->handle(Request::create('POST', "/admin/$collection/$id/", [], ['_csrf' => Csrf::token(), '_hash' => $this->hash($collection)] + $post, [], $files));
+        // неполная форма стёрла бы остальные поля: вопрос о пунктах приказа снят отметкой (его проверяет CollectionReadinessTest)
+        return $this->app->handle(Request::create('POST', "/admin/$collection/$id/", [], ['_csrf' => Csrf::token(), '_hash' => $this->hash($collection)] + $post + ['confirm_readiness' => '1'], [], $files));
     }
 
     /** @return array<string,mixed> */
