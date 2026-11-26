@@ -7,7 +7,7 @@ declare(strict_types=1);
  *   php scripts/seed.php [--demo] [--target=DIR] [--force]
  *
  *   --demo        взять seed/demo (примеры для разработки и тестов) вместо seed/data
- *                 и положить демо-PDF из seed/files/demo в public/uploads/docs (если их там нет)
+ *                 и положить демо-PDF из seed/files/demo в папку загрузок /docs (если их там нет)
  *   --target=DIR  папка хранилища (в ней data/ и versions/); по умолчанию — storageDir из конфигурации
  *   --force       заменить и существующие файлы (прежние останутся в истории версий)
  *
@@ -45,7 +45,7 @@ $store = new JsonStore($target . '/data', $target . '/versions');
 
 try {
     $written = Seeder::seed($store, $seedDir, $force);
-    $copied = $demo ? Seeder::copyMissingFiles($root . '/seed/files/demo', $root . '/public/uploads/docs') : [];
+    $copied = $demo ? Seeder::copyMissingFiles($root . '/seed/files/demo', ((string) ($config['uploadsDir'] ?? '') ?: Layout::uploadsDir($root)) . '/docs') : [];
 } catch (Throwable $e) {
     fwrite(STDERR, 'seed: ' . $e->getMessage() . "\n");
     exit(1);
@@ -58,6 +58,6 @@ fwrite(STDOUT, sprintf(
     $written === [] ? 'всё уже на месте' : implode(', ', $written)
 ));
 if ($copied !== []) {
-    fwrite(STDOUT, 'seed: public/uploads/docs: ' . implode(', ', $copied) . "\n");
+    fwrite(STDOUT, 'seed: uploads/docs: ' . implode(', ', $copied) . "\n");
 }
 exit(0);

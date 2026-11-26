@@ -26,6 +26,7 @@ use Groza\Support\Csrf;
 use Groza\Support\RateLimiter;
 use Groza\Support\Clock;
 use Groza\Support\FixedClock;
+use Groza\Support\Layout;
 use Groza\Support\Session;
 use Groza\Support\SystemClock;
 use Groza\View\View;
@@ -304,11 +305,22 @@ final class App
         );
     }
 
-    /** Приём загруженных файлов: public/uploads (или config uploadsDir — для тестов). */
+    /**
+     * Папка загрузок (адрес на сайте — /uploads/): config uploadsDir, иначе по раскладке сайта (Layout: public/uploads
+     * или uploads в общей папке). Один источник для приёма файлов, резервной копии и уборки.
+     */
+    public function uploadsDir(): string
+    {
+        $dir = (string) ($this->config['uploadsDir'] ?? '');
+
+        return $dir !== '' ? rtrim($dir, '/\\') : Layout::uploadsDir((string) $this->config['rootDir']);
+    }
+
+    /** Приём загруженных файлов в uploadsDir(). */
     public function uploads(): Uploads
     {
         return $this->uploads ??= new Uploads(
-            (string) ($this->config['uploadsDir'] ?? $this->config['rootDir'] . '/public/uploads'),
+            $this->uploadsDir(),
             '/uploads',
             new ImageProcessor()
         );

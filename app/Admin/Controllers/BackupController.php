@@ -27,7 +27,7 @@ final class BackupController
         if (!$this->zip) {
             return $this->page('admin/not-found', [
                 'heading' => 'Резервная копия недоступна',
-                'message' => 'На сервере нет модуля zip — скачайте данные через хостинг (папки storage/data и public/uploads).',
+                'message' => 'На сервере нет модуля zip — скачайте данные через хостинг (папки storage/data и uploads).',
             ], 503);
         }
         $tmpDir = $this->app->config()['storageDir'] . '/tmp';
@@ -75,7 +75,7 @@ final class BackupController
                 $zip->addFile($path, 'data/' . $name . '.json');
             }
         }
-        $uploads = (string) ($this->app->config()['uploadsDir'] ?? $this->app->config()['rootDir'] . '/public/uploads');
+        $uploads = $this->app->uploadsDir();
         foreach (['img', 'docs'] as $kind) {
             foreach (glob($uploads . '/' . $kind . '/*') ?: [] as $path) {
                 $file = basename($path);
