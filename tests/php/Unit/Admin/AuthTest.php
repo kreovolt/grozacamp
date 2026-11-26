@@ -298,13 +298,73 @@ final class AuthTest extends TestCase
         $this->assertSame('/admin/login/?next=%2Fadmin%2Fshifts%2Flonely%2F', $res->header('Location'));
     }
 
-    public function test_unauthenticated_post_with_valid_token_redirects_to_login(): void
+    public function test_unauthenticated_post_with_valid_token_shows_expired_page_without_echoing_passwords(): void
     {
         AdminHttp::get($this->app, '/admin/login/');
-        $res = AdminHttp::postWithToken($this->app, '/admin/password/', ['current' => 'x']);
+        $res = AdminHttp::postWithToken($this->app, '/admin/password/', ['current' => 'старый-пароль-x']);
 
+        $this->assertSame(401, $res->status());
+        $this->assertStringContainsString('Вы вышли из админки из-за бездействия — изменения не сохранены', $res->body());
+        $this->assertStringContainsString('href="/admin/login/?next=/admin/password/"', $res->body());
+        $this->assertStringNotContainsString('старый-пароль-x', $res->body());
+    }
+
+    public function test_save_after_idle_timeout_echoes_typed_text_and_links_back_to_the_form(): void
+    {
+        AdminHttp::login($this->app);
+        $id = $this->app->store()->read('shifts')['items'][0]['id'];
+        $hash = $this->app->store()->hash('shifts');
+        $token = Csrf::token();
+        $this->clock()->advance('+31 minutes');
+
+        $typed = 'Полчаса писал <b>описание</b> & "кавычки"';
+        $res = AdminHttp::post($this->app, '/admin/shifts/' . $id . '/', ['_csrf' => $token, '_hash' => $hash, 'title' => 'Новое название', 'lead' => $typed]);
+
+        $this->assertSame(401, $res->status());
+        $body = $res->body();
+        $this->assertStringContainsString('Сессия истекла', $body);
+        $this->assertStringContainsString('Вы вышли из админки из-за бездействия — изменения не сохранены', $body);
+        $this->assertStringContainsString('Полчаса писал &lt;b&gt;описание&lt;/b&gt; &amp; &quot;кавычки&quot;', $body);
+        $this->assertStringContainsString('Новое название', $body);
+        $this->assertStringContainsString('href="/admin/login/?next=/admin/shifts/' . $id . '/"', $body);
+        $this->assertStringNotContainsString($hash, $body, '_hash не показываем');
+        $this->assertStringNotContainsString($token, $body, '_csrf не показываем');
+        $this->assertSame($hash, $this->app->store()->hash('shifts'), 'ничего не сохранено');
+        $this->assertStringContainsString('no-store', (string) $res->header('Cache-Control'));
+
+        // «Войти заново» ведёт обратно к форме
+        $login = AdminHttp::login($this->app, 'olga', AdminHttp::PASSWORD, '127.0.0.1', '/admin/shifts/' . $id . '/');
+        $this->assertSame('/admin/shifts/' . $id . '/', $login->header('Location'));
+    }
+
+    public function test_quick_actions_after_idle_timeout_link_back_to_their_list(): void
+    {
+        $id = $this->app->store()->read('shifts')['items'][0]['id'];
+        $cases = [
+            '/admin/shifts/' . $id . '/status/' => '/admin/shifts/',
+            '/admin/shifts/' . $id . '/visibility/' => '/admin/shifts/',
+            '/admin/shifts/' . $id . '/delete/' => '/admin/shifts/' . $id . '/delete/',
+            '/admin/history/restore/' => '/admin/history/',
+        ];
+        foreach ($cases as $path => $next) {
+            AdminHttp::login($this->app);
+            $token = Csrf::token();
+            $this->clock()->advance('+31 minutes');
+            $res = AdminHttp::post($this->app, $path, ['_csrf' => $token, 'state' => 'hide']);
+            $this->assertSame(401, $res->status(), $path);
+            $this->assertStringContainsString('href="/admin/login/?next=' . $next . '"', $res->body(), $path);
+        }
+    }
+
+    public function test_logout_after_idle_timeout_just_goes_to_login(): void
+    {
+        AdminHttp::login($this->app);
+        $token = Csrf::token();
+        $this->clock()->advance('+31 minutes');
+
+        $res = AdminHttp::post($this->app, '/admin/logout/', ['_csrf' => $token]);
         $this->assertSame(302, $res->status());
-        $this->assertStringStartsWith('/admin/login/', (string) $res->header('Location'));
+        $this->assertSame('/admin/login/', $res->header('Location'));
     }
 
     /** @dataProvider evilNext */

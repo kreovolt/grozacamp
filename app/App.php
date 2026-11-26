@@ -205,14 +205,20 @@ final class App
                 $token = $r->header('X-CSRF-Token');
             }
             if (!Csrf::verify($token)) {
-                return Response::html($this->view()->render('admin/expired', ['echo' => ExpiredEcho::from($r)]), 419);
+                return Response::html($this->view()->render('admin/expired', ['echo' => ExpiredEcho::from($r), 'reason' => 'csrf']), 419);
             }
         }
         if ($r->path() === '/admin/login/') {
             return null;
         }
+        $denied = $this->auth()->requireUser($r);
+        // Токен ещё верен, а вход истёк (30 минут бездействия): отправку формы не теряем молча — показываем набранное
+        // и ссылку «Войти заново» на ту же форму. Выход и так выход: туда — обычная переадресация на вход.
+        if ($denied !== null && !in_array($r->method(), ['GET', 'HEAD'], true) && $r->path() !== '/admin/logout/') {
+            return Response::html($this->view()->render('admin/expired', ['echo' => ExpiredEcho::from($r), 'reason' => 'auth']), 401);
+        }
 
-        return $this->auth()->requireUser($r);
+        return $denied;
     }
 
     /** Адрес с www. ведёт на основной (baseUrl) с тем же путём и строкой запроса. */

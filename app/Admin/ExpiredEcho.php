@@ -12,6 +12,8 @@ use Groza\Readiness\Readiness;
  * Страница «сессия устарела» (419) для POST из форм админки: набранный текст не должен пропасть.
  * Из запроса берутся строковые поля формы и показываются обратно (на странице они экранируются);
  * токены, `_hash`, пароли и всё, что на них похоже, не возвращаются. Общий объём — не больше LIMIT байт.
+ * Чужой сайт, отправивший форму в админку, свой текст на странице не увидит: если браузер назвал источник (Origin, иначе Referer),
+ * он должен совпадать с адресом самой админки.
  */
 final class ExpiredEcho
 {
@@ -29,7 +31,7 @@ final class ExpiredEcho
         $items = [];
         $left = self::LIMIT;
         $truncated = false;
-        if (!in_array($path, self::SKIP_PATHS, true)) {
+        if (!in_array($path, self::SKIP_PATHS, true) && self::sameOrigin($r)) {
             foreach (self::flatten($r->allPost()) as $name => $value) {
                 if ($value === '' || self::secret($name)) {
                     continue;
@@ -48,6 +50,22 @@ final class ExpiredEcho
         }
 
         return ['items' => $items, 'truncated' => $truncated, 'next' => self::next($path)];
+    }
+
+    /** Источник запроса (Origin, иначе Referer) — тот же хост, что у админки; браузер не назвал источник — считаем своим. */
+    private static function sameOrigin(Request $r): bool
+    {
+        $from = $r->header('Origin');
+        if ($from === null || $from === '' || $from === 'null') {
+            $from = $r->header('Referer');
+        }
+        if ($from === null || $from === '') {
+            return $r->header('Origin') !== 'null'; // «null» — песочница или чужой документ
+        }
+        $p = parse_url($from);
+        $host = is_array($p) ? strtolower((string) ($p['host'] ?? '')) . (isset($p['port']) ? ':' . $p['port'] : '') : '';
+
+        return $host !== '' && $host === $r->host();
     }
 
     /** @param array<mixed> $post @return array<string,string> «имя[вложенное]» → строка */
@@ -119,9 +137,19 @@ final class ExpiredEcho
         return $name;
     }
 
-    /** Страница, куда вернуться после входа: форма правки (адрес POST совпадает с адресом самой формы). */
-    private static function next(string $path): ?string
+    /**
+     * Страница, куда вернуться после входа — та, с которой отправили форму: форма правки (адрес POST совпадает с её адресом),
+     * подтверждение удаления, список (быстрые кнопки статуса, порядка, видимости), история (откат), смена пароля.
+     */
+    public static function next(string $path): ?string
     {
-        return preg_match('#^/admin/(texts/[a-z]+|settings|[a-z0-9-]+/(?:new|[a-f0-9]{12}))/$#', $path) === 1 ? $path : null;
+        if (preg_match('#^/admin/(texts/[a-z]+|settings|password|[a-z0-9-]+/(?:new|[a-f0-9]{12})|[a-z0-9-]+/[a-f0-9]{12}/delete)/$#', $path) === 1) {
+            return $path;
+        }
+        if (preg_match('#^/admin/([a-z0-9-]+)/[a-f0-9]{12}/(?:move|visibility|status)/$#', $path, $m) === 1) {
+            return '/admin/' . $m[1] . '/';
+        }
+
+        return $path === '/admin/history/restore/' ? '/admin/history/' : null;
     }
 }
