@@ -86,7 +86,11 @@ $action = '/admin/' . $collection . '/' . $id . '/';
     <button type="submit" class="btn btn-primary">Сохранить</button>
     <a class="btn btn-ghost" href="/admin/<?= e($collection) ?>/">Закрыть</a>
 <?php if (!$isNew): ?>
-    <a class="btn btn-ghost btn-quiet" href="/admin/<?= e($collection) ?>/<?= e($id) ?>/delete/">Удалить</a>
+    <a class="btn btn-ghost btn-quiet actions__delete" href="/admin/<?= e($collection) ?>/<?= e($id) ?>/delete/">Удалить</a>
 <?php endif ?>
   </div>
+<?php if (!$isNew): ?>
+<?php /* На телефоне «Удалить» не в липкой полосе (три кнопки не помещались в строку, полоса вырастала до 133 px) — под формой */ ?>
+  <p class="actions-delete-phone"><a class="btn btn-ghost btn-quiet" href="/admin/<?= e($collection) ?>/<?= e($id) ?>/delete/">Удалить</a></p>
+<?php endif ?>
 </form>

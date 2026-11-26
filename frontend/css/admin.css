@@ -37,7 +37,7 @@
   .admin-bar__in { @apply mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3 px-4 py-3; }
   .admin-brand { @apply font-display text-lg font-semibold uppercase tracking-brand text-cream no-underline; }
   .admin-bar__user { @apply flex flex-wrap items-center gap-3 text-sm; }
-  .admin-bar__name { @apply font-semibold; }
+  .admin-bar__name { @apply hidden font-semibold sm:inline; } /* на телефоне имя прячется: «Пароль» и «Выйти» встают в строку с названием */
   .admin-link-light { @apply inline-flex min-h-11 items-center text-cream underline; }
   .admin-bar :focus-visible { outline-color: theme('colors.gold'); }
 
@@ -69,6 +69,7 @@
   /* ---- Админка: разделы, списки, формы правки ---- */
   .lead { @apply mb-6 text-lg; }
   .tiles { @apply grid grid-cols-1 gap-3 sm:grid-cols-2; }
+  .tiles > :last-child:nth-child(odd) { @apply sm:col-span-2; } /* нечётная последняя плитка — на весь ряд, без пустой ячейки */
   .tile { @apply flex items-center justify-between gap-3 rounded-card bg-paper px-5 py-4 text-ink no-underline shadow-card; min-height: 64px; }
   .tile:hover { @apply bg-sand-deep; }
   .tile__name { @apply font-display text-xl font-semibold uppercase tracking-nav text-forest; }
@@ -95,7 +96,15 @@
   .changes__when { @apply w-36 shrink-0 text-ink-soft; }
   .changes__what { @apply min-w-0 flex-1 basis-60; overflow-wrap: anywhere; }
   .history { @apply mb-3 rounded-card bg-paper px-4 py-3 shadow-card; }
-  .history__title { @apply cursor-pointer font-display text-xl font-semibold uppercase tracking-nav text-forest; min-height: 44px; }
+  /* Заголовок раздела истории: без системного треугольника, шеврон справа (как у вопросов на сайте), текст по центру строки */
+  .history__title { @apply flex cursor-pointer list-none items-center gap-2 font-display text-xl font-semibold uppercase tracking-nav text-forest; min-height: 44px; }
+  .history__title::-webkit-details-marker { display: none; }
+  .history__title::after {
+    content: '';
+    @apply ml-auto size-2.5 shrink-0 border-b-2 border-r-2 border-current transition-transform duration-200;
+    transform: translateY(-25%) rotate(45deg);
+  }
+  .history[open] > .history__title::after { transform: translateY(25%) rotate(-135deg); }
   .history__list { @apply mt-3 grid gap-2; }
   .history__item { @apply grid items-center gap-x-4 gap-y-2 border-t border-sand-deep pt-3 sm:grid-cols-[1fr_auto]; }
   .history__text { @apply grid gap-0.5; }
@@ -220,7 +229,10 @@
   .echo textarea { @apply bg-sand; }
 
   .actions { @apply mt-2 flex flex-wrap items-center gap-3; }
-  .actions--sticky { @apply sticky bottom-0 -mx-4 mt-4 border-t border-sand-deep bg-paper/95 px-4 py-3 sm:-mx-6 sm:px-6; }
+  /* Липкая полоса «Сохранить / Закрыть» — всегда одна строка (на телефоне 68 px, а не 133) и непрозрачная: поля формы под ней не просвечивают */
+  .actions--sticky { @apply sticky bottom-0 -mx-4 mt-4 flex-nowrap gap-2 border-t border-sand-deep bg-paper px-4 py-2.5 sm:-mx-6 sm:gap-3 sm:px-6 sm:py-3; }
+  .actions__delete { @apply hidden sm:ml-auto sm:inline-flex; }
+  .actions-delete-phone { @apply mt-3 sm:hidden; }
 }
 
 /* Цвета нажатой кнопки статуса — вне @layer: имена классов собираются в PHP, Tailwind их в шаблонах не увидит и вычистил бы */
