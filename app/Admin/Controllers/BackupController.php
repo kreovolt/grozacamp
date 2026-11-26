@@ -15,9 +15,13 @@ use Groza\Support\Csrf;
  */
 final class BackupController
 {
+    /** Сборок архива за одно скачивание: файл могли убрать (замена, карантин) между списком и записью архива. */
+    private const ATTEMPTS = 3;
+
     private bool $zip;
 
-    public function __construct(private App $app, ?bool $zipAvailable = null)
+    /** @param (\Closure(int):void)|null $beforeClose только для тестов: вызывается перед записью архива (номер попытки) */
+    public function __construct(private App $app, ?bool $zipAvailable = null, private ?\Closure $beforeClose = null)
     {
         $this->zip = $zipAvailable ?? class_exists(\ZipArchive::class);
     }
@@ -42,20 +46,11 @@ final class BackupController
         }
         // большая папка загрузок: сборка архива может занять дольше обычного предела времени запроса
         @set_time_limit(300);
-        $tmp = $tmpDir . '/backup-' . bin2hex(random_bytes(8)) . '.zip';
-        $zip = new \ZipArchive();
-        if ($zip->open($tmp, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
-            return $this->failed();
+        $tmp = null;
+        for ($attempt = 1; $attempt <= self::ATTEMPTS && $tmp === null; $attempt++) {
+            $tmp = $this->build($tmpDir, $attempt);
         }
-        try {
-            $this->fill($zip);
-            if (!$zip->close() || !is_file($tmp)) {
-                throw new \RuntimeException('zip close failed');
-            }
-        } catch (\Throwable $e) {
-            @unlink($tmp);
-            error_log('Groza backup: ' . $e->getMessage());
-
+        if ($tmp === null) {
             return $this->failed();
         }
 
@@ -66,6 +61,37 @@ final class BackupController
             ->withHeader('Content-Disposition', 'attachment; filename="' . $name . '"')
             ->withHeader('Cache-Control', 'no-store, private')
             ->withHeader('X-Content-Type-Options', 'nosniff');
+    }
+
+    /**
+     * Одна сборка архива. ZipArchive читает файлы при закрытии: если файл за это время убрали (заменили фото, удалили
+     * документ — он ушёл в карантин), закрытие не удаётся; тогда сборка повторяется с новым списком файлов.
+     *
+     * @return string|null путь к готовому архиву
+     */
+    private function build(string $tmpDir, int $attempt): ?string
+    {
+        $tmp = $tmpDir . '/backup-' . bin2hex(random_bytes(8)) . '.zip';
+        $zip = new \ZipArchive();
+        if ($zip->open($tmp, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+            return null;
+        }
+        try {
+            $this->fill($zip);
+            if ($this->beforeClose !== null) {
+                ($this->beforeClose)($attempt);
+            }
+            if (!@$zip->close() || !is_file($tmp)) {
+                throw new \RuntimeException('zip close failed (attempt ' . $attempt . ')');
+            }
+        } catch (\Throwable $e) {
+            @unlink($tmp);
+            error_log('Groza backup: ' . $e->getMessage());
+
+            return null;
+        }
+
+        return $tmp;
     }
 
     private function fill(\ZipArchive $zip): void

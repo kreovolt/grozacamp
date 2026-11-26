@@ -49,6 +49,26 @@ final class BackupTest extends TestCase
     }
 
     /** @return list<string> имена записей архива */
+    public function test_file_removed_while_zipping_is_retried_without_it(): void
+    {
+        file_put_contents($this->uploads . '/docs/gone.pdf', '%PDF-1.4 x');
+        file_put_contents($this->uploads . '/docs/stays.pdf', '%PDF-1.4 y');
+        $gone = $this->uploads . '/docs/gone.pdf';
+        // первая сборка: файл убрали (ушёл в карантин) между списком и записью архива
+        $controller = new BackupController($this->app, null, static function (int $attempt) use ($gone): void {
+            if ($attempt === 1) {
+                @unlink($gone);
+            }
+        });
+
+        $res = $controller->download(\Groza\Http\Request::create('GET', '/admin/backup/'), []);
+
+        $this->assertSame(200, $res->status());
+        $names = $this->entries($res->body());
+        $this->assertContains('uploads/docs/stays.pdf', $names);
+        $this->assertNotContains('uploads/docs/gone.pdf', $names);
+    }
+
     private function entries(string $zipBytes): array
     {
         $tmp = tempnam(sys_get_temp_dir(), 'bk');
