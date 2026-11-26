@@ -24,13 +24,15 @@ if ($rows === []) {
     return;
 }
 // Без линий-разделителей: пункты разделяет только воздух. Число колонок на десктопе = число пунктов, чтобы не было пустых ячеек
-$columns = [1 => 'lg:grid-cols-1', 2 => 'lg:grid-cols-2', 3 => 'lg:grid-cols-3', 4 => 'lg:grid-cols-4', 5 => 'lg:grid-cols-5'];
+// Три-четыре пункта встают в один ряд уже с 768 px (на планшете 2 × 2 оставляло пустые половины строк); пять — с 1024 px
+$columns = [1 => 'lg:grid-cols-1', 2 => 'lg:grid-cols-2', 3 => 'md:grid-cols-3', 4 => 'md:grid-cols-4', 5 => 'lg:grid-cols-5'];
+$oneRow = in_array(min(count($rows), 5), [3, 4], true) ? 'md:odd:last:col-span-1' : 'lg:odd:last:col-span-1';
 ?>
 <section class="<?= e(trim('on-dark bg-forest text-cream ' . ($class ?? ''))) ?>" aria-label="<?= e($label ?? 'Лагерь в цифрах') ?>">
   <div class="wrap">
     <ul class="grid grid-cols-2 gap-x-6 gap-y-7 py-8 sm:gap-x-10 sm:py-10 lg:gap-x-12 <?= $columns[min(count($rows), 5)] ?>" role="list">
       <?php foreach ($rows as $row): ?>
-        <li class="flex flex-col gap-2 odd:last:col-span-2 lg:odd:last:col-span-1">
+        <li class="flex flex-col gap-2 odd:last:col-span-2 <?= $oneRow ?>">
           <span class="tabular font-display text-[clamp(2rem,1.55rem+1.6vw,2.75rem)] font-bold leading-none text-gold"><?= t($row['value']) ?></span>
           <span class="text-[0.9375rem] leading-snug text-sage"><?= t($row['label'] ?? '') ?></span>
         </li>
