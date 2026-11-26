@@ -36,7 +36,8 @@ $initials = static function (string $name): string {
   <?php foreach ($groups as $gi => $group): ?>
     <section class="<?= $gi > 0 ? 'mt-14 sm:mt-16' : '' ?>" aria-labelledby="team-group-<?= $gi ?>">
       <h2 class="border-b border-dashed border-moss/45 pb-4 font-display text-[clamp(1.5rem,1.2rem+1.1vw,2.125rem)] font-bold uppercase leading-[1.1] tracking-[0.015em] text-ink" id="team-group-<?= $gi ?>"><?= t($group['title']) ?></h2>
-      <ul data-reveal class="mt-8 grid grid-cols-2 gap-x-4 gap-y-9 sm:grid-cols-3 sm:gap-x-6 lg:grid-cols-4 desk:grid-cols-5" role="list">
+      <?php /* Уже 400 px две колонки по 130 px рвали слова в описаниях — одна колонка, фото слева, текст справа */ ?>
+      <ul data-reveal class="mt-8 grid grid-cols-1 gap-x-4 gap-y-7 min-[400px]:grid-cols-2 min-[400px]:gap-y-9 sm:grid-cols-3 sm:gap-x-6 lg:grid-cols-4 desk:grid-cols-5" role="list">
         <?php foreach ($group['members'] as $m): ?>
           <?php
           $name = (string) $m['name'];
@@ -46,17 +47,17 @@ $initials = static function (string $name): string {
               $img = null;
           }
           ?>
-          <li class="team-member min-w-0">
+          <li class="team-member min-w-0 max-[399px]:grid max-[399px]:grid-cols-[5.5rem_minmax(0,1fr)] max-[399px]:grid-rows-[auto_auto_1fr] max-[399px]:gap-x-4">
             <?php if ($img !== null): ?>
-              <div class="aspect-[4/5] overflow-hidden rounded-card bg-sand-deep">
+              <div class="aspect-[4/5] overflow-hidden rounded-card bg-sand-deep max-[399px]:row-span-3 max-[399px]:self-start">
                 <?= picture($img, $name, '(min-width: 1024px) 14rem, 45vw', false, 'h-full w-full object-cover') ?>
               </div>
             <?php else: ?>
-              <div class="grid aspect-[4/5] place-items-center rounded-card bg-sand-deep" aria-hidden="true">
-                <span class="font-display text-[clamp(2.25rem,1.5rem+3vw,3.5rem)] font-semibold tracking-[0.06em] text-forest/70"><?= e($initials($name)) ?></span>
+              <div class="grid aspect-[4/5] place-items-center rounded-card bg-sand-deep max-[399px]:row-span-3 max-[399px]:self-start" aria-hidden="true">
+                <span class="font-display text-[clamp(1.75rem,1.5rem+3vw,3.5rem)] font-semibold tracking-[0.06em] text-forest/70"><?= e($initials($name)) ?></span>
               </div>
             <?php endif ?>
-            <p class="mt-3 font-bold leading-snug text-ink"><?= t($name) ?></p>
+            <p class="mt-3 font-bold leading-snug text-ink max-[399px]:mt-0"><?= t($name) ?></p>
             <?php if (!empty($m['role'])): ?>
               <p class="max-sm:hyphenate mt-1 font-display text-[0.875rem] font-medium uppercase leading-snug tracking-[0.08em] text-rust-deep"><?= t((string) $m['role']) ?></p>
             <?php endif ?>

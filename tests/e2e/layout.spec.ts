@@ -117,3 +117,26 @@ test.describe('подписи кнопок в одну строку', () => {
     }
   }
 });
+
+test('375 px: фото «Как проходит смена» — лента с прокруткой вбок, снимки не меньше половины экрана', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto('/');
+  const strip = page.locator('[data-block="steps"] .photo-strip');
+  const widths = await strip.locator('figure').evaluateAll((els) => els.map((el) => el.getBoundingClientRect().width));
+  expect(widths).toHaveLength(3);
+  for (const w of widths) expect(w).toBeGreaterThanOrEqual(375 * 0.5);
+  // есть что листать — и Tab до ленты доходит
+  expect(await strip.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true);
+  await expect(strip).toHaveAttribute('tabindex', '0');
+  expect(await horizontalOverflow(page)).toBe(0);
+});
+
+test('320 px: команда в одну колонку, фото слева, слова описаний не рвутся посередине', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.goto('/team/');
+  const member = page.locator('.team-member').first();
+  const photo = await member.locator('div').first().boundingBox();
+  const name = await member.locator('p').first().boundingBox();
+  expect(name!.x).toBeGreaterThan(photo!.x + photo!.width);
+  expect(Math.round(name!.y)).toBe(Math.round(photo!.y));
+});

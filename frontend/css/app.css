@@ -248,6 +248,36 @@
     .shift-grid > .shift-card:last-child:nth-child(3n + 1) { grid-column: 2; }
   }
 
+  /* Три полароида «Как проходит смена»: на телефоне — лента с прокруткой вбок (снимок ~60 % ширины, соседний виден краем,
+     подписи целиком), с 640 px — три в ряд. Поля сверху и снизу — под наклон и тень полароидов, прокрутка их не обрезает. */
+  .photo-strip {
+    display: flex;
+    gap: 1rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--gutter);
+    margin-inline: calc(-1 * var(--gutter));
+    padding: 0.75rem var(--gutter) 1.75rem;
+    scrollbar-width: none;
+  }
+  .photo-strip::-webkit-scrollbar { display: none; }
+  .photo-strip > * {
+    flex: 0 0 60%;
+    scroll-snap-align: center;
+  }
+  @screen sm {
+    .photo-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      align-items: start;
+      gap: 1.25rem;
+      overflow: visible;
+      margin-inline: 0;
+      padding: 0;
+    }
+  }
+
   /* Таблицы Сведений: если реальные данные шире колонки (рядом с оглавлением она узкая), прокручивается таблица, а не страница */
   .table-scroll {
     overflow-x: auto;

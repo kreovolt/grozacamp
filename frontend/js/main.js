@@ -2,6 +2,7 @@
 import { initCookieNotice } from './cookie.js';
 import { initForms } from './forms.js';
 import { initDropdowns, initMobileMenu } from './nav.js';
+import { initScrollRegions } from './scroll-regions.js';
 import { initScrollUi } from './scroll-ui.js';
 
 // С JS выпадающее меню управляется скриптом; без JS работает запасной вариант на CSS (:hover/:focus-within)
@@ -12,3 +13,4 @@ initMobileMenu();
 initForms();
 initCookieNotice();
 initScrollUi();
+initScrollRegions();

@@ -18,8 +18,9 @@ if ($full) {
     array_push($cols, ['education', 'Образование'], ['specialty', 'Направление подготовки / специальность'], ['qualification', 'Квалификация']);
 }
 ?>
-<?php /* Обёртка с прокруткой — страховка: длинное слово в реальных данных не должно растягивать страницу (рядом с оглавлением колонка узкая) */ ?>
-<div class="table-scroll" role="region" aria-label="<?= e($full ? 'Таблица: педагогический и вожатский состав' : 'Таблица: сотрудники') ?>" tabindex="0">
+<?php /* Обёртка с прокруткой — страховка: длинное слово в реальных данных не должно растягивать страницу (рядом с оглавлением колонка узкая).
+   Tab доходит до неё, только когда есть что прокручивать (frontend/js/scroll-regions.js) */ ?>
+<div class="table-scroll" role="region" aria-label="<?= e($full ? 'Таблица: педагогический и вожатский состав' : 'Таблица: сотрудники') ?>" data-scroll-region>
 <table class="staff-table w-full border-collapse text-left text-[0.9375rem] leading-snug">
   <thead class="max-md:sr-only">
     <tr class="border-b-2 border-forest/70 align-bottom">

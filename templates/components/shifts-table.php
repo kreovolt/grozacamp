@@ -20,7 +20,7 @@ $cols = $prices
     : ['Смена', 'Даты', 'Дней', 'Возраст', 'База'];
 $cell = 'px-3 py-2.5 first:pl-0 max-md:block max-md:px-0 max-md:py-1 max-md:before:block max-md:before:text-[0.75rem] max-md:before:uppercase max-md:before:tracking-[0.06em] max-md:before:text-ink-soft max-md:before:content-[attr(data-label)]';
 ?>
-<div class="table-scroll" role="region" aria-label="<?= e($caption) ?>" tabindex="0">
+<div class="table-scroll" role="region" aria-label="<?= e($caption) ?>" data-scroll-region>
 <table class="shifts-table w-full border-collapse text-left text-[0.9375rem] leading-snug">
   <caption class="sr-only"><?= t($caption) ?></caption>
   <thead class="max-md:sr-only">

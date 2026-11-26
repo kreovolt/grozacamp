@@ -241,25 +241,23 @@ $steps = [
         <?= $this->partial('components/section-head', ['title' => 'Как проходит смена', 'id' => 'steps-title']) ?>
         <?= $this->partial('components/steps', ['steps' => $steps, 'class' => 'mt-10']) ?>
       </div>
-      <div class="grid grid-cols-3 items-start gap-3 sm:gap-5" data-reveal>
+      <?php /* На телефоне три снимка в ряд выходили по 85 px — лента с прокруткой вбок (app.css, .photo-strip), с 640 px — три в ряд */ ?>
+      <div class="photo-strip" role="group" aria-label="<?= e('Фото со смены') ?>" data-scroll-region data-reveal>
         <?= $this->partial('components/polaroid', [
-            'media' => $shot('evening-circle', '(min-width: 1024px) 14rem, 31vw'),
+            'media' => $shot('evening-circle', '(min-width: 1024px) 14rem, (min-width: 640px) 31vw, 60vw'),
             'tilt' => 'left',
             'caption' => 'Вечерний круг',
-            'captionClass' => 'text-[0.8125rem] sm:text-[0.9375rem]',
         ]) ?>
         <?= $this->partial('components/polaroid', [
-            'media' => $shot('games-chairs', '(min-width: 1024px) 14rem, 31vw'),
+            'media' => $shot('games-chairs', '(min-width: 1024px) 14rem, (min-width: 640px) 31vw, 60vw'),
             'tilt' => 'right',
             'caption' => 'Игры всем отрядом',
-            'captionClass' => 'text-[0.8125rem] sm:text-[0.9375rem]',
-            'class' => 'translate-y-6',
+            'class' => 'sm:translate-y-6',
         ]) ?>
         <?= $this->partial('components/polaroid', [
-            'media' => $shot('awards-group', '(min-width: 1024px) 14rem, 31vw'),
+            'media' => $shot('awards-group', '(min-width: 1024px) 14rem, (min-width: 640px) 31vw, 60vw'),
             'tilt' => 'slight',
             'caption' => 'Грамоты в финале',
-            'captionClass' => 'text-[0.8125rem] sm:text-[0.9375rem]',
         ]) ?>
       </div>
     </div>
