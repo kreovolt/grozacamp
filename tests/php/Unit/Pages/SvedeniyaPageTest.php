@@ -47,9 +47,11 @@ final class SvedeniyaPageTest extends TestCase
     /** Строка пункта: <div data-item="…"> … </div> (внутри строки вложенных div нет). */
     private function row(string $html, string $id): string
     {
-        $this->assertSame(1, preg_match('#<div[^>]*\sdata-item="[^"]*\b' . preg_quote($id, '#') . '\b[^"]*"[^>]*>(.*?)</div>#us', $html, $m), "нет строки $id");
+        // Внутри строки бывают свои <div> (обёртка таблицы с прокруткой) — берём содержимое до парного </div>
+        $nested = '(?<el><div\b[^>]*>(?:[^<]++|<(?!/?div\b)|(?&el))*</div>)';
+        $this->assertSame(1, preg_match('#<div[^>]*\sdata-item="[^"]*\b' . preg_quote($id, '#') . '\b[^"]*"[^>]*>(?<in>(?:[^<]++|<(?!/?div\b)|' . $nested . ')*)</div>#us', $html, $m), "нет строки $id");
 
-        return $m[1];
+        return $m['in'];
     }
 
     private function section(string $html, string $id): string

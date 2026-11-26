@@ -203,6 +203,12 @@
     .ticket-stub::after { top: auto; right: auto; bottom: -0.75rem; left: -0.8125rem; }
   }
 
+  /* Таблицы Сведений: если реальные данные шире колонки (рядом с оглавлением она узкая), прокручивается таблица, а не страница */
+  .table-scroll {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+
   /* Текст из редактора админки (абзацы, списки, ссылки) */
   .richtext > * + * { margin-top: 0.75em; }
   .richtext ul { @apply list-disc pl-5; }
