@@ -103,6 +103,41 @@ test('черновик: набранное в «Коротко о смене» �
   await expect(page.locator('.alert-ok')).toContainText('Сохранено');
 });
 
+test('черновик: набранное до запуска скрипта админки (медленный интернет) тоже сохраняется', async ({ page }) => {
+  await login(page);
+  await page.goto('/admin/shifts/');
+  const href = await page.getByRole('link', { name: 'Спасатель', exact: true }).first().getAttribute('href');
+  let release!: () => void;
+  const gate = new Promise<void>((resolveGate) => {
+    release = resolveGate;
+  });
+  await page.route(/\/assets\/js\/admin\.js/, async (route) => {
+    await gate;
+    await route.continue();
+  });
+  await page.goto(href!, { waitUntil: 'commit' });
+  const lead = page.getByLabel('Коротко о смене');
+  await lead.waitFor();
+  const original = await lead.inputValue();
+  const typed = original + ' Набрано до запуска скрипта.';
+  await lead.fill(typed); // скрипта ещё нет
+  release();
+  await page.locator('form[data-draft-ready]').waitFor();
+  await page.unroute(/\/assets\/js\/admin\.js/);
+
+  // уход со страницы сохраняет черновик: набранное — не «исходное с сервера»
+  await page.goto('/admin/shifts/');
+  await expect.poll(() => draftKeys(page)).toHaveLength(1);
+  await page.goto(href!);
+  await expect(page.getByLabel('Коротко о смене')).toHaveValue(typed);
+  await expect(page.getByText('Восстановлен черновик')).toBeVisible();
+
+  // убрать черновик
+  await page.getByRole('button', { name: 'Отменить' }).click();
+  await expect(page.getByLabel('Коротко о смене')).toHaveValue(original);
+  expect(await draftKeys(page)).toEqual([]);
+});
+
 test('ошибка проверки: сводка со ссылками, фокус на первом неверном поле, введённое не пропадает', async ({ page }) => {
   await login(page);
   await page.goto('/admin/shifts/new/');

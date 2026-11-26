@@ -50,6 +50,8 @@ function toolbarHtml() {
 
 function enhance(textarea) {
   const n = ++seq;
+  // набрали в поле раньше, чем запустился редактор: это ввод человека (admin.js сохранит его в черновик)
+  if (textarea.value !== textarea.defaultValue) textarea.setAttribute('data-early-input', '');
   const label = textarea.id ? document.querySelector('label[for="' + textarea.id + '"]') : null;
   if (label && !label.id) label.id = 'rt-label-' + n;
 

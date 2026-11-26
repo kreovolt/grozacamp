@@ -69,6 +69,38 @@ function snapshot(form) {
   return out;
 }
 
+/**
+ * Значения, с которыми форма пришла с сервера (до любого ввода): defaultValue / defaultChecked / defaultSelected.
+ * Так набранное ещё до запуска скрипта (медленный интернет) считается вводом и попадает в черновик, а не в «исходное».
+ * Поле редактора текста — после его запуска (редактор переписывает разметку поля по-своему); набранное в нём
+ * до запуска редактора отмечает admin-editor.js (data-early-input).
+ */
+function baseline(form) {
+  const out = {};
+  for (const el of Array.from(form.elements)) {
+    if (!el.name || SKIP.has(el.name) || el.disabled) continue;
+    const type = el.type;
+    if (type === 'file' || type === 'submit' || type === 'button' || type === 'reset' || type === 'hidden') continue;
+    if (type === 'radio') {
+      if (el.defaultChecked) out[el.name] = el.value;
+      else if (!(el.name in out)) out[el.name] = null;
+    } else if (type === 'checkbox') {
+      out[el.name] = el.defaultChecked;
+    } else if (el.tagName === 'SELECT') {
+      const chosen = Array.from(el.options).find((o) => o.defaultSelected) || el.options[0];
+      out[el.name] = chosen ? chosen.value : '';
+    } else if (el.hasAttribute('data-richtext')) {
+      out[el.name] = el.hasAttribute('data-early-input') ? null : el.value;
+    } else if (el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA') {
+      // редактор текста (trix-editor) — тоже элемент формы с тем же именем, что его поле: решает поле (выше)
+      if (!(el.name in out)) out[el.name] = el.value;
+    } else {
+      out[el.name] = el.defaultValue;
+    }
+  }
+  return out;
+}
+
 function same(a, b) {
   const keys = Object.keys(a);
   if (keys.length !== Object.keys(b).length) return false;
@@ -112,7 +144,7 @@ function pruneOld() {
 function initDraft(form) {
   const key = DRAFT_PREFIX + location.pathname;
   const hashField = form.elements.namedItem('_hash');
-  const server = snapshot(form);
+  const server = baseline(form);
   // Форма показана после отказа (409/422): значения в ней — несохранённый ввод человека, а не данные сервера.
   // Такой черновик не удаляем, пока ввод не сохранён (иначе при истёкшей сессии текст пропал бы).
   const unsaved = form.hasAttribute('data-draft-unsaved');
