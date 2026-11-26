@@ -65,11 +65,28 @@ final class SessionTest extends TestCase
         $this->assertNull(Session::get('a'));
     }
 
-    public function test_cookie_name_detection(): void
+    public function test_cookie_counts_only_with_a_live_session_file(): void
     {
-        $this->assertTrue(Session::hasCookie('foo=1; groza_admin=abc'));
-        $this->assertFalse(Session::hasCookie('foo=1; groza_admin2=abc'));
-        $this->assertFalse(Session::hasCookie(null));
-        $this->assertFalse(Session::hasCookie('groza_admin='));
+        $storage = sys_get_temp_dir() . '/groza-sess-' . bin2hex(random_bytes(6));
+        mkdir($storage . '/sessions', 0777, true);
+        $config = ['storageDir' => $storage];
+        $id = str_repeat('a1b2', 8);
+        try {
+            $this->assertSame($id, Session::cookieId('foo=1; groza_admin=' . $id));
+            $this->assertFalse(Session::hasCookie('foo=1; groza_admin=' . $id, $config), 'вид верный, но файла нет (устарела)');
+            touch($storage . '/sessions/sess_' . $id);
+            $this->assertTrue(Session::hasCookie('foo=1; groza_admin=' . $id, $config));
+            $this->assertFalse(Session::hasCookie('foo=1; groza_admin2=' . $id, $config));
+            $this->assertFalse(Session::hasCookie(null, $config));
+            $this->assertFalse(Session::hasCookie('groza_admin=', $config));
+            foreach (['abc', 'junk', str_repeat('x', 300), '../../data/users', 'a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2/x', "a1b2a1b2a1b2a1b2a1b2a1b2\x01"] as $junk) {
+                $this->assertNull(Session::cookieId('groza_admin=' . $junk), $junk);
+                $this->assertFalse(Session::hasCookie('groza_admin=' . $junk, $config), $junk);
+            }
+        } finally {
+            @unlink($storage . '/sessions/sess_' . $id);
+            @rmdir($storage . '/sessions');
+            @rmdir($storage);
+        }
     }
 }

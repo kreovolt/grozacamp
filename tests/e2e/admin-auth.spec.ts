@@ -97,3 +97,15 @@ test('строгий режим сессии: подброшенный иден�
   expect(cookie).toBeTruthy();
   expect(cookie?.value).not.toBe(planted);
 });
+
+test('выдуманная cookie сессии не заводит новую сессию на страницах админки (настоящий обработчик сессий)', async ({ request }) => {
+  for (const value of ['a'.repeat(32), 'junk']) {
+    for (const path of ['/admin/shifts/', '/admin/']) {
+      const res = await request.get(path, { headers: { Cookie: `groza_admin=${value}` }, maxRedirects: 0 });
+      expect(res.status(), `${path} ${value}`).toBe(302);
+      expect(res.headers()['location']).toMatch(/^\/admin\/login\/\?next=/);
+      // строгий режим на мусорный идентификатор выдал бы новый (и новый файл в storage/sessions)
+      expect(res.headers()['set-cookie'], `${path} ${value}`).toBeUndefined();
+    }
+  }
+});

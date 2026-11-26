@@ -37,22 +37,53 @@ final class Session
         ];
     }
 
-    /** Нужна ли сессия: уже есть cookie, это страница входа (выдаёт токен) или тесты. */
-    public static function wanted(?string $cookieHeader, bool $issueNew): bool
+    /** Идентификатор в cookie: знаки и длина, которые выдаёт PHP (sid_bits_per_character 4–6, длина 22–256). */
+    private const ID_FORMAT = '/^[A-Za-z0-9,-]{22,256}$/D';
+
+    /**
+     * Нужна ли сессия: есть cookie с ЖИВОЙ сессией, это страница входа (выдаёт токен) или тесты.
+     * Мусорное или устаревшее значение cookie сессию не запускает: иначе строгий режим заводил бы на каждый такой запрос
+     * новый файл в storage/sessions (засорение диска без входа).
+     *
+     * @param array<string,mixed> $config storageDir
+     */
+    public static function wanted(?string $cookieHeader, bool $issueNew, array $config): bool
     {
-        return self::memory() || $issueNew || self::hasCookie($cookieHeader);
+        return self::memory() || $issueNew || self::hasCookie($cookieHeader, $config);
     }
 
-    public static function hasCookie(?string $cookieHeader): bool
+    /**
+     * Пришла ли cookie сессии, у которой на сервере есть файл. Значение не того вида или без файла — как будто cookie нет
+     * (анонимный запрос: на странице входа его считает ограничитель новых сессий).
+     *
+     * @param array<string,mixed> $config storageDir
+     */
+    public static function hasCookie(?string $cookieHeader, array $config): bool
+    {
+        $id = self::cookieId($cookieHeader);
+
+        return $id !== null && is_file(self::dir($config) . '/sess_' . $id);
+    }
+
+    /** Значение cookie сессии, если оно похоже на идентификатор PHP; иначе null. */
+    public static function cookieId(?string $cookieHeader): ?string
     {
         foreach (explode(';', (string) $cookieHeader) as $pair) {
             $parts = explode('=', trim($pair), 2);
-            if ($parts[0] === self::NAME && ($parts[1] ?? '') !== '') {
-                return true;
+            if ($parts[0] === self::NAME) {
+                $v = $parts[1] ?? '';
+
+                return preg_match(self::ID_FORMAT, $v) === 1 ? $v : null;
             }
         }
 
-        return false;
+        return null;
+    }
+
+    /** Папка файлов сессий: {storageDir}/sessions (вне корня сайта). @param array<string,mixed> $config */
+    public static function dir(array $config): string
+    {
+        return rtrim((string) ($config['storageDir'] ?? ''), '/\\') . '/sessions';
     }
 
     /** @param array<string,mixed> $config env, storageDir */
@@ -67,7 +98,7 @@ final class Session
 
             return;
         }
-        $dir = rtrim((string) $config['storageDir'], '/\\') . '/sessions';
+        $dir = self::dir($config);
         if (!is_dir($dir) && !@mkdir($dir, 0700, true) && !is_dir($dir)) {
             throw new \RuntimeException('Не удаётся создать каталог сессий');
         }

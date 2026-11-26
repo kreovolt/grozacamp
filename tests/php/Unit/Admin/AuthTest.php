@@ -629,4 +629,28 @@ final class AuthTest extends TestCase
         $this->assertSame('600', $blocked->header('Retry-After'));
         $this->assertSame(200, $get('203.0.113.10')->status()); // другой адрес не затронут
     }
+
+    public function test_junk_session_cookie_does_not_bypass_the_new_session_limit(): void
+    {
+        $app = TestApp::make(['env' => 'prod', 'baseUrl' => 'https://grozacamp.ru', 'appSecret' => str_repeat('k', 40), 'fakeNow' => null]);
+        $get = static fn (string $cookie) => $app->handle(Request::create('GET', '/admin/login/', [], [], ['Cookie' => 'groza_admin=' . $cookie], [], '203.0.113.9', true));
+        for ($i = 0; $i < 20; $i++) {
+            // каждый раз новое выдуманное значение — и правильного вида, и мусор
+            $this->assertSame(200, $get($i % 2 === 0 ? bin2hex(random_bytes(16)) : 'junk' . $i)->status(), (string) $i);
+        }
+        $this->assertSame(429, $get(bin2hex(random_bytes(16)))->status());
+        $this->assertSame(429, $get('x')->status());
+    }
+
+    public function test_live_session_cookie_is_not_counted_as_a_new_session(): void
+    {
+        $app = TestApp::make(['env' => 'prod', 'baseUrl' => 'https://grozacamp.ru', 'appSecret' => str_repeat('k', 40), 'fakeNow' => null]);
+        $id = bin2hex(random_bytes(16));
+        mkdir($app->config()['storageDir'] . '/sessions', 0777, true);
+        touch($app->config()['storageDir'] . '/sessions/sess_' . $id);
+        for ($i = 0; $i < 25; $i++) {
+            $res = $app->handle(Request::create('GET', '/admin/login/', [], [], ['Cookie' => 'groza_admin=' . $id], [], '203.0.113.9', true));
+            $this->assertSame(200, $res->status(), (string) $i);
+        }
+    }
 }

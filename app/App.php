@@ -135,7 +135,7 @@ final class App
         if ($issuesToken && $this->tooManyNewSessions($r)) {
             return Response::html($this->view()->render('admin/too-many'), 429)->withHeader('Retry-After', '600');
         }
-        if (Session::wanted($r->header('Cookie'), $issuesToken)) {
+        if (Session::wanted($r->header('Cookie'), $issuesToken, $this->config)) {
             Session::start($this->config);
         }
         try {
@@ -148,12 +148,13 @@ final class App
     }
 
     /**
-     * Страница входа выдаёт сессию любому без cookie — каждый такой запрос оставляет файл. На сайте (staging, prod) число
-     * новых сессий с одного адреса ограничено, иначе бот может засыпать storage/sessions.
+     * Страница входа выдаёт сессию любому без живой сессии — каждый такой запрос оставляет файл. На сайте (staging, prod) число
+     * новых сессий с одного адреса ограничено, иначе бот может засыпать storage/sessions. Cookie с выдуманным или
+     * устаревшим значением от счёта не освобождает: в зачёт идёт только cookie, у которой есть файл сессии.
      */
     private function tooManyNewSessions(Request $r): bool
     {
-        if (!in_array($this->config['env'], ['staging', 'prod'], true) || Session::hasCookie($r->header('Cookie'))) {
+        if (!in_array($this->config['env'], ['staging', 'prod'], true) || Session::hasCookie($r->header('Cookie'), $this->config)) {
             return false;
         }
         $secret = (string) $this->config['appSecret'];
