@@ -100,7 +100,8 @@ $hours = array_values(array_filter([$settings['hoursWeekdays'] ?? '', $settings[
 
 <section class="bg-sand-deep <?= $section ?> anchor-section" id="zayavka" data-block="request" aria-labelledby="zayavka-title">
   <div class="wrap grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16">
-    <div>
+    <?php /* рядом с длинной формой левая колонка едет вместе со страницей, а не оставляет пустой столбец */ ?>
+    <div class="lg:sticky lg:top-28 lg:self-start">
       <?= $this->partial('components/section-head', [
           'title' => 'Оставьте заявку',
           'lead' => 'Несколько коротких полей. Мы перезвоним в рабочее время, расскажем про смену и ответим на вопросы.',
@@ -113,7 +114,7 @@ $hours = array_values(array_filter([$settings['hoursWeekdays'] ?? '', $settings[
         <?php endif ?>
       </ul>
     </div>
-    <div class="rounded-card bg-paper p-6 shadow-card sm:p-8">
+    <div class="rounded-card bg-paper p-5 shadow-card min-[360px]:p-6 sm:p-8">
       <?= $this->partial('forms/booking', ['values' => $values, 'errors' => $errors, 'options' => $options, 'guard' => $guard]) ?>
     </div>
   </div>

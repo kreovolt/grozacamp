@@ -32,7 +32,7 @@ use function Groza\View\t;
     <p class="rounded-btn border-2 border-rust-deep bg-paper px-4 py-3 font-semibold text-rust-deep" role="alert" data-form-error<?= empty($errors['_form']) ? ' hidden' : '' ?>><?= t($errors['_form'] ?? '') ?></p>
 <?php $fieldErrors = array_diff_key($errors, ['_form' => true]); ?>
 <?php if ($fieldErrors !== []): /* без JS страница показана заново после отправки: сводка в начале формы, ссылки на поля */ ?>
-    <div class="rounded-btn border-2 border-rust-deep bg-paper px-4 py-3 text-rust-deep" role="alert" data-form-summary>
+    <div class="rounded-btn border-2 border-rust-deep bg-paper px-3 py-3 text-rust-deep sm:px-4" role="alert" data-form-summary>
       <p class="font-semibold"><?= t(($formId === 'vacancy' ? 'Анкета' : 'Заявка') . ' не отправлена. Проверьте:') ?></p>
       <ul class="mt-2 list-disc pl-5">
 <?php foreach ($fieldErrors as $name => $message): ?>

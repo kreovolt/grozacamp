@@ -108,15 +108,16 @@ $shot = static function (string $key, string $sizes): string {
 
 <?php if ($benefits !== '' || $selection !== ''): ?>
   <section class="bg-sand-deep <?= $section ?>" data-block="offer" aria-label="Что даём и как проходит отбор">
-    <div class="wrap grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-16">
+    <?php /* Заголовки разной длины (одна и две строки): с 1024 px колонки — подсетка, тексты начинаются на одной линии */ ?>
+    <div class="wrap grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-x-16">
       <?php if ($benefits !== ''): ?>
-        <div>
+        <div class="lg:row-span-2 lg:grid lg:grid-rows-subgrid lg:gap-y-0">
           <?= $this->partial('components/section-head', ['title' => 'Что даём', 'id' => 'benefits-title']) ?>
           <div class="richtext mt-6 max-w-[56ch] leading-relaxed text-ink"><?= richtext($benefits) ?></div>
         </div>
       <?php endif ?>
       <?php if ($selection !== ''): ?>
-        <div>
+        <div class="lg:row-span-2 lg:grid lg:grid-rows-subgrid lg:gap-y-0">
           <?= $this->partial('components/section-head', ['title' => 'Как проходит отбор', 'id' => 'selection-title']) ?>
           <div class="richtext mt-6 max-w-[56ch] leading-relaxed text-ink"><?= richtext($selection) ?></div>
         </div>
@@ -127,12 +128,14 @@ $shot = static function (string $key, string $sizes): string {
 
 <section class="<?= $section ?> anchor-section" id="anketa" data-block="form" aria-labelledby="anketa-title">
   <div class="wrap grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16">
+    <?php /* рядом с длинной анкетой заголовок едет вместе со страницей, а не оставляет пустой столбец */ ?>
     <?= $this->partial('components/section-head', [
+        'class' => 'lg:sticky lg:top-28 lg:self-start',
         'title' => 'Анкета',
         'lead' => 'Несколько коротких полей: должность, как с вами связаться и пара слов об опыте.',
         'id' => 'anketa-title',
     ]) ?>
-    <div class="rounded-card bg-paper p-6 shadow-card sm:p-8">
+    <div class="rounded-card bg-paper p-5 shadow-card min-[360px]:p-6 sm:p-8">
       <?= $this->partial('forms/vacancy', ['values' => $values, 'errors' => $errors, 'options' => $options, 'guard' => $guard]) ?>
     </div>
   </div>
