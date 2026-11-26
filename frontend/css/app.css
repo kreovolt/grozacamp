@@ -215,30 +215,32 @@
     .hero-copy [data-hero-title] ~ div { max-width: none; } /* кнопки в один ряд */
   }
 
-  /* Финальный призыв с фото (components/cta-final): фото — карточка, как у героя. Телефон: текст → фото → контакты;
-     с 1024 px — текст и контакты слева, фото справа на высоту обоих */
-  .cta-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: 'text' 'photo' 'contacts';
-    row-gap: 2.5rem;
-  }
-  .cta-grid > [data-cta-text] { grid-area: text; }
-  .cta-grid > [data-cta-photo] { grid-area: photo; }
-  .cta-grid > [data-cta-contacts] { grid-area: contacts; }
-  .cta-photo {
+  /* Финальный призыв с фото (components/cta-final): ночной костёр в естественных цветах, без зелёной заливки.
+     Телефон и планшет: фото полосой сверху во всю ширину, низ растворяется в фоне блока, ниже текст и контакты.
+     С 1024 px: фото справа на 62 % ширины и всю высоту блока, левый край плавно уходит в тёмный фон —
+     костёр справа, а текст и контакты слева на тёмной части (колонка не уже заголовка: «к приключению?» в одну строку). */
+  .cta-night { background: theme('colors.forest.deep'); }
+  .cta-night__photo {
+    position: relative;
     aspect-ratio: 4 / 3;
-    border-radius: theme('borderRadius.card');
-    box-shadow: 0 0 0 1px theme('colors.sand.DEFAULT / 14%'), 0 30px 60px -28px rgb(12 22 16 / 0.75);
+    -webkit-mask-image: linear-gradient(to bottom, #000 62%, transparent);
+    mask-image: linear-gradient(to bottom, #000 62%, transparent);
+  }
+  .cta-night__photo img { object-position: 57% 45%; }
+  @screen sm {
+    .cta-night__photo { aspect-ratio: 16 / 9; }
   }
   @screen lg {
-    .cta-grid {
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
-      grid-template-areas: 'text photo' 'contacts photo';
-      align-content: center;
-      column-gap: clamp(2.5rem, 4.5vw, 4.5rem);
+    .cta-night__photo {
+      position: absolute;
+      inset: 0 0 0 auto;
+      width: 62%;
+      aspect-ratio: auto;
+      -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 40%);
+      mask-image: linear-gradient(90deg, transparent 0, #000 40%);
     }
-    .cta-grid > [data-cta-photo] { align-self: center; }
+    .cta-night__photo img { object-position: 50% 62%; }
+    .cta-night__copy { max-width: min(40rem, 52%); }
   }
 
   /* «Путёвка»: корешок отделён линией отрыва (пунктир 2 px), по её краям — вырезы цвета фона секции (--notch).

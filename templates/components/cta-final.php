@@ -3,9 +3,9 @@ declare(strict_types=1);
 
 /**
  * Финальный призыв: заголовок, кнопка к сменам, телефон и WhatsApp офиса на forest.
- * С фото — фото-карточкой в естественных цветах, как у героя главной (не фоном под зелёным затемнением:
- * ночной костёр под заливкой превращался в мутное пятно). Телефон: текст, фото, контакты;
- * с 1024 px — текст и контакты слева, фото справа (.cta-grid в app.css). Без фото — текст и контакты в две колонки.
+ * С фото — ночная сцена (.cta-night в app.css): фото в естественных цветах, без зелёной заливки (под ней костёр
+ * превращался в мутное пятно); на телефоне полосой сверху, с 1024 px — справа, растворяясь в тёмном фоне слева,
+ * текст и контакты — на тёмной части. Без фото — текст и контакты в две колонки.
  * Подпись фото — alt из дескриптора (описание снимка из config/photos.json).
  * @var array<string,mixed> $settings
  * @var string $title
@@ -58,19 +58,25 @@ ob_start();
 <?php
 $contacts = (string) ob_get_clean();
 ?>
-<div class="on-dark bg-forest text-cream">
-  <?php if ($withPhoto): ?>
-    <div class="cta-grid wrap py-16 sm:py-20 desk:py-24">
+<?php if ($withPhoto): ?>
+<div class="cta-night on-dark relative isolate overflow-hidden text-cream">
+  <?php /* Фото в естественных цветах: на телефоне — полосой сверху, с 1024 px — справа на всю высоту блока,
+     левый край растворяется в тёмном фоне (маска в app.css), текст и контакты — слева на тёмной части */ ?>
+  <div class="cta-night__photo" data-cta-photo>
+    <?= picture($image, (string) ($image['alt'] ?? ''), '(min-width: 1024px) 62vw, 100vw', false, 'h-full w-full object-cover') ?>
+  </div>
+  <div class="wrap relative -mt-4 pb-16 sm:-mt-6 sm:pb-20 lg:mt-0 lg:py-24 desk:py-28">
+    <div class="cta-night__copy">
       <div data-cta-text><?= $text ?></div>
-      <div class="cta-photo relative overflow-hidden bg-forest-deep" data-cta-photo>
-        <?= picture($image, (string) ($image['alt'] ?? ''), '(min-width: 1360px) 640px, (min-width: 1024px) 50vw, 100vw', false, 'absolute inset-0 h-full w-full object-cover') ?>
-      </div>
-      <div class="border-t border-dashed border-sage/40 pt-8" data-cta-contacts><?= $contacts ?></div>
+      <div class="mt-10 border-t border-dashed border-sage/40 pt-8" data-cta-contacts><?= $contacts ?></div>
     </div>
-  <?php else: ?>
-    <div class="wrap grid grid-cols-1 items-end gap-10 py-16 sm:py-20 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] desk:py-28">
-      <div><?= $text ?></div>
-      <div class="border-t border-dashed border-sage/40 pt-8 lg:border-l lg:border-t-0 lg:pb-1 lg:pl-10 lg:pt-0"><?= $contacts ?></div>
-    </div>
-  <?php endif ?>
+  </div>
 </div>
+<?php else: ?>
+<div class="on-dark bg-forest text-cream">
+  <div class="wrap grid grid-cols-1 items-end gap-10 py-16 sm:py-20 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] desk:py-28">
+    <div><?= $text ?></div>
+    <div class="border-t border-dashed border-sage/40 pt-8 lg:border-l lg:border-t-0 lg:pb-1 lg:pl-10 lg:pt-0"><?= $contacts ?></div>
+  </div>
+</div>
+<?php endif ?>

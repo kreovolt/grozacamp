@@ -216,3 +216,53 @@ test('320 px: «Позвонить» и бургер в шапке не захо
   await page.evaluate(() => document.fonts.ready);
   expect(await gutterOverflow(page, '[data-header] .wrap')).toBeLessThanOrEqual(0);
 });
+
+// Заголовок не должен оставлять знак препинания один на строке («К ПРИКЛЮЧЕНИЮ / ?»): так бывает, когда
+// неразрывная группа слов шире колонки и браузер переносит её аварийно (overflow-wrap) на последнем символе
+test.describe('заголовки: нет строк из одних знаков препинания и разрывов посреди слова', () => {
+  const PAGES = ['/', '/booking/', '/info/', '/vacancies/', '/team/', '/contacts/', '/svedeniya/', '/svedeniya/ob-organizacii/',
+    '/svedeniya/mto/', '/svedeniya/dostupnaya-sreda/', '/program/spasatel-2027/', '/pravila/'];
+  for (const width of [320, 375, 768, 1024, 1280, 1440, 1811, 2560]) {
+    test(`${width} px`, async ({ page }) => {
+      test.setTimeout(120_000);
+      await page.setViewportSize({ width, height: 900 });
+      const bad: string[] = [];
+      for (const path of PAGES) {
+        const response = await page.goto(path);
+        if (response?.status() !== 200) continue;
+        const found = await page.evaluate(() => {
+          const out: string[] = [];
+          for (const h of document.querySelectorAll('h1, h2, h3, h4')) {
+            if (!(h instanceof HTMLElement) || h.getClientRects().length === 0) continue;
+            const range = document.createRange();
+            const lines: string[] = [];
+            let cur = '';
+            let top: number | null = null;
+            const walker = document.createTreeWalker(h, NodeFilter.SHOW_TEXT);
+            let node: Node | null;
+            while ((node = walker.nextNode())) {
+              const text = node as Text;
+              for (let i = 0; i < text.length; i++) {
+                range.setStart(text, i);
+                range.setEnd(text, i + 1);
+                const r = range.getClientRects()[0];
+                if (!r) { if (/\s/.test(text.data[i])) cur += ' '; continue; } // пробел у края строки без своего прямоугольника
+                if (top !== null && Math.abs(r.top - top) > 4) { lines.push(cur); cur = ''; }
+                top = r.top;
+                cur += text.data[i];
+              }
+            }
+            lines.push(cur);
+            const lone = lines.filter((l, i) => i > 0 && /^[\s ?!.,:;…»)\]–—-]+$/.test(l));
+            // разрыв посреди слова: строка кончается буквой, следующая начинается с буквы (пробела между ними нет)
+            const split = lines.some((l, i) => i > 0 && /\p{L}$/u.test(lines[i - 1]) && /^\p{L}/u.test(l));
+            if (lone.length || split) out.push(`${h.textContent?.trim()} → ${JSON.stringify(lines)}`);
+          }
+          return out;
+        });
+        bad.push(...found.map((f) => `${path}: ${f}`));
+      }
+      expect(bad).toEqual([]);
+    });
+  }
+});
