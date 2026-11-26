@@ -25,8 +25,11 @@ $phone = trim((string) ($settings['phone'] ?? ''));
       <?= $this->partial('components/button', ['label' => 'Контакты', 'href' => '/contacts/', 'size' => 'lg', 'variant' => 'outline-light']) ?>
       <?= $this->partial('components/button', ['label' => 'На главную', 'href' => '/', 'size' => 'lg', 'variant' => 'outline-light']) ?>
     </div>
-    <?php if ($phone !== ''): ?>
-      <p class="mt-8 text-cream/90">Телефон офиса: <a class="tap tabular whitespace-nowrap font-semibold text-cream underline decoration-gold/60 underline-offset-4 hover:decoration-gold" href="<?= e(tel($phone)) ?>"><?= t(Phone::pretty($phone)) ?></a></p>
-    <?php endif ?>
   </div>
 </section>
+<?php if ($phone !== ''): ?>
+  <?php /* Телефон — на песочном блоке: лесной экран 404 не сливается с таким же лесным подвалом */ ?>
+  <div class="wrap py-10 sm:py-12">
+    <p class="text-lg text-ink">Телефон офиса: <a class="tap tabular whitespace-nowrap font-semibold text-rust-deep underline decoration-rust-deep/40 underline-offset-4 hover:decoration-rust-deep" href="<?= e(tel($phone)) ?>"><?= t(Phone::pretty($phone)) ?></a></p>
+  </div>
+<?php endif ?>
