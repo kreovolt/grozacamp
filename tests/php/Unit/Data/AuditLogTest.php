@@ -18,7 +18,42 @@ final class AuditLogTest extends TestCase
     protected function tearDown(): void
     {
         @unlink($this->file);
+        @unlink(dirname($this->file) . '/audit.1.jsonl');
         @rmdir(dirname($this->file));
+    }
+
+    public function test_log_rotates_to_one_archive_and_recent_reads_across_it(): void
+    {
+        $log = new AuditLog($this->file, null, 600);
+        for ($i = 1; $i <= 40; $i++) {
+            $log->record('anna', 'shifts.update', (string) $i);
+        }
+        $archive = dirname($this->file) . '/audit.1.jsonl';
+        $this->assertFileExists($archive);
+        $this->assertLessThan(600 + 200, filesize($this->file), 'текущий файл не растёт без предела');
+        $this->assertLessThan(600 + 200, filesize($archive));
+        $this->assertSame([], glob(dirname($this->file) . '/audit.2*') ?: [], 'архив один');
+
+        $recent = array_column($log->recent(8), 'target');
+        $this->assertSame(['40', '39', '38', '37', '36', '35', '34', '33'], $recent, 'новые первыми, через границу файлов');
+        $this->assertSame('40', $log->recent(1)[0]['target']);
+    }
+
+    public function test_recent_reads_from_the_tail_across_block_boundaries(): void
+    {
+        $log = new AuditLog($this->file);
+        $long = str_repeat('д', 20000); // строки длиннее блока чтения (64 КБ на три строки)
+        for ($i = 1; $i <= 6; $i++) {
+            $log->record('anna', 'a', $i . $long);
+        }
+        $log->record('anna', 'a', 'last');
+
+        $rows = $log->recent(10);
+        $this->assertCount(7, $rows);
+        $this->assertSame('last', $rows[0]['target']);
+        $this->assertSame('6' . $long, $rows[1]['target']);
+        $this->assertSame('1' . $long, $rows[6]['target']);
+        $this->assertSame([], $log->recent(0));
     }
 
     public function test_audit_appends_jsonl(): void
