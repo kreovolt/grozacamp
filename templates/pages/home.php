@@ -5,7 +5,7 @@ declare(strict_types=1);
  * Главная (спека §7.1), двенадцать блоков по порядку; у каждого data-block (порядок проверяют тесты).
  * Тексты героя, цифры, «что входит» и распорядок — из texts; тексты блоков 4–7 и 12 — здесь, в шаблоне
  * (их меняет разработчик; только факты из FAQ, текстов и спеки).
- * @var array{kicker:string, title:string, lead:string, photo:string} $hero
+ * @var array{kicker:string, title:string, lead:string, photo:string|array<string,mixed>} $hero  photo — ключ библиотеки или загруженное фото
  * @var list<string> $stats
  * @var list<array<string,mixed>> $shifts
  * @var array<string,array<string,mixed>> $venues

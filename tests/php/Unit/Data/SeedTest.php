@@ -82,7 +82,7 @@ final class SeedTest extends TestCase
     {
         $registry = self::registry();
         $expected = [
-            'home.heroKicker', 'home.heroTitle', 'home.heroLead', 'home.stats', 'home.included', 'home.schedule',
+            'home.heroKicker', 'home.heroTitle', 'home.heroLead', 'home.heroPhoto', 'home.stats', 'home.included', 'home.schedule',
             'info.prepare', 'info.contraindications', 'info.medicines', 'info.contact', 'info.transfer', 'info.visits',
             'lists.packing', 'lists.documents', 'rules', 'policy',
             'sved.campType', 'sved.legalForm', 'sved.fullName', 'sved.shortName', 'sved.director', 'sved.addresses',
@@ -95,7 +95,7 @@ final class SeedTest extends TestCase
         foreach ($registry as $key => $def) {
             $this->assertIsString($def['label'] ?? null, $key);
             $this->assertNotSame('', $def['label'], $key);
-            $this->assertContains($def['type'] ?? null, ['plain', 'richtext', 'list'], $key);
+            $this->assertContains($def['type'] ?? null, ['plain', 'richtext', 'list', 'image'], $key);
             $group = match (true) {
                 str_starts_with($key, 'home.') => 'home',
                 str_starts_with($key, 'info.'), str_starts_with($key, 'lists.'), $key === 'rules' => 'info',
@@ -111,6 +111,8 @@ final class SeedTest extends TestCase
         }
         $this->assertSame('richtext', $registry['rules']['type']);
         $this->assertSame('richtext', $registry['policy']['type']);
+        $this->assertSame('image', $registry['home.heroPhoto']['type']);
+        $this->assertArrayNotHasKey('required', $registry['home.heroPhoto']);
     }
 
     public function test_text_registry_required_paragraphs_of_order_201(): void
@@ -146,6 +148,8 @@ final class SeedTest extends TestCase
                     $this->assertSame(trim($line), $line, "$set: $key");
                     $this->assertNotSame('', $line, "$set: $key");
                 }
+            } elseif ($def['type'] === 'image') {
+                $this->assertNull($texts[$key], "$set: $key — своё фото не задано (на сайте фото по умолчанию)");
             } else {
                 $this->assertIsString($texts[$key], "$set: $key — строка");
             }

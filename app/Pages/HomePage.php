@@ -25,8 +25,8 @@ final class HomePage
 
     private const DEFAULT_TITLE = 'Лагерь настоящих приключений';
     private const REGION = 'Пермский край';
-    /** Фото героя: селфи вожатого с ребятами из папки заказчика (решение пользователя, photo-selection.md). */
-    private const HERO_PHOTO = 'friends-selfie';
+    /** Фото героя по умолчанию: селфи вожатого с ребятами из папки заказчика (решение пользователя, photo-selection.md). */
+    public const HERO_PHOTO = 'friends-selfie';
 
     public function __construct(private App $app)
     {
@@ -51,7 +51,8 @@ final class HomePage
                 'kicker' => $this->kicker($texts, $allShifts),
                 'title' => PageData::text($texts, 'home.heroTitle') ?: self::DEFAULT_TITLE,
                 'lead' => PageData::text($texts, 'home.heroLead'),
-                'photo' => self::HERO_PHOTO,
+                // своё фото из админки («Главная» → «Фото первого экрана»), иначе — из библиотеки сайта
+                'photo' => PageData::uploadedPhoto($texts['home.heroPhoto'] ?? null) ?? self::HERO_PHOTO,
             ],
             'stats' => PageData::lines($texts['home.stats'] ?? []),
             'shifts' => $shifts,

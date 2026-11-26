@@ -12,6 +12,8 @@ declare(strict_types=1);
  * @var string $basedOn
  * @var bool $unsaved
  * @var bool $editor есть ли в группе текст с оформлением (тогда подключается Trix)
+ * @var bool $multipart есть ли в группе фото (форма отправляет файлы)
+ * @var string $defaultPhoto ключ фото по умолчанию (библиотека сайта), когда своё не загружено
  * @var string $conflictText
  * @var string $siteUrl
  * @var array{login:string,name:string}|null $user
@@ -51,7 +53,7 @@ $this->layout('admin/layout', ['title' => $title, 'user' => $user, 'csrf' => $cs
 </div>
 <p class="alert alert-error" role="alert" data-draft-banner="conflict" hidden><?= e($conflictText) ?></p>
 <p class="alert alert-error" role="alert" data-draft-banner="changed" hidden>Тексты изменили после того, как вы начали правку — сравните и сохраните ещё раз.</p>
-<form method="post" action="/admin/texts/<?= e($group) ?>/" class="form edit-form" data-draft data-based-on="<?= e($basedOn) ?>"<?= $banner !== null ? ' data-draft-conflict' : '' ?><?= $unsaved ? ' data-draft-unsaved' : '' ?> novalidate autocomplete="off">
+<form method="post" action="/admin/texts/<?= e($group) ?>/"<?= $multipart ? ' enctype="multipart/form-data"' : '' ?> class="form edit-form" data-draft data-based-on="<?= e($basedOn) ?>"<?= $banner !== null ? ' data-draft-conflict' : '' ?><?= $unsaved ? ' data-draft-unsaved' : '' ?> novalidate autocomplete="off">
   <input type="hidden" name="_csrf" value="<?= e($csrf) ?>">
   <input type="hidden" name="_hash" value="<?= e($hash) ?>">
 <?php foreach ($fields as $f):
@@ -61,6 +63,35 @@ $this->layout('admin/layout', ['title' => $title, 'user' => $user, 'csrf' => $cs
     $aria = $invalid ? ' aria-invalid="true"' : '';
     ?>
   <div class="field text-field<?= $invalid ? ' has-error' : '' ?>" id="<?= e($f['key']) ?>">
+<?php if ($f['type'] === 'image'):
+    $photo = $f['value']['photo'];
+    $altId = $id . '__alt';
+    ?>
+    <span class="label" id="<?= e($id) ?>-label"><?= e($f['label']) ?></span>
+    <div class="current">
+      <?= $this->partial('admin/fields/_thumb', ['value' => $photo ?? $defaultPhoto, 'class' => 'current__img']) ?>
+<?php if ($photo !== null): ?>
+      <div class="choices choices--row">
+        <label class="choice"><input type="radio" name="imgaction[<?= e($f['key']) ?>]" value="keep"<?= !$f['value']['remove'] ? ' checked' : '' ?>><span>Оставить</span></label>
+        <label class="choice"><input type="radio" name="imgaction[<?= e($f['key']) ?>]" value="remove"<?= $f['value']['remove'] ? ' checked' : '' ?>><span>Убрать (вернуть фото по умолчанию)</span></label>
+      </div>
+<?php else: ?>
+      <p class="hint">Сейчас на сайте фото по умолчанию — селфи вожатого с ребятами.</p>
+<?php endif ?>
+    </div>
+    <label class="file-pick" for="<?= e($id) ?>"><?= $photo !== null ? 'Заменить фото' : 'Выбрать своё фото' ?></label>
+    <input type="file" id="<?= e($id) ?>" name="<?= e((string) $f['fileField']) ?>" accept="image/jpeg,image/png,image/webp"<?= $f['error'] !== null ? ' aria-invalid="true"' : '' ?>>
+    <p class="hint">JPEG, PNG или WebP до 10 МБ, лучше горизонтальное, от 1600 px в ширину. На телефоне фото обрезается по краям — главное держите в центре кадра. Картинка для соцсетей (когда ссылку на сайт пересылают) не меняется: это отдельная картинка сайта.</p>
+    <div class="alt-field">
+      <label for="<?= e($altId) ?>">Что на фото?</label>
+      <input type="text" id="<?= e($altId) ?>" name="imgalt[<?= e($f['key']) ?>]" value="<?= e((string) $f['value']['alt']) ?>" maxlength="200" autocomplete="off"<?= $f['error'] !== null ? ' aria-invalid="true"' : '' ?>>
+      <p class="hint">Одной фразой: кто и что на снимке. Нужно для своего фото: эту подпись читают незрячим посетителям.</p>
+    </div>
+<?php if ($f['error'] !== null): ?>
+    <p class="field-error"><?= e((string) $f['error']) ?></p>
+<?php endif ?>
+  </div>
+<?php continue; endif ?>
     <label for="<?= e($id) ?>"><?= e($f['label']) ?><?php if ($f['required']): ?> <span class="req" aria-hidden="true">*</span><?php endif ?></label>
 <?php if ($f['code'] !== null): ?>
     <p class="hint">Основание: п. <?= e((string) $f['code']) ?> приказа № 201<?= $f['required'] ? ' — обязательный пункт для проверки' : '' ?>.</p>

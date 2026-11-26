@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { PORT_TEXTS, url } from './ports';
+import { resolve } from 'node:path';
 
 // Свой сервер и данные (порт 8096, storage/test-texts): тексты и настройки меняются, редактор грузит много статики.
 // Всё, что тест меняет, он возвращает на место.
@@ -197,4 +198,32 @@ test('черновик: нетронутая форма его не создаё
 
   await page.locator('[data-draft-cancel]').click();
   await expect(page.locator('#info\\.visits trix-editor')).not.toContainText('ЧЕРНОВИК-e2e');
+});
+
+test('фото первого экрана: своё фото с подписью видно на главной, «Убрать» возвращает фото по умолчанию', async ({ page }) => {
+  await login(page);
+  await page.goto('/admin/texts/home/');
+  await page.locator('form[data-draft-ready]').waitFor();
+  await expect(page.locator('[id="home.heroPhoto"]')).toContainText('Сейчас на сайте фото по умолчанию');
+
+  await page.locator('[id="t-home.heroPhoto"]').setInputFiles(resolve('tests/fixtures/uploads/small.jpg'));
+  await page.getByLabel('Что на фото?').fill('Ребята у палаток на рассвете');
+  await page.getByRole('button', { name: 'Сохранить' }).click();
+  await expect(page.locator('.alert-ok')).toContainText('Сохранено');
+
+  await page.goto('/');
+  const img = page.locator('[data-block="hero"] img');
+  await expect(img).toHaveAttribute('src', /^\/uploads\/img\/[0-9a-f]{16}-\d+\.jpg$/);
+  await expect(img).toHaveAttribute('alt', 'Ребята у палаток на рассвете');
+  await expect(img).toHaveAttribute('fetchpriority', 'high');
+  expect((await page.request.get((await img.getAttribute('src'))!)).status()).toBe(200);
+
+  // вернуть как было
+  await page.goto('/admin/texts/home/');
+  await page.locator('form[data-draft-ready]').waitFor();
+  await page.getByLabel('Убрать (вернуть фото по умолчанию)').check();
+  await page.getByRole('button', { name: 'Сохранить' }).click();
+  await expect(page.locator('.alert-ok')).toContainText('Сохранено');
+  await page.goto('/');
+  await expect(page.locator('[data-block="hero"] img')).toHaveAttribute('src', /^\/assets\/img\/friends-selfie-/);
 });

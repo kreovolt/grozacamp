@@ -120,6 +120,9 @@ final class ExpiredEcho
 
     private static function label(string $path, string $name): string
     {
+        if (preg_match('/^imgalt\[(.+)\]$/', $name, $m) === 1) {
+            return (string) (Readiness::registry()[$m[1]]['label'] ?? $m[1]) . ': что на фото';
+        }
         if (preg_match('/^text\[(.+)\]$/', $name, $m) === 1) {
             return (string) (Readiness::registry()[$m[1]]['label'] ?? $m[1]);
         }

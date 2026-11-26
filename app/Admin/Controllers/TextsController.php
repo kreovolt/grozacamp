@@ -4,10 +4,13 @@ declare(strict_types=1);
 namespace Groza\Admin\Controllers;
 
 use Groza\Support\Sanitizer;
+use Groza\Admin\UploadException;
 use Groza\App;
+use Groza\Content\PageData;
 use Groza\Data\ConflictException;
 use Groza\Http\Request;
 use Groza\Http\Response;
+use Groza\Pages\HomePage;
 use Groza\Readiness\Readiness;
 use Groza\Support\Csrf;
 
@@ -19,7 +22,10 @@ use Groza\Support\Csrf;
  *  - `_hash` файла на момент открытия: если файл с тех пор менялся — 409, ничего не пишется, ввод остаётся в форме;
  *  - незнакомый ключ в запросе — 400, не записывается ничего;
  *  - обязательный пункт приказа нельзя очистить случайно: без confirm_empty[ключ]=1 — 422 с вопросом, ввод остаётся;
- *  - текст с оформлением очищается Sanitizer'ом (граница безопасности), «пустым» считается и `<p> </p>`.
+ *  - текст с оформлением очищается Sanitizer'ом (граница безопасности), «пустым» считается и `<p> </p>`;
+ *  - фото (type=image, например «Фото первого экрана»): описание делает сервер (Uploads), из запроса берутся только файл,
+ *    подпись «Что на фото?» (обязательна) и выбор «оставить / убрать»; файл принимается после проверки остального,
+ *    заменённый уходит по тем же правилам, что в редакторе списков (App::discardUploads: с учётом хранимых версий).
  */
 final class TextsController
 {
@@ -31,6 +37,7 @@ final class TextsController
     private const MAX_RICH = 400000;
     /** Длиннее — многострочное поле, короче — строка ввода. */
     private const TEXTAREA_FROM = 90;
+    private const ALT_MAX = 200;
 
     /** Группы страниц админки: адрес → подпись. */
     public const GROUPS = [
@@ -55,7 +62,9 @@ final class TextsController
         $stored = $this->app->store()->read('texts');
         $values = [];
         foreach ($this->keys($group) as $key => $def) {
-            $values[$key] = self::display($def['type'], $stored[$key] ?? null);
+            $values[$key] = $def['type'] === 'image'
+                ? self::imageValue($stored[$key] ?? null, null, false)
+                : self::display($def['type'], $stored[$key] ?? null);
         }
 
         return $this->render($group, $values, [], [], 200, null, $r->query('saved') === '1');
@@ -69,11 +78,12 @@ final class TextsController
             return $this->notFound();
         }
         $keys = $this->keys($group);
+        $images = array_filter($keys, static fn (array $d): bool => $d['type'] === 'image');
         $posted = $r->post('text');
         if (!is_array($posted)) {
             return $this->badRequest('Форма отправлена неполностью. Откройте страницу заново.');
         }
-        $unknown = array_values(array_diff(array_map('strval', array_keys($posted)), array_keys($keys)));
+        $unknown = array_values(array_diff(array_map('strval', array_keys($posted)), array_keys(array_diff_key($keys, $images))));
         if ($unknown !== []) {
             return $this->badRequest('В форме есть незнакомое поле: ' . mb_substr(implode(', ', $unknown), 0, 80) . '. Откройте страницу заново.');
         }
@@ -90,7 +100,36 @@ final class TextsController
         $clean = [];
         $errors = [];
         $needConfirm = [];
+        $pending = [];
+        $altPosted = $r->post('imgalt');
+        $altPosted = is_array($altPosted) ? $altPosted : [];
+        $actionPosted = $r->post('imgaction');
+        $actionPosted = is_array($actionPosted) ? $actionPosted : [];
         foreach ($keys as $key => $def) {
+            if ($def['type'] === 'image') {
+                $photo = PageData::uploadedPhoto($stored[$key] ?? null);
+                $file = $r->file(self::fileField($key));
+                $uploaded = is_array($file) && (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+                if (!$uploaded && !array_key_exists($key, $altPosted) && !array_key_exists($key, $actionPosted)) {
+                    $values[$key] = self::imageValue($stored[$key] ?? null, null, false); // поля фото не было в форме — не трогаем
+                    continue;
+                }
+                $alt = self::cleanAlt($altPosted[$key] ?? '');
+                $remove = ($actionPosted[$key] ?? 'keep') === 'remove';
+                $keep = !$uploaded && !$remove ? $photo : null;
+                $values[$key] = self::imageValue($stored[$key] ?? null, $alt, $remove);
+                if (($uploaded || $keep !== null) && $alt === '') {
+                    $errors[$key] = CollectionController::MSG_ALT;
+                    continue;
+                }
+                if ($uploaded) {
+                    $pending[$key] = $file;
+                    $clean[$key] = ['alt' => $alt]; // описание файла — после загрузки
+                } else {
+                    $clean[$key] = $keep !== null ? array_replace($keep, ['alt' => $alt]) : null;
+                }
+                continue;
+            }
             if (!array_key_exists($key, $posted)) {
                 $values[$key] = self::display($def['type'], $stored[$key] ?? null);
                 continue;
@@ -117,14 +156,43 @@ final class TextsController
             return $this->render($group, $values, $errors, $needConfirm, 422, null, false, $postedHash);
         }
 
+        // Всё верно — только теперь принимаем фото (описание делает сервер)
+        $created = [];
+        foreach ($pending as $key => $file) {
+            try {
+                $d = $this->app->uploads()->storeImage($file);
+            } catch (UploadException $e) {
+                $this->app->discardUploads($created);
+
+                return $this->render($group, $values, [$key => $e->getMessage()], [], 422, null, false, $postedHash);
+            }
+            $created[] = $d['src'];
+            $clean[$key] = $d + ['alt' => (string) ($clean[$key]['alt'] ?? '')];
+        }
+
         $next = array_replace($stored, $clean);
         if ($next !== $stored) { // ничего не изменилось — ни записи, ни строки в журнале
             try {
                 $store->write('texts', $next, $this->app->actor(), $postedHash);
             } catch (ConflictException) {
+                $this->app->discardUploads($created);
+
                 return $this->render($group, $values, [], [], 409, self::MSG_CONFLICT, false, null, $postedHash);
+            } catch (\Throwable $e) {
+                $this->app->discardUploads($created);
+                throw $e;
             }
             $this->app->audit()->record($this->app->actor(), 'texts.update', $group);
+            // заменённое или убранное фото больше не нужно сайту (истории — может быть: тогда в карантин)
+            $old = [];
+            foreach (array_keys($images) as $key) {
+                $was = PageData::uploadedPhoto($stored[$key] ?? null);
+                $now = PageData::uploadedPhoto($next[$key] ?? null);
+                if ($was !== null && ($now === null || $now['src'] !== $was['src'])) {
+                    $old[] = $was['src'];
+                }
+            }
+            $this->app->discardUploads($old);
         }
 
         return Response::redirect('/admin/texts/' . $group . '/?saved=1', 303);
@@ -162,6 +230,35 @@ final class TextsController
         }
     }
 
+    /** Имя поля файла для фото-ключа (точки в именах верхнего уровня PHP заменил бы на «_» сам). */
+    public static function fileField(string $key): string
+    {
+        return 'img_' . preg_replace('/[^A-Za-z0-9]/', '_', $key);
+    }
+
+    /**
+     * Что показать в поле фото: сохранённое фото (или null — фото по умолчанию), подпись (введённая или сохранённая), «убрать».
+     *
+     * @return array{photo:?array<string,mixed>, alt:string, remove:bool}
+     */
+    private static function imageValue(mixed $stored, ?string $alt, bool $remove): array
+    {
+        $photo = PageData::uploadedPhoto($stored);
+
+        return ['photo' => $photo, 'alt' => $alt ?? (string) ($photo['alt'] ?? ''), 'remove' => $remove];
+    }
+
+    /** Подпись к фото: одна строка, без управляющих знаков, не длиннее ALT_MAX. */
+    private static function cleanAlt(mixed $v): string
+    {
+        if (!is_scalar($v)) {
+            return '';
+        }
+        $s = trim((string) preg_replace('/[\p{C}\s]+/u', ' ', mb_scrub((string) $v)));
+
+        return trim(mb_substr($s, 0, self::ALT_MAX));
+    }
+
     /** Значение в поле формы. */
     private static function display(string $type, mixed $value): string
     {
@@ -191,7 +288,7 @@ final class TextsController
     }
 
     /**
-     * @param array<string,string> $values
+     * @param array<string,mixed> $values строка поля; у фото — {photo, alt, remove}
      * @param array<string,string> $errors
      * @param array<string,bool> $needConfirm
      */
@@ -222,7 +319,8 @@ final class TextsController
                     : null,
                 'legalTitle' => $order !== null ? (string) $order['title'] : null,
                 'legalFull' => $order !== null ? (string) $order['full'] : null,
-                'multiline' => $def['type'] === 'list' || ($def['type'] === 'plain' && mb_strlen($values[$key] ?? '') >= self::TEXTAREA_FROM),
+                'multiline' => $def['type'] === 'list' || ($def['type'] === 'plain' && mb_strlen(is_string($values[$key] ?? null) ? $values[$key] : '') >= self::TEXTAREA_FROM),
+                'fileField' => $def['type'] === 'image' ? self::fileField($key) : null,
             ];
             if (isset($errors[$key])) {
                 $summary[] = ['id' => $key, 'label' => (string) $def['label'], 'message' => $errors[$key]];
@@ -245,6 +343,8 @@ final class TextsController
             'basedOn' => $basedOn ?? $hash ?? $now,
             'unsaved' => $status !== 200,
             'editor' => (bool) array_filter($fields, static fn (array $f): bool => $f['type'] === 'richtext'),
+            'multipart' => (bool) array_filter($fields, static fn (array $f): bool => $f['type'] === 'image'),
+            'defaultPhoto' => HomePage::HERO_PHOTO,
             'conflictText' => self::MSG_CONFLICT,
             'siteUrl' => ['home' => '/', 'info' => '/info/', 'svedeniya' => '/svedeniya/', 'vacancies' => '/vacancies/', 'legal' => '/policy/'][$group],
         ]), $status);

@@ -107,6 +107,34 @@ final class PageData
         return is_array($file) && is_string($file['url'] ?? null) && trim($file['url']) !== '' ? $file : null;
     }
 
+    /**
+     * Загруженное в админке фото из данных (описание делает сервер): только /uploads/img/{имя}, ширины и форматы — списки,
+     * размеры — положительные числа. Что угодно другое (пусто, ключ, правка руками) — null: страница берёт фото по умолчанию.
+     *
+     * @return array{src:string,widths:list<int>,formats:list<string>,w:int,h:int,alt?:string}|null
+     */
+    public static function uploadedPhoto(mixed $v): ?array
+    {
+        if (!is_array($v) || !is_string($v['src'] ?? null) || preg_match('#^/uploads/img/[A-Za-z0-9_-]+$#D', $v['src']) !== 1) {
+            return null;
+        }
+        $widths = $v['widths'] ?? null;
+        $formats = $v['formats'] ?? null;
+        $positive = static fn (mixed $n): bool => is_int($n) && $n > 0 && $n <= 100000;
+        if (!is_array($widths) || $widths === [] || !array_is_list($widths) || array_filter($widths, $positive) !== $widths
+            || !is_array($formats) || $formats === [] || !array_is_list($formats)
+            || array_filter($formats, static fn (mixed $f): bool => is_string($f) && preg_match('/^[a-z0-9]{2,5}$/D', $f) === 1) !== $formats
+            || !$positive($v['w'] ?? null) || !$positive($v['h'] ?? null)) {
+            return null;
+        }
+        $out = ['src' => $v['src'], 'widths' => $widths, 'formats' => $formats, 'w' => $v['w'], 'h' => $v['h']];
+        if (is_string($v['alt'] ?? null) && trim($v['alt']) !== '') {
+            $out['alt'] = trim($v['alt']);
+        }
+
+        return $out;
+    }
+
     /** «Что входит в стоимость» (texts home.included). @param array<string,mixed> $texts @return list<string> */
     public static function included(array $texts): array
     {

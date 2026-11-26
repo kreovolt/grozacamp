@@ -5,17 +5,20 @@ declare(strict_types=1);
  * Реестр текстовых блоков сайта (storage/data/texts.json — объект «ключ → значение»).
  *
  * type:     plain — строка; richtext — HTML (p, br, strong, em, a, ul, ol, li, h3, blockquote);
- *           list — список строк (для «значение|подпись» и «время|дело» — через вертикальную черту).
+ *           list — список строк (для «значение|подпись» и «время|дело» — через вертикальную черту);
+ *           image — загруженное фото (описание делает сервер: src, widths, formats, w, h, alt; подпись alt обязательна)
+ *           или null — тогда на сайте фото по умолчанию.
  * group:    раздел админки: home — «Главная», info — «Родителям», svedeniya — «Сведения»,
  *           vacancies — «Вакансии», legal — «Документы о данных».
  * required: пункт приказа Минпросвещения № 201, если блок по нему обязателен.
  *
- * @return array<string, array{label:string, type:'plain'|'richtext'|'list', group:'home'|'info'|'svedeniya'|'vacancies'|'legal', required?:string}>
+ * @return array<string, array{label:string, type:'plain'|'richtext'|'list'|'image', group:'home'|'info'|'svedeniya'|'vacancies'|'legal', required?:string}>
  */
 return [
     'home.heroKicker' => ['label' => 'Строка над заголовком (если пусто — по ближайшему сезону смен)', 'type' => 'plain', 'group' => 'home'],
     'home.heroTitle' => ['label' => 'Заголовок первого экрана', 'type' => 'plain', 'group' => 'home'],
     'home.heroLead' => ['label' => 'Подзаголовок первого экрана', 'type' => 'plain', 'group' => 'home'],
+    'home.heroPhoto' => ['label' => 'Фото первого экрана', 'type' => 'image', 'group' => 'home'],
     'home.stats' => ['label' => 'Полоса цифр (строка: «значение|подпись»)', 'type' => 'list', 'group' => 'home'],
     'home.included' => ['label' => 'Что входит в стоимость', 'type' => 'list', 'group' => 'home'],
     'home.schedule' => ['label' => 'Распорядок дня (строка: «время|дело»)', 'type' => 'list', 'group' => 'home'],
