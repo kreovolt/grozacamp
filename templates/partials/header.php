@@ -10,7 +10,7 @@ use function Groza\View\e;
 use function Groza\View\icon;
 use function Groza\View\tel;
 ?>
-<header class="on-dark sticky top-0 z-40 bg-forest text-cream shadow-[0_10px_24px_-18px_rgb(12_22_16/0.7)]">
+<header class="on-dark sticky top-0 z-40 bg-forest text-cream transition-shadow duration-200 data-[scrolled]:shadow-[0_10px_24px_-18px_rgb(12_22_16/0.7)]" data-header>
   <div class="wrap relative flex h-16 items-center gap-6 desk:h-20">
     <?= $this->partial('partials/brand') ?>
     <?= $this->partial('partials/nav-desktop') ?>

@@ -127,6 +127,13 @@
     fill: none;
   }
 
+  /* Топо-линии (components/topo): у верхнего и нижнего края блока растворяются, а не обрываются о его границу.
+     По бокам линии и так уходят за край — там маска не нужна. */
+  .topo {
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 18%, #000 82%, transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 18%, #000 82%, transparent 100%);
+  }
+
   /* Герой главной. Лица на селфи занимают весь кадр, поэтому текст не кладём на фото:
      телефон и планшет — фото сверху во всю ширину экрана (16 : 9), текст ниже на forest;
      с 1024 px — две колонки по сетке .wrap (края — как у логотипа и меню в шапке): текст слева,
@@ -137,10 +144,11 @@
     margin-inline: calc(-1 * var(--gutter));
   }
   .hero-copy { padding-block: 2rem 2.75rem; }
-  /* Топо-линии гаснут к заголовку: гуще внизу блока, под кнопками */
+  /* Топо-линии гаснут к заголовку: гуще в нижней трети блока, под кнопками, и растворяются у самого края
+     (иначе линии обрываются о границу с полосой цифр) */
   .hero-topo {
-    -webkit-mask-image: linear-gradient(to top, #000 0, #000 30%, transparent 85%);
-    mask-image: linear-gradient(to top, #000 0, #000 30%, transparent 85%);
+    -webkit-mask-image: linear-gradient(to top, transparent 0, #000 22%, #000 42%, transparent 88%);
+    mask-image: linear-gradient(to top, transparent 0, #000 22%, #000 42%, transparent 88%);
   }
   @screen lg {
     .hero-grid {

@@ -24,7 +24,7 @@ $lines = [
     'M-20 60 C 290 0, 470 110, 690 40 S 1070 -30, 1220 20',
 ];
 ?>
-<svg class="<?= e($class ?? 'pointer-events-none absolute inset-0 h-full w-full text-sand opacity-20') ?>" viewBox="0 0 1200 500" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true" focusable="false">
+<svg class="topo <?= e($class ?? 'pointer-events-none absolute inset-0 h-full w-full text-sand opacity-20') ?>" viewBox="0 0 1200 500" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true" focusable="false">
   <?php foreach ($lines as $d): ?>
     <path d="<?= $d ?>" vector-effect="non-scaling-stroke"/>
   <?php endforeach ?>
