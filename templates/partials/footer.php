@@ -118,7 +118,7 @@ $heading = 'mb-5 font-display text-[0.875rem] font-semibold uppercase tracking-[
   </div>
 
   <div class="relative border-t border-cream/[0.12]">
-    <div class="wrap flex flex-col gap-3 py-6 text-[0.875rem] text-sage sm:flex-row sm:items-center sm:justify-between">
+    <div class="wrap flex flex-col gap-3 py-6 text-[0.875rem] text-sage sm:flex-row sm:items-center sm:justify-between" data-footer-bottom>
       <p>© Детский лагерь «Гроза», <?= e((string) $year) ?></p>
       <ul class="flex flex-wrap gap-x-6 gap-y-2" role="list">
         <?php foreach (Nav::legal() as $link): ?>

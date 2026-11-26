@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { PORT_METRIKA, url } from './ports';
 
 // Вёрстка на краевых ширинах (аудит адаптивности, .superpowers/…/layout-audit.md): без горизонтальной прокрутки,
 // ничего не обрезано и не залезает на поля контейнера .wrap.
@@ -139,4 +140,35 @@ test('320 px: команда в одну колонку, фото слева, с
   const name = await member.locator('p').first().boundingBox();
   expect(name!.x).toBeGreaterThan(photo!.x + photo!.width);
   expect(Math.round(name!.y)).toBe(Math.round(photo!.y));
+});
+
+test.describe('кнопка «Наверх» ничего не закрывает', () => {
+  for (const viewport of [{ width: 320, height: 640 }, { width: 768, height: 1024 }, { width: 1024, height: 768 }, { width: 1366, height: 768 }]) {
+    test(`${viewport.width} px: в конце страницы не лежит на правовых ссылках подвала`, async ({ page }) => {
+      await page.setViewportSize(viewport);
+      await page.goto('/');
+      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+      const up = page.getByRole('link', { name: 'Наверх' });
+      await expect(up).toBeVisible();
+      const button = (await up.boundingBox())!;
+      for (const link of await page.locator('[data-footer-bottom] a, [data-footer-bottom] p').all()) {
+        const b = (await link.boundingBox())!;
+        const overlaps = b.x < button.x + button.width && b.x + b.width > button.x && b.y < button.y + button.height && b.y + b.height > button.y;
+        expect(overlaps, await link.innerText()).toBe(false);
+      }
+    });
+  }
+
+  test('375 px: с уведомлением о cookie кнопка стоит над ним, уведомление компактное', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto(url(PORT_METRIKA) + '/');
+    const notice = page.locator('[data-cookie-notice]');
+    await expect(notice).toBeVisible();
+    await page.evaluate(() => window.scrollTo(0, 3000));
+    const up = page.getByRole('link', { name: 'Наверх' });
+    await expect(up).toBeVisible();
+    const box = (await notice.boundingBox())!;
+    await expect.poll(async () => { const b = (await up.boundingBox())!; return b.y + b.height; }).toBeLessThanOrEqual(box.y);
+    expect(box.height).toBeLessThanOrEqual(812 * 0.2);
+  });
 });
