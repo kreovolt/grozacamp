@@ -43,6 +43,18 @@ final class ProjectHygieneTest extends TestCase
         $this->assertSame([], $missing, 'Нет declare(strict_types=1);');
     }
 
+    /** Скрипты из scripts/ запускаются только из консоли: попавшие в корень сайта (общая папка) по адресу не выполняются. */
+    public function test_cli_scripts_refuse_to_run_from_the_web(): void
+    {
+        $missing = [];
+        foreach (glob(self::root() . '/scripts/*.php') ?: [] as $file) {
+            if (!str_contains((string) file_get_contents($file), "if (PHP_SAPI !== 'cli') {")) {
+                $missing[] = basename($file);
+            }
+        }
+        $this->assertSame([], $missing);
+    }
+
     public function test_config_file_does_not_leak_variables_into_the_includer(): void
     {
         $leaked = (static function (): array {

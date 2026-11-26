@@ -175,4 +175,20 @@ final class SecurityHeadersTest extends TestCase
         $this->assertStringContainsString('max-age=31536000, immutable', $ht);
         $this->assertStringContainsString('HTTP_AUTHORIZATION', $ht);
     }
+
+    /** Служебные папки закрыты двумя способами (RedirectMatch и mod_rewrite) — списки одинаковые, и в них всё, что лежит рядом с сайтом. */
+    public function test_htaccess_deny_lists_match(): void
+    {
+        $ht = (string) file_get_contents(dirname(__DIR__, 4) . '/public/.htaccess');
+        $this->assertSame(1, preg_match('#RedirectMatch 404 \(\?i\)\^/\(([^)]+)\)\(/\|\$\)#', $ht, $alias));
+        $this->assertSame(1, preg_match('#RewriteRule \^\(([^)]+)\)\(/\|\$\) - \[F,NC,L\]#', $ht, $rewrite));
+        $a = explode('|', $alias[1]);
+        $b = explode('|', $rewrite[1]);
+        sort($a);
+        sort($b);
+        $this->assertSame($a, $b);
+        foreach (['app', 'config', 'storage', 'vendor', 'docs', 'content', 'tools', '_source', 'scripts', 'seed', 'tests', 'templates'] as $dir) {
+            $this->assertContains($dir, $a, $dir);
+        }
+    }
 }

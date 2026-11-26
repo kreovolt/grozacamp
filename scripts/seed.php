@@ -18,6 +18,9 @@ use Groza\Data\JsonStore;
 use Groza\Data\Seeder;
 use Groza\Support\Layout;
 
+if (PHP_SAPI !== 'cli') {
+    exit(1);
+}
 $root = dirname(__DIR__);
 require $root . '/vendor/autoload.php';
 $config = require $root . '/config/config.php';

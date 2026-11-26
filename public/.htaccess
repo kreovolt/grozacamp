@@ -33,7 +33,7 @@ RedirectMatch 404 ^/(?:.*/)?\.(?!well-known/acme-challenge/)
   RewriteEngine On
 
   # То же самое запретом (403), на случай если RedirectMatch на хостинге отключён
-  RewriteRule ^(app|config|storage|templates|vendor|seed|scripts|tests|frontend|node_modules)(/|$) - [F,NC,L]
+  RewriteRule ^(app|config|storage|templates|vendor|seed|scripts|tests|frontend|node_modules|docs|content|tools|_source)(/|$) - [F,NC,L]
   RewriteRule (^|/)\.(?!well-known/acme-challenge/) - [F,NC,L]
   RewriteRule ^(composer\.(json|lock)|package(-lock)?\.json|phpunit\.xml(\.dist)?|playwright\.config\.ts|tailwind\.config\.js|[^/]+\.md)$ - [F,NC,L]
 
