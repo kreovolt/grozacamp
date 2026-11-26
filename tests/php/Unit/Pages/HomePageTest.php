@@ -194,7 +194,8 @@ final class HomePageTest extends TestCase
             $items[$i]['onHome'] = true;
         }
         $app->store()->write('faq', ['items' => $items], 'test');
-        $faq = $this->block(TestApp::get($app, '/')->body(), 'faq');
+        // текст на странице с неразрывными пробелами типографа — сравниваем с обычными, иначе «не содержит» проходит всегда
+        $faq = str_replace(" ", ' ', $this->block(TestApp::get($app, '/')->body(), 'faq'));
 
         $this->assertSame(5, substr_count($faq, '<details'));
         $this->assertStringContainsString('Где живут ребята?', $faq, 'первые по порядку');
@@ -204,8 +205,10 @@ final class HomePageTest extends TestCase
 
     public function test_faq_shows_only_marked_for_home(): void
     {
-        $faq = $this->block(TestApp::get(TestApp::make(), '/')->body(), 'faq');
+        $faq = str_replace(" ", ' ', $this->block(TestApp::get(TestApp::make(), '/')->body(), 'faq'));
+        $all = str_replace(" ", ' ', TestApp::get(TestApp::make(), '/info/')->body());
 
+        $this->assertStringContainsString('Что с клещами?', $all, 'вопрос есть в FAQ — значит, проверка ниже не пустая');
         $this->assertStringContainsString('Это безопасно?', $faq);
         $this->assertStringNotContainsString('Что с клещами?', $faq);
     }

@@ -48,7 +48,10 @@ function nobr(string $text): string
     return $out;
 }
 
-/** Типограф в текстовых узлах готового безопасного HTML (разметка и атрибуты не меняются); результат так же безопасен. */
+/**
+ * Типограф в текстовых узлах уже безопасного HTML: выход Sanitizer::clean или литерал шаблона с e()-частями.
+ * Не санитайзер — сырой HTML сюда не подавать (см. HtmlTypograph).
+ */
 function typeset(string $safeHtml): string
 {
     return HtmlTypograph::apply($safeHtml);

@@ -97,6 +97,8 @@ final class TypographTest extends TestCase
             'номер дома с дробью' => ['Власова, 37/2', 'Власова,~37/2'],
             'номер дома и пометка в скобках' => ['Власова, 37 (пример)', 'Власова,~37 (пример)'],
             'число после запятой со словом — не номер дома' => ['детей в отряде, 2 вожатых', 'детей в~отряде, 2~вожатых'],
+            'число с дефисом после запятой — не номер дома' => ['обратно, 5-разовое питание', 'обратно, 5-разовое питание'],
+            'порядковые числа после запятой' => ['отряд, 2-я смена', 'отряд, 2-я~смена'],
             'адрес из подвала' =>['г. Пермь, ул. Милиционера Власова, 37', 'г.~Пермь, ул.~Милиционера Власова,~37'],
             'индекс в начале' => ['614065, г. Пермь', '614065, г.~Пермь'],
 
@@ -145,6 +147,17 @@ final class TypographTest extends TestCase
             $this->assertSame($url, Typograph::apply($url), $url);
             $this->assertSame([[$url, false]], Typograph::segments($url), $url . ': внутри адреса не ставим nobr');
         }
+    }
+
+    public function test_regex_failure_returns_the_text_unchanged(): void
+    {
+        // ~12 тысяч звеньев «1-1-1…» упираются в предел стека PCRE JIT: preg_replace возвращает null.
+        // Типограф только оформляет текст — при сбое он должен вернуть текст как был, а не пустую строку.
+        $in = 'Итого ' . implode('-', array_fill(0, 12000, '1')) . ' дней в лагере';
+        $out = Typograph::apply($in);
+
+        $this->assertNotSame('', $out);
+        $this->assertSame($in, str_replace(self::NBSP, ' ', $out));
     }
 
     public function test_invalid_utf8_is_returned_as_is(): void

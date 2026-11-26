@@ -48,24 +48,42 @@ final class Typograph
             return $text; // нечего менять, битая кодировка или символы, которые нужны нам как метки
         }
 
-        // Телефон: внутри только неразрывные пробелы
-        $text = (string) preg_replace_callback('/' . self::PHONE . '/u', static fn (array $m): string => strtr($m[0], [' ' => self::NBSP, "\t" => self::NBSP]), $text);
+        $original = $text;
+        try {
+            // Телефон: внутри только неразрывные пробелы
+            $text = self::reCallback('/' . self::PHONE . '/u', static fn (array $m): string => strtr($m[0], [' ' => self::NBSP, "\t" => self::NBSP]), $text);
 
-        // Адреса, почта и телефоны на время работы правил заменяются метками (один символ из личной области Unicode)
-        // (в личной области 6400 знаков; адресов больше 6000 в одном тексте не бывает — лишние просто не прячем)
-        $kept = [];
-        $text = (string) preg_replace_callback('/' . self::URL . '|' . self::PHONE . '/iu', static function (array $m) use (&$kept): string {
-            if (count($kept) >= 6000) {
-                return $m[0];
-            }
-            $kept[] = $m[0];
+            // Адреса, почта и телефоны на время работы правил заменяются метками (один символ из личной области Unicode)
+            // (в личной области 6400 знаков; адресов больше 6000 в одном тексте не бывает — лишние просто не прячем)
+            $kept = [];
+            $text = self::reCallback('/' . self::URL . '|' . self::PHONE . '/iu', static function (array $m) use (&$kept): string {
+                if (count($kept) >= 6000) {
+                    return $m[0];
+                }
+                $kept[] = $m[0];
 
-            return mb_chr(0xE000 + count($kept) - 1, 'UTF-8');
-        }, $text);
+                return mb_chr(0xE000 + count($kept) - 1, 'UTF-8');
+            }, $text);
 
-        $text = self::rules($text);
+            $text = self::rules($text);
 
-        return $kept === [] ? $text : self::restore($text, $kept);
+            return $kept === [] ? $text : self::restore($text, $kept);
+        } catch (\RuntimeException) {
+            // Сбой PCRE (предел стека на чудовищном токене): оформление — не повод терять текст
+            return $original;
+        }
+    }
+
+    /** preg_replace, но сбой PCRE (null) — исключение, а не пустая строка. */
+    private static function re(string $pattern, string $replacement, string $text): string
+    {
+        return preg_replace($pattern, $replacement, $text) ?? throw new \RuntimeException(preg_last_error_msg());
+    }
+
+    /** preg_replace_callback, но сбой PCRE (null) — исключение, а не пустая строка. */
+    private static function reCallback(string $pattern, callable $callback, string $text): string
+    {
+        return preg_replace_callback($pattern, $callback, $text) ?? throw new \RuntimeException(preg_last_error_msg());
     }
 
     /**
@@ -172,41 +190,41 @@ final class Typograph
 
         // Дефис или короткое тире с пробелами: между словами — длинное тире с неразрывным пробелом перед ним;
         // рядом с числом (диапазон «29 июня – 12 июля», «2026 – 2027») тире остаётся как есть, неразрывный пробел — тоже перед ним
-        $text = (string) preg_replace_callback('/(' . $notWs . ')[ \t]+([-–])[ \t]+(?=(' . $notWs . '))/u', static function (array $m) use ($nb): string {
+        $text = self::reCallback('/(' . $notWs . ')[ \t]+([-–])[ \t]+(?=(' . $notWs . '))/u', static function (array $m) use ($nb): string {
             $number = preg_match('/^\p{N}$/u', $m[1]) === 1 || preg_match('/^\p{N}$/u', $m[3]) === 1;
 
             return $m[1] . $nb . ($number ? $m[2] : '—') . ' ';
         }, $text);
         // Длинное тире — не в начало строки
-        $text = (string) preg_replace('/(?<=' . $notWs . ')[ \t]+—/u', $nb . '—', $text);
+        $text = self::re('/(?<=' . $notWs . ')[ \t]+—/u', $nb . '—', $text);
 
         // т. д., т. е., т. п.: внутри неразрывный пробел (после — обычный: часто это конец предложения)
-        $text = (string) preg_replace('/(?<![\p{L}\p{N}])(т\.)[ \t]+(?=[дпе]\.)/iu', '$1' . $nb, $text);
+        $text = self::re('/(?<![\p{L}\p{N}])(т\.)[ \t]+(?=[дпе]\.)/iu', '$1' . $nb, $text);
         // Сокращения: г. Пермь, ул. Ленина, д. 5, им. Вагина, тел. …
-        $text = (string) preg_replace('/(?<![\p{L}\p{N}])(?<!т\.\x{00A0})(?<!т\. )((?:' . self::ABBR . ')\.)[ \t]+(?=[^\s\-–—])/iu', '$1' . $nb, $text);
+        $text = self::re('/(?<![\p{L}\p{N}])(?<!т\.\x{00A0})(?<!т\. )((?:' . self::ABBR . ')\.)[ \t]+(?=[^\s\-–—])/iu', '$1' . $nb, $text);
         // № 201, § 3
-        $text = (string) preg_replace('/([№§])[ \t]+(?=\S)/u', '$1' . $nb, $text);
+        $text = self::re('/([№§])[ \t]+(?=\S)/u', '$1' . $nb, $text);
 
         // Инициалы: «Е. А. Лучников», «Е.А. Лучников», «Лучников Е. А.»
-        $text = (string) preg_replace('/(?<![\p{L}\p{N}])(\p{Lu}\.)[ \t]+(?=\p{Lu}(?:\.|\p{Ll}))/u', '$1' . $nb, $text);
-        $text = (string) preg_replace('/(?<![\p{L}\p{N}])(\p{Lu}\p{Ll}+)[ \t]+(?=\p{Lu}\.)/u', '$1' . $nb, $text);
+        $text = self::re('/(?<![\p{L}\p{N}])(\p{Lu}\.)[ \t]+(?=\p{Lu}(?:\.|\p{Ll}))/u', '$1' . $nb, $text);
+        $text = self::re('/(?<![\p{L}\p{N}])(\p{Lu}\p{Ll}+)[ \t]+(?=\p{Lu}\.)/u', '$1' . $nb, $text);
 
         // Разряды: 40 000, 1 250 000
-        $text = (string) preg_replace_callback('/(?<![\p{N}.,])\d{1,3}(?:[ \t\x{00A0}]\d{3})+(?![\p{N}])/u', static fn (array $m): string => strtr($m[0], [' ' => $nb, "\t" => $nb]), $text);
+        $text = self::reCallback('/(?<![\p{N}.,])\d{1,3}(?:[ \t\x{00A0}]\d{3})+(?![\p{N}])/u', static fn (array $m): string => strtr($m[0], [' ' => $nb, "\t" => $nb]), $text);
         // 60 000 ₽, 10 %
-        $text = (string) preg_replace('/(?<=\p{N})[ \t]+(?=[₽%‰])/u', $nb, $text);
+        $text = self::re('/(?<=\p{N})[ \t]+(?=[₽%‰])/u', $nb, $text);
         // Число и следующее слово: 14 дней, 8–17 лет, в 10:00 сбор, 2027 г.
         // (год после месяца — «12 июля 2027» — не привязываем: в узкой колонке «2–22 июля 2027» целиком не помещается)
-        $text = (string) preg_replace('/(?<![\p{L}\p{N}])(\p{N}+(?:[.,:\/–-]\p{N}+)*)[ \t]+(?=\p{L})/u', '$1' . $nb, $text);
+        $text = self::re('/(?<![\p{L}\p{N}])(\p{N}+(?:[.,:\/–-]\p{N}+)*)[ \t]+(?=\p{L})/u', '$1' . $nb, $text);
         // Номер дома после запятой: Власова, 37 / 37а / 37/2. После номера дома слова нет («Власова, 37.», «37 (пример)»);
         // «в отряде, 2 вожатых» — это счёт, а не адрес: там число держится со своим словом (правило выше), а не с запятой
-        $text = (string) preg_replace('/(?<=\p{L}),[ \t]+(?=\p{N}{1,4}(?:\p{L}{1,2})?(?:\/\p{N}{1,4})?(?![\p{L}\p{N}])(?![ \t\x{00A0}]*[\p{L}\p{N}]))/u', ',' . $nb, $text);
+        $text = self::re('/(?<=\p{L}),[ \t]+(?=\p{N}{1,4}(?:\p{L}{1,2})?(?:\/\p{N}{1,4})?(?![-–]\p{L})(?![\p{L}\p{N}])(?![ \t\x{00A0}]*[\p{L}\p{N}]))/u', ',' . $nb, $text);
 
         // Частицы — к предыдущему слову: пришёл бы, тот же, знаете ли
-        $text = (string) preg_replace('/(?<=[\p{L}\p{N}])[ \t]+(?=(?:' . self::PARTICLES . ')(?![\p{L}\p{N}]))/iu', $nb, $text);
+        $text = self::re('/(?<=[\p{L}\p{N}])[ \t]+(?=(?:' . self::PARTICLES . ')(?![\p{L}\p{N}]))/iu', $nb, $text);
         // Короткие слова и предлоги — к следующему: в лесу, и в лагере, для детей. Частицы вперёд не цепляем,
         // аббревиатуры из двух заглавных («ФЗ», «ВК», «РФ») — тоже: это не предлоги (заглавными сайт пишет через CSS, не в тексте)
-        $text = (string) preg_replace(
+        $text = self::re(
             '/(?<![\p{L}\p{N}])(?!(?:' . self::PARTICLES . ')' . $ws . ')(?!(?-i:[А-ЯЁ]{2})[ \t])((?:' . self::PREPOSITIONS . ')|[а-яё]{1,2})[ \t]+(?=[^\s\-–—])/iu',
             '$1' . $nb,
             $text
